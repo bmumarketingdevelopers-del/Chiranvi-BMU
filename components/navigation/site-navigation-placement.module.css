@@ -29,7 +29,7 @@
   right: calc(45.5 * var(--landing-page-horizontal-design-pixel));
 }
 
-/* Room for the bar on pages that start below it: 27 above the bar + the bar (88 tall) */
+/* Room for the bar on pages that start below it: 27 above the bar + the bar (100 tall) */
 .site-navigation-placement-space {
   height: calc(
     27 *
@@ -40,7 +40,7 @@
           var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
         )
       ) +
-      88 *
+      100 *
       min(
         var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
         var(--landing-viewport-height-at-starting-zoom, 100svh) / 916

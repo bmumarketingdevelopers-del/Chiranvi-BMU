@@ -2,6 +2,8 @@
   Sizes are written in Figma pixels from the landing page frame (1440 x 916), from the navigation
   bar design: bar 1349 x 88, logo 124.66 x 55, links Poppins 20 about 36 apart, icons 18.74 x 20
   (drawn in 25 boxes) with centres about 47 apart, 51 from the right end.
+  Enlarged on request: bar 100 tall, logo 74 tall and 40 from the left, links 22 about 40 apart,
+  icons in 30 boxes 26 apart.
   --landing-page-design-pixel is set by the landing page so the bar scales with the screen.
   Outside the landing page it falls back to 1px (the Figma size).
 */
@@ -12,8 +14,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: calc(88 * var(--navigation-design-pixel));
-  padding-left: calc(24 * var(--navigation-design-pixel));
+  height: calc(100 * var(--navigation-design-pixel));
+  padding-left: calc(40 * var(--navigation-design-pixel));
   padding-right: calc(51 * var(--navigation-design-pixel));
   border-radius: calc(20 * var(--navigation-design-pixel));
   background: #ffffff;
@@ -28,7 +30,7 @@
 
 .site-navigation-bar-logo-image {
   width: auto;
-  height: calc(55 * var(--navigation-design-pixel));
+  height: calc(74 * var(--navigation-design-pixel));
 }
 
 /* Page links */
@@ -36,7 +38,7 @@
 .site-navigation-bar-links-list {
   display: flex;
   align-items: center;
-  gap: calc(36 * var(--navigation-design-pixel));
+  gap: calc(40 * var(--navigation-design-pixel));
   /*
     In Figma the link group's centre sits 41 to the right of the bar's centre.
     Positioning from the centre keeps that placement on every screen width.
@@ -48,7 +50,7 @@
 }
 
 .site-navigation-bar-link {
-  font-size: calc(20 * var(--navigation-design-pixel));
+  font-size: calc(22 * var(--navigation-design-pixel));
   font-weight: 400;
   color: #161a17;
   white-space: nowrap;
@@ -78,7 +80,7 @@
 .site-navigation-bar-icon-group {
   display: flex;
   align-items: center;
-  gap: calc(22 * var(--navigation-design-pixel));
+  gap: calc(26 * var(--navigation-design-pixel));
   margin-left: auto;
 }
 
@@ -87,9 +89,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 25 box: the icon drawing inside comes out about 19 x 20, as in the design */
-  width: calc(25 * var(--navigation-design-pixel));
-  height: calc(25 * var(--navigation-design-pixel));
+  /* 30 box: the icon drawing inside comes out about 23 x 24 (design 25 box, enlarged) */
+  width: calc(30 * var(--navigation-design-pixel));
+  height: calc(30 * var(--navigation-design-pixel));
   color: #161a17;
   cursor: pointer;
   transition: color 150ms ease;
@@ -117,12 +119,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(18 * var(--navigation-design-pixel));
-  height: calc(18 * var(--navigation-design-pixel));
+  width: calc(20 * var(--navigation-design-pixel));
+  height: calc(20 * var(--navigation-design-pixel));
   border-radius: 50%;
   background: #daab24;
   color: #161a17;
-  font-size: calc(11 * var(--navigation-design-pixel));
+  font-size: calc(12 * var(--navigation-design-pixel));
   font-weight: 600;
   line-height: 1;
 }

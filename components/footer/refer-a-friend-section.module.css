@@ -59,20 +59,22 @@
 
 /*
   Line drawing (states set by the component each time the section comes into / leaves the view).
-  Each line is one dash as long as the line itself (pathLength 1): moving the dash offset from 1 to 0
-  draws it from its start to its end.
+  Each line is one dash (pathLength 1): moving the dash offset from 2 to 0 draws it from its start to
+  its end. The dash and gap are 2, not 1, because the lines keep a fixed 1.5px thickness
+  (non-scaling-stroke) and the browser then measures the dash on screen, where on wide screens the
+  line is longer than 1; with 1 the bottom circle and the end of the wave were cut off.
     hidden  - lines not drawn yet (instant, while off screen), leaf hidden
-    drawing - slow: top circle (3.2s), then the long wave (4.8s), then the bottom circle (3.2s); the
+    drawing - slow: top circle (3.2s), the long wave (4.8s, from 1s) and the bottom circle (3.2s, from 1.2s); the
               leaf fades and grows in at the end (about 6.5s in all)
     drawn   - fully drawn (before the page script runs, and for reduced motion)
 */
 .refer-a-friend-background-line-pattern > * {
-  stroke-dasharray: 1;
+  stroke-dasharray: 2;
   stroke-dashoffset: 0;
 }
 
 .refer-a-friend-lines-hidden .refer-a-friend-background-line-pattern > * {
-  stroke-dashoffset: 1;
+  stroke-dashoffset: 2;
   transition: none;
 }
 
@@ -87,7 +89,7 @@
 }
 
 .refer-a-friend-lines-drawing .refer-a-friend-line-bottom-circle {
-  transition-delay: 2.8s;
+  transition-delay: 1.2s;
 }
 
 .refer-a-friend-lines-hidden .refer-a-friend-background-leaf {
@@ -104,19 +106,51 @@
     transform 1s ease-out 5.4s;
 }
 
-/* Text: heading, description and Claim Now button (Poppins) */
+/*
+  Text: heading and description (Poppins).
+  Laptop / desktop show them as pictures exported from Figma at 4x (banner 1200 x 440 in Figma,
+  design pixel = Figma x 930/1200):
+    heading picture      1871 x 339 -> 467.75 Figma wide -> 362.5 design pixels
+    description picture  2144 x 191 -> 536 Figma wide    -> 415.4 design pixels
+    heading top 154.6 Figma, left 59 Figma, 20 Figma between the two pictures
+  The live text (sizes below) is kept for screen readers and shown on phones instead.
+*/
 
 .refer-a-friend-text-block {
   position: absolute;
-  left: calc(47 * var(--refer-a-friend-design-pixel));
-  top: calc(86 * var(--refer-a-friend-design-pixel));
+  left: calc(45.7 * var(--refer-a-friend-design-pixel));
+  top: calc(119.8 * var(--refer-a-friend-design-pixel));
+}
+
+.refer-a-friend-heading-image,
+.refer-a-friend-description-image {
+  display: block;
+  height: auto;
+}
+
+.refer-a-friend-heading-image {
+  width: calc(362.5 * var(--refer-a-friend-design-pixel));
+}
+
+.refer-a-friend-description-image {
+  width: calc(415.4 * var(--refer-a-friend-design-pixel));
+}
+
+/* Live text: hidden from view on laptop / desktop (screen readers still read it) */
+.refer-a-friend-text-for-phones {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .refer-a-friend-heading {
   font-family: var(--font-poppins), sans-serif;
-  font-size: calc(30 * var(--refer-a-friend-design-pixel));
-  font-weight: 600;
-  line-height: calc(37 * var(--refer-a-friend-design-pixel));
+  font-size: calc(27.9 * var(--refer-a-friend-design-pixel));
+  font-weight: 700;
+  line-height: calc(35.6 * var(--refer-a-friend-design-pixel));
   color: #ffffff;
 }
 
@@ -125,12 +159,12 @@
 }
 
 .refer-a-friend-description {
-  margin-top: calc(12 * var(--refer-a-friend-design-pixel));
+  margin-top: calc(15.5 * var(--refer-a-friend-design-pixel));
   font-family: var(--font-poppins), sans-serif;
-  font-size: calc(14.5 * var(--refer-a-friend-design-pixel));
+  font-size: calc(12.6 * var(--refer-a-friend-design-pixel));
   font-weight: 400;
-  line-height: calc(23 * var(--refer-a-friend-design-pixel));
-  color: #ffffff;
+  line-height: calc(20.5 * var(--refer-a-friend-design-pixel));
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .refer-a-friend-description strong {
@@ -147,12 +181,12 @@
 /*
   Both screens end 16 design pixels above the bottom of the banner (341), so their rounded bottoms
   show with a gap under them:
-    purity screen  170 wide x 239 tall, top 86  -> bottom 325
+    purity screen  170 wide x 239 tall, top 96  -> bottom 335 (lower, as in the design)
     rewards screen 176 wide x 310 tall, top 15  -> bottom 325
 */
 .refer-a-friend-purity-screen {
   left: calc(495 * var(--refer-a-friend-design-pixel));
-  top: calc(86 * var(--refer-a-friend-design-pixel));
+  top: calc(96 * var(--refer-a-friend-design-pixel));
   width: calc(170 * var(--refer-a-friend-design-pixel));
 }
 
@@ -175,7 +209,7 @@
 /*
   Product carousel on the purity screen: all three products are always shown, standing on the same
   line (68% down the screen). The one in the centre is full size, in front and glowing; the other two
-  are smaller and softer on the left and right. Every 3 seconds they turn one place:
+  are a little smaller (0.62) and softer on the left and right. Every 3 seconds they turn one place:
     paneer centre (ghee left, milk right) -> milk centre (paneer left, ghee right)
     -> ghee centre (milk left, paneer right) -> paneer centre again.
   Every product follows the same path, centre -> left -> right -> centre; they start at different
@@ -198,7 +232,7 @@
 }
 
 .refer-a-friend-purity-screen-paneer {
-  --product-centre-width: 42%;
+  --product-centre-width: 50%;
 
   animation-delay: 0s;
 }
@@ -233,7 +267,7 @@
     left: 22%;
     z-index: 1;
     opacity: 0.7;
-    transform: translateX(-50%) scale(0.5);
+    transform: translateX(-50%) scale(0.62);
     filter: drop-shadow(0 0 0 rgba(255, 222, 140, 0));
   }
   /* Right: smaller, behind, softer */
@@ -242,7 +276,7 @@
     left: 78%;
     z-index: 1;
     opacity: 0.7;
-    transform: translateX(-50%) scale(0.5);
+    transform: translateX(-50%) scale(0.62);
     filter: drop-shadow(0 0 0 rgba(255, 222, 140, 0));
   }
   100% {
@@ -261,7 +295,7 @@
   .refer-a-friend-purity-screen-paneer {
     animation: none;
     opacity: 0.7;
-    transform: translateX(-50%) scale(0.5);
+    transform: translateX(-50%) scale(0.62);
   }
 
   .refer-a-friend-purity-screen-paneer {
@@ -391,6 +425,21 @@
     order: 2;
     width: 100%;
     margin-top: 22px;
+  }
+
+  /* Phones: the live text instead of the pictures */
+  .refer-a-friend-heading-image,
+  .refer-a-friend-description-image {
+    display: none;
+  }
+
+  .refer-a-friend-text-for-phones {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
   }
 
   .refer-a-friend-heading {

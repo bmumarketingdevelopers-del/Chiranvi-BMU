@@ -81,7 +81,16 @@ export default function ReferAFriendSection() {
         >
           {/* pathLength="1" lets the CSS draw each line from 0 to its full length, whatever its real length */}
           <circle cx="362" cy="-18" r="102" pathLength={1} className={styles["refer-a-friend-line-top-circle"]} />
-          <circle cx="31" cy="374" r="123" pathLength={1} className={styles["refer-a-friend-line-bottom-circle"]} />
+          {/*
+            Bottom-left circle edge (centre 31, 374, radius 123): only its top half is drawn, from the left
+            over the top to the right, so the visible part starts drawing straight away (a full circle
+            would first draw its hidden half below the banner).
+          */}
+          <path
+            d="M-92 374A123 123 0 0 1 154 374"
+            pathLength={1}
+            className={styles["refer-a-friend-line-bottom-circle"]}
+          />
           <path
             d="M228 341C300 300 382 302 452 268S560 196 604 168S760 58 870 84Q906 96 930 118"
             pathLength={1}
@@ -93,14 +102,39 @@ export default function ReferAFriendSection() {
         </svg>
 
         <div className={styles["refer-a-friend-text-block"]}>
+          {/*
+            Laptop / desktop: the heading and description are pictures exported from Figma (so they look
+            exactly like the design); the real text stays in the page for screen readers and search,
+            and is what phones show.
+          */}
           <h2 id="refer-a-friend-heading" className={styles["refer-a-friend-heading"]}>
-            Good Milk. Good Health.
-            <br />
-            <span className={styles["refer-a-friend-heading-highlight"]}>Goodness</span> Worth Sharing.
+            <Image
+              src="/images/refer-a-friend/refer-a-friend-heading-text.webp"
+              alt=""
+              width={1871}
+              height={339}
+              unoptimized
+              className={styles["refer-a-friend-heading-image"]}
+            />
+            <span className={styles["refer-a-friend-text-for-phones"]}>
+              Good Milk. Good Health.
+              <br />
+              <span className={styles["refer-a-friend-heading-highlight"]}>Goodness</span> Worth Sharing.
+            </span>
           </h2>
           <p className={styles["refer-a-friend-description"]}>
-            Invite your friends to Chiranvi Farms! When they make their <br />
-            first purchase, they&rsquo;ll remember you for a lifetime.
+            <Image
+              src="/images/refer-a-friend/refer-a-friend-description-text.webp"
+              alt=""
+              width={2144}
+              height={191}
+              unoptimized
+              className={styles["refer-a-friend-description-image"]}
+            />
+            <span className={styles["refer-a-friend-text-for-phones"]}>
+              Invite your friends to Chiranvi Farms! When they make their <br />
+              first purchase, they&rsquo;ll remember you for a lifetime.
+            </span>
           </p>
         </div>
 

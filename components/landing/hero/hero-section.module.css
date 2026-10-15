@@ -190,11 +190,11 @@
 }
 
 /*
-  680 tall (as large as fits below the navigation bar), standing on the same line as the jar.
+  680 tall, standing 20 below the jar's line so the cap stays 10 clear of the (taller, 100) navigation bar.
   Moved 60 left of the jar's centre so the bottle covers the ring's inner edge, like the jar does.
 */
 .landing-hero-milk-bottle-image {
-  top: calc(-29 * var(--landing-page-design-pixel));
+  top: calc(-9 * var(--landing-page-design-pixel));
   left: calc(50% - 234.5 * var(--landing-page-design-pixel));
   width: auto;
   height: calc(680 * var(--landing-page-design-pixel));

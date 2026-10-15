@@ -1,0 +1,622 @@
+/*
+  /contact-us page, from the design (1440-wide frame). Numbers in calc() are design pixels multiplied by
+  --contact-design-pixel, the same zoom-aware unit as the landing page (window size at the starting
+  zoom, from the layout script).
+  Fonts and colours: Ubuntu headings and FAQ questions (gold italic "you."), Poppins text;
+  dark green #2B5E3C, gold #C9A24A, light green fields #EEF4E6, grey cards #F3F3F3, beige FAQ border #ECE2CF.
+*/
+
+.contact-us-page {
+  --contact-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  /* Widths follow the screen width, like the navigation bar (45.5 from the sides) */
+  --contact-horizontal-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440);
+  --contact-side-margin: calc(45.5 * var(--contact-horizontal-design-pixel));
+  /* Cards and form sit 86 from the sides of the 1440 frame, a little inside the navigation bar */
+  --contact-content-inset: calc(40.5 * var(--contact-horizontal-design-pixel));
+
+  display: flow-root;
+  min-height: 100svh;
+  /* Light green behind the top, fading to white around the contact cards */
+  background: linear-gradient(
+    180deg,
+    #e6efdc 0,
+    #f4f8ef calc(380 * var(--contact-design-pixel)),
+    #ffffff calc(560 * var(--contact-design-pixel))
+  );
+  font-family: var(--font-poppins), sans-serif;
+  color: #1e2a22;
+}
+
+.contact-us-content {
+  padding: calc(56 * var(--contact-design-pixel)) var(--contact-side-margin) calc(40 * var(--contact-design-pixel));
+}
+
+/* Small gold label above the headings ("CONTACT US", "QUICK ANSWERS") */
+.contact-us-eyebrow {
+  font-size: calc(14 * var(--contact-design-pixel));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #c9a24a;
+}
+
+/* "CONTACT US" above the hero heading: cow yellow from the Chiranvi Farms logo */
+.contact-us-eyebrow-logo-yellow {
+  color: #f2bf2b;
+}
+
+/* Hero */
+
+.contact-us-hero {
+  text-align: center;
+}
+
+.contact-us-heading {
+  margin-top: calc(14 * var(--contact-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(78 * var(--contact-design-pixel));
+  font-weight: 500;
+  line-height: 1.17;
+  color: #2b5e3c;
+}
+
+/* "you.": cow yellow from the Chiranvi Farms logo */
+.contact-us-heading-highlight {
+  font-style: italic;
+  color: #f2bf2b;
+}
+
+.contact-us-intro {
+  margin-top: calc(24 * var(--contact-design-pixel));
+  font-size: calc(18 * var(--contact-design-pixel));
+  line-height: 1.6;
+  color: #2f6b3f;
+}
+
+/* Four contact cards in a row (smaller than the design: 1000 wide in all, centred) */
+.contact-us-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(20 * var(--contact-design-pixel));
+  max-width: calc(1000 * var(--contact-horizontal-design-pixel));
+  margin: calc(50 * var(--contact-design-pixel)) auto 0;
+}
+
+.contact-us-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: calc(138 * var(--contact-horizontal-design-pixel));
+  padding: calc(20 * var(--contact-design-pixel)) calc(16 * var(--contact-design-pixel));
+  border-radius: calc(20 * var(--contact-design-pixel));
+  background: #f3f3f3;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.contact-us-card:hover {
+  background: #edf2e8;
+}
+
+.contact-us-card:focus-visible {
+  outline: 2px solid #2b5e3c;
+  outline-offset: 3px;
+}
+
+.contact-us-card-icon {
+  display: grid;
+  place-items: center;
+  width: calc(64 * var(--contact-design-pixel));
+  height: calc(64 * var(--contact-design-pixel));
+  border-radius: 50%;
+  background: #eef3e8;
+}
+
+.contact-us-card-icon svg {
+  width: calc(36 * var(--contact-design-pixel));
+  height: calc(36 * var(--contact-design-pixel));
+  fill: none;
+  stroke: #111111;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.contact-us-card-icon .contact-us-card-icon-dot {
+  fill: #111111;
+  stroke: #f3f3f3;
+  stroke-width: 1.4;
+}
+
+.contact-us-card-title {
+  margin-top: calc(14 * var(--contact-design-pixel));
+  font-size: calc(18 * var(--contact-design-pixel));
+  font-weight: 600;
+  color: #2b5e3c;
+  overflow-wrap: anywhere;
+}
+
+.contact-us-card-note {
+  margin-top: calc(4 * var(--contact-design-pixel));
+  font-size: calc(17 * var(--contact-design-pixel));
+  color: #555555;
+}
+
+.contact-us-card-address {
+  margin-top: calc(14 * var(--contact-design-pixel));
+  font-size: calc(15 * var(--contact-design-pixel));
+  font-weight: 600;
+  line-height: 1.8;
+  color: #2b5e3c;
+}
+
+/* "How can we help?" form */
+
+/* Same width as the four contact cards above (1000 on the 1440 frame), centred, so their edges line up */
+.contact-us-form-section {
+  max-width: calc(1000 * var(--contact-horizontal-design-pixel));
+  margin: calc(110 * var(--contact-design-pixel)) auto 0;
+}
+
+.contact-us-form-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(50 * var(--contact-design-pixel));
+  font-weight: 400;
+  line-height: 1.2;
+  color: #1a1a1a;
+}
+
+.contact-us-form-subheading {
+  margin-top: calc(10 * var(--contact-design-pixel));
+  font-size: calc(18 * var(--contact-design-pixel));
+  color: #666666;
+}
+
+/* Two columns of fields; the message box runs the full width */
+.contact-us-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(20 * var(--contact-design-pixel)) calc(24 * var(--contact-design-pixel));
+  margin-top: calc(32 * var(--contact-design-pixel));
+}
+
+.contact-us-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--contact-design-pixel));
+}
+
+.contact-us-form-field-wide,
+.contact-us-form-actions {
+  grid-column: 1 / -1;
+}
+
+.contact-us-form-label {
+  font-size: calc(16.5 * var(--contact-design-pixel));
+  font-weight: 600;
+  color: #111111;
+}
+
+.contact-us-form-input,
+.contact-us-form-select {
+  width: 100%;
+  height: calc(56 * var(--contact-design-pixel));
+  padding: 0 calc(20 * var(--contact-design-pixel));
+  border: 1px solid #dde7cf;
+  border-radius: calc(10 * var(--contact-design-pixel));
+  background: #eef4e6;
+  font-family: inherit;
+  font-size: calc(17 * var(--contact-design-pixel));
+  color: #1e2a22;
+  transition: border-color 0.2s ease;
+}
+
+.contact-us-form-input::placeholder {
+  color: #9aa58f;
+}
+
+.contact-us-form-input:focus,
+.contact-us-form-select:focus {
+  border-color: #2b5e3c;
+  outline: none;
+}
+
+.contact-us-form-select-wrapper {
+  position: relative;
+  display: block;
+}
+
+.contact-us-form-select {
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Grey "Select a topic" until a topic is picked */
+.contact-us-form-select:invalid {
+  color: #9aa58f;
+}
+
+.contact-us-form-select option {
+  color: #1e2a22;
+}
+
+.contact-us-form-select-arrow {
+  position: absolute;
+  top: 50%;
+  right: calc(20 * var(--contact-design-pixel));
+  width: calc(22 * var(--contact-design-pixel));
+  height: calc(22 * var(--contact-design-pixel));
+  translate: 0 -50%;
+  fill: none;
+  stroke: #333333;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.contact-us-form-message {
+  height: calc(150 * var(--contact-design-pixel));
+  padding-top: calc(16 * var(--contact-design-pixel));
+  padding-bottom: calc(16 * var(--contact-design-pixel));
+  resize: vertical;
+}
+
+.contact-us-form-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(18 * var(--contact-design-pixel));
+  margin-top: calc(26 * var(--contact-design-pixel));
+}
+
+.contact-us-form-send-button {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(12 * var(--contact-design-pixel));
+  height: calc(64 * var(--contact-design-pixel));
+  padding: 0 calc(26 * var(--contact-design-pixel)) 0 calc(44 * var(--contact-design-pixel));
+  border: none;
+  border-radius: 999px;
+  background: #2b5e3c;
+  font-family: inherit;
+  font-size: calc(19 * var(--contact-design-pixel));
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.contact-us-form-send-button:hover {
+  background: #234e32;
+}
+
+.contact-us-form-send-button svg {
+  width: calc(26 * var(--contact-design-pixel));
+  height: calc(26 * var(--contact-design-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.contact-us-form-sent-note {
+  font-size: calc(17 * var(--contact-design-pixel));
+  color: #2b5e3c;
+}
+
+/* Frequently asked questions */
+
+.contact-us-faq-section {
+  /* Same width as the cards and the form, so all three line up */
+  max-width: calc(1000 * var(--contact-horizontal-design-pixel));
+  margin: calc(110 * var(--contact-design-pixel)) auto 0;
+  text-align: center;
+}
+
+.contact-us-faq-heading {
+  margin-top: calc(10 * var(--contact-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(46 * var(--contact-design-pixel));
+  font-weight: 500;
+  line-height: 1.2;
+  color: #222222;
+}
+
+.contact-us-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(15 * var(--contact-design-pixel));
+  margin-top: calc(70 * var(--contact-design-pixel));
+  text-align: left;
+}
+
+.contact-us-faq-item {
+  border: 1px solid #ece2cf;
+  border-radius: calc(17 * var(--contact-design-pixel));
+  background: #ffffff;
+}
+
+.contact-us-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(16 * var(--contact-design-pixel));
+  width: 100%;
+  min-height: calc(80 * var(--contact-design-pixel));
+  padding: calc(18 * var(--contact-design-pixel)) calc(28 * var(--contact-design-pixel)) calc(18 * var(--contact-design-pixel))
+    calc(38 * var(--contact-design-pixel));
+  border: none;
+  background: none;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(18.5 * var(--contact-design-pixel));
+  font-weight: 500;
+  text-align: left;
+  color: #222222;
+  cursor: pointer;
+}
+
+.contact-us-faq-question:focus-visible {
+  border-radius: calc(17 * var(--contact-design-pixel));
+  outline: 2px solid #2b5e3c;
+  outline-offset: -2px;
+}
+
+/* Plus / minus circle: light green when closed, dark green when open */
+.contact-us-faq-toggle {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(36 * var(--contact-design-pixel));
+  height: calc(36 * var(--contact-design-pixel));
+  border-radius: 50%;
+  background: #eef1e8;
+  color: #2b5e3c;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.contact-us-faq-toggle-open {
+  background: #2b5e3c;
+  color: #ffffff;
+}
+
+.contact-us-faq-toggle svg {
+  width: calc(22 * var(--contact-design-pixel));
+  height: calc(22 * var(--contact-design-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The answer slides open (height from 0 to its full size) */
+.contact-us-faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 0.3s ease, visibility 0.3s;
+}
+
+.contact-us-faq-answer-open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+
+.contact-us-faq-answer-text {
+  overflow: hidden;
+  max-width: calc(660 * var(--contact-design-pixel));
+  padding: 0 calc(38 * var(--contact-design-pixel));
+  font-size: calc(15.5 * var(--contact-design-pixel));
+  line-height: 1.75;
+  color: #666666;
+}
+
+.contact-us-faq-answer-open .contact-us-faq-answer-text {
+  padding-bottom: calc(28 * var(--contact-design-pixel));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-us-faq-answer {
+    transition: none;
+  }
+}
+
+/* Phone layout: cards two per row, form fields one per row, phone text sizes */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .contact-us-page {
+    background: linear-gradient(180deg, #e6efdc 0, #f4f8ef 320px, #ffffff 520px);
+  }
+
+  .contact-us-content {
+    padding: 28px 15px 24px;
+  }
+
+  .contact-us-eyebrow {
+    font-size: 12px;
+  }
+
+  .contact-us-heading {
+    margin-top: 10px;
+    font-size: 34px;
+  }
+
+  .contact-us-intro {
+    margin-top: 14px;
+    font-size: 14px;
+  }
+
+  .contact-us-intro br {
+    display: none;
+  }
+
+  /* Full phone width, so the two columns of cards sit centred */
+  .contact-us-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: none;
+    margin: 28px 0 0;
+  }
+
+  .contact-us-card {
+    min-height: 150px;
+    padding: 18px 10px;
+    border-radius: 16px;
+  }
+
+  .contact-us-card-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .contact-us-card-icon svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .contact-us-card-title {
+    margin-top: 10px;
+    font-size: 13.5px;
+  }
+
+  .contact-us-card-note {
+    font-size: 11.5px;
+  }
+
+  .contact-us-card-address {
+    margin-top: 10px;
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+
+  .contact-us-form-section {
+    max-width: none;
+    margin: 56px 0 0;
+  }
+
+  .contact-us-form-heading {
+    font-size: 28px;
+  }
+
+  .contact-us-form-subheading {
+    margin-top: 6px;
+    font-size: 13.5px;
+  }
+
+  /* Two columns of fields on phones too; the message box runs the full width */
+  .contact-us-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 10px;
+    margin-top: 22px;
+  }
+
+  .contact-us-form-field {
+    gap: 8px;
+  }
+
+  .contact-us-form-label {
+    font-size: 13px;
+  }
+
+  .contact-us-form-input,
+  .contact-us-form-select {
+    height: 48px;
+    padding: 0 12px;
+    border-radius: 10px;
+    /* 16px stops phones from zooming in when a field is tapped */
+    font-size: 16px;
+  }
+
+  /* Hints a little smaller, so they fit the half-width fields */
+  .contact-us-form-input::placeholder,
+  .contact-us-form-select:invalid {
+    font-size: 14px;
+  }
+
+  .contact-us-form-select-arrow {
+    right: 14px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .contact-us-form-message {
+    height: 120px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .contact-us-form-actions {
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .contact-us-form-send-button {
+    gap: 8px;
+    height: 50px;
+    padding: 0 18px 0 32px;
+    font-size: 15px;
+  }
+
+  .contact-us-form-send-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .contact-us-form-sent-note {
+    font-size: 13.5px;
+  }
+
+  .contact-us-faq-section {
+    max-width: none;
+    margin-top: 56px;
+  }
+
+  .contact-us-faq-heading {
+    margin-top: 8px;
+    font-size: 28px;
+  }
+
+  .contact-us-faq-list {
+    gap: 12px;
+    margin-top: 36px;
+  }
+
+  .contact-us-faq-item {
+    border-radius: 14px;
+  }
+
+  .contact-us-faq-question {
+    min-height: 62px;
+    padding: 14px 14px 14px 18px;
+    font-size: 15px;
+  }
+
+  .contact-us-faq-question:focus-visible {
+    border-radius: 14px;
+  }
+
+  .contact-us-faq-toggle {
+    width: 30px;
+    height: 30px;
+  }
+
+  .contact-us-faq-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .contact-us-faq-answer-text {
+    max-width: none;
+    padding: 0 18px;
+    font-size: 13.5px;
+  }
+
+  .contact-us-faq-answer-open .contact-us-faq-answer-text {
+    padding-bottom: 18px;
+  }
+}

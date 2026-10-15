@@ -26,7 +26,7 @@ const footerLinkColumns = [
     title: "Company",
     links: [
       { label: "About us", href: "#" },
-      { label: "Contact", href: "#" },
+      { label: "Contact", href: "/contact-us" },
       { label: "Refund", href: "/refund" },
       { label: "Referral", href: "#" },
       { label: "Privacy policy", href: "/privacy-policy" },

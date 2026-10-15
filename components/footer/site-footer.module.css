@@ -22,17 +22,18 @@
 
 /*
   One row: brand block, three link columns, Get in touch.
-  Column widths put each column where it starts in the design.
+  Column widths put each column where it starts in the design; the left padding (14.5) and the
+  first column (297.5) leave the same space on the left (5.8% of the panel) and right (8.8%) as Figma.
 */
 .site-footer-content {
   display: grid;
   grid-template-columns:
-    calc(338 * var(--site-footer-design-pixel)) calc(142 * var(--site-footer-design-pixel))
+    calc(297.5 * var(--site-footer-design-pixel)) calc(142 * var(--site-footer-design-pixel))
     calc(150 * var(--site-footer-design-pixel)) calc(134 * var(--site-footer-design-pixel)) 1fr;
   width: calc(930 * var(--site-footer-design-pixel));
   max-width: 100%;
   margin: 0 auto;
-  padding-left: calc(35 * var(--site-footer-design-pixel));
+  padding-left: calc(14.5 * var(--site-footer-design-pixel));
 }
 
 /* Brand block: logo, description, copyright */
