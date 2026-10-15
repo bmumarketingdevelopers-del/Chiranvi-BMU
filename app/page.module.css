@@ -1,0 +1,23 @@
+/*
+  Page-wide styles for the landing page.
+  Each section has its own folder in components/landing/
+  (for example hero/hero-section.tsx and hero/hero-section.module.css).
+*/
+
+.landing-page {
+  font-family: var(--font-poppins), sans-serif;
+  /* White behind every section, also when the visitor's computer is in dark mode
+     (globals.css would otherwise show a dark page around the footer panel). */
+  background: #ffffff;
+  /* Keeps the footer's white space below it inside the page (so it stays white too). */
+  display: flow-root;
+}
+
+/* Mobile layout (chosen by the script in page.tsx; see components/landing/hero/hero-section.module.css for details). */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .landing-page {
+    /* Fills the screen with the hero's light colour. */
+    min-height: 100svh;
+    background: #fefefe;
+  }
+}

@@ -1,0 +1,33 @@
+/*
+  /community page frame: light green fading to white behind the navigation bar and the
+  "Join the Chiranvi Community" section (design colours), white below for the footer.
+  The navigation bar is placed like on the landing page (47 from the sides, 27 from the top).
+*/
+
+.community-page {
+  --landing-page-horizontal-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440);
+  --landing-page-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
+
+  display: flow-root;
+  min-height: 100svh;
+  background: linear-gradient(180deg, #e8f1df 0, #f6faf3 calc(720 * var(--landing-page-design-pixel)), #ffffff calc(1080 * var(--landing-page-design-pixel)));
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.community-page-navigation {
+  position: relative;
+  z-index: 5;
+  padding: calc(27 * var(--landing-page-vertical-design-pixel)) calc(47 * var(--landing-page-horizontal-design-pixel))
+    calc(10 * var(--landing-page-design-pixel));
+}
+
+/* Phone layout: the bar 12px from the top and sides, as on the landing page */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .community-page-navigation {
+    padding: 12px 12px 4px;
+  }
+}

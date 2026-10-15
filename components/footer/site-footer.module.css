@@ -1,0 +1,212 @@
+/*
+  Site footer, measured from the design (content 930 design pixels wide, the same width as the
+  Refer a Friend banner above it, so their edges line up).
+  Numbers in calc() are design pixels multiplied by --site-footer-design-pixel: 83.4% of the screen
+  width / 930, as in the design. The footer is the bottom half of a light grey rounded panel
+  (the Refer a Friend banner above is the top half). The width at the starting zoom comes from the landing page script; on other pages
+  it falls back to the current window width.
+*/
+
+.site-footer {
+  --site-footer-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * 0.834 / 930);
+
+  /* Panel: same width as the banner's panel, rounded bottom corners, white space below */
+  width: calc(1020 * var(--site-footer-design-pixel));
+  max-width: calc(100% - 32px);
+  margin: 0 auto calc(49 * var(--site-footer-design-pixel));
+  padding: 0 0 calc(36 * var(--site-footer-design-pixel));
+  border-radius: 0 0 calc(21 * var(--site-footer-design-pixel)) calc(21 * var(--site-footer-design-pixel));
+  background: #fafafa;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+/*
+  One row: brand block, three link columns, Get in touch.
+  Column widths put each column where it starts in the design.
+*/
+.site-footer-content {
+  display: grid;
+  grid-template-columns:
+    calc(338 * var(--site-footer-design-pixel)) calc(142 * var(--site-footer-design-pixel))
+    calc(150 * var(--site-footer-design-pixel)) calc(134 * var(--site-footer-design-pixel)) 1fr;
+  width: calc(930 * var(--site-footer-design-pixel));
+  max-width: 100%;
+  margin: 0 auto;
+  padding-left: calc(35 * var(--site-footer-design-pixel));
+}
+
+/* Brand block: logo, description, copyright */
+
+.site-footer-logo-link {
+  display: block;
+  width: fit-content;
+}
+
+.site-footer-logo-image {
+  width: auto;
+  height: calc(62 * var(--site-footer-design-pixel));
+}
+
+.site-footer-description {
+  max-width: calc(290 * var(--site-footer-design-pixel));
+  margin-top: calc(14 * var(--site-footer-design-pixel));
+  font-size: calc(12 * var(--site-footer-design-pixel));
+  line-height: calc(16.3 * var(--site-footer-design-pixel));
+  color: #576c5e;
+}
+
+.site-footer-copyright {
+  margin-top: calc(26 * var(--site-footer-design-pixel));
+  font-size: calc(10.5 * var(--site-footer-design-pixel));
+  line-height: calc(14 * var(--site-footer-design-pixel));
+  color: #59695f;
+}
+
+/* Link columns and Get in touch */
+
+.site-footer-link-column,
+.site-footer-contact-column {
+  padding-top: calc(26 * var(--site-footer-design-pixel));
+}
+
+/* Column titles: Poppins Bold, very dark green (measured from the design close-ups) */
+.site-footer-column-title {
+  font-size: calc(13 * var(--site-footer-design-pixel));
+  font-weight: 700;
+  line-height: calc(18 * var(--site-footer-design-pixel));
+  color: #162416;
+}
+
+.site-footer-link-list {
+  display: flex;
+  flex-direction: column;
+  /* One link every 20 design pixels, starting 26.5 below the column title's top, as in the design */
+  gap: calc(6 * var(--site-footer-design-pixel));
+  margin-top: calc(8.5 * var(--site-footer-design-pixel));
+}
+
+/* Block, so each row is exactly the link's own height (not the page's default text height). */
+.site-footer-link {
+  display: block;
+  width: fit-content;
+  font-size: calc(11.5 * var(--site-footer-design-pixel));
+  font-weight: 400;
+  line-height: calc(14 * var(--site-footer-design-pixel));
+  color: #79867b;
+  transition: color 150ms ease;
+}
+
+.site-footer-link:hover,
+.site-footer-link:focus-visible {
+  color: #285c3a;
+}
+
+/* "Get in touch" text sits closer under its title than the links do, as in the design */
+.site-footer-contact-text {
+  margin-top: calc(3 * var(--site-footer-design-pixel));
+  /* Each line stays on one line, as in the design (it may run slightly past the column). */
+  white-space: nowrap;
+  font-size: calc(11.5 * var(--site-footer-design-pixel));
+  font-weight: 400;
+  line-height: calc(16.7 * var(--site-footer-design-pixel));
+  color: #79867b;
+}
+
+.site-footer-social-links {
+  display: flex;
+  gap: calc(11 * var(--site-footer-design-pixel));
+  margin-top: calc(26 * var(--site-footer-design-pixel));
+}
+
+.site-footer-social-link {
+  display: block;
+  transition: transform 150ms ease;
+}
+
+.site-footer-social-link:hover,
+.site-footer-social-link:focus-visible {
+  transform: translateY(-2px);
+}
+
+.site-footer-social-icon {
+  display: block;
+  width: calc(21 * var(--site-footer-design-pixel));
+  height: calc(21 * var(--site-footer-design-pixel));
+}
+
+/*
+  Mobile layout (chosen by the landing page script): brand block on top, then the link columns
+  two per row, then Get in touch.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .site-footer {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 8px 16px 32px;
+    border-radius: 0;
+  }
+
+  .site-footer-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 16px;
+    width: 100%;
+    padding-left: 0;
+  }
+
+  .site-footer-brand {
+    grid-column: 1 / -1;
+  }
+
+  .site-footer-logo-image {
+    height: 52px;
+  }
+
+  .site-footer-description {
+    max-width: none;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .site-footer-copyright {
+    margin-top: 14px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .site-footer-link-column,
+  .site-footer-contact-column {
+    padding-top: 0;
+  }
+
+  .site-footer-column-title {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .site-footer-link-list {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .site-footer-link,
+  .site-footer-contact-text {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .site-footer-contact-text {
+    white-space: normal;
+  }
+
+  .site-footer-social-links {
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .site-footer-social-icon {
+    width: 26px;
+    height: 26px;
+  }
+}

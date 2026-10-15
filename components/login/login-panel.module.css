@@ -1,0 +1,440 @@
+/*
+  Login page (Log in / Verify OTP / OTP expired), measured from the designs.
+  Compact card: 440px wide on desktop (reduced on request from the designs' larger card),
+  with a soft green background, a light shadow and a short fade-in. Fills the screen width on phones.
+  Sizes are in px because this page has its own fixed layout.
+*/
+
+.login-page-background {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  padding: 24px 16px;
+  background: radial-gradient(circle at 20% 15%, #eef6ea 0%, transparent 45%),
+    radial-gradient(circle at 85% 90%, #e3efe1 0%, transparent 50%), #f3f5f2;
+}
+
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 36px 34px 26px;
+  border: 1px solid #e6ebe5;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #14202e;
+  box-shadow:
+    0 1px 2px rgba(20, 32, 46, 0.04),
+    0 18px 40px rgba(40, 92, 58, 0.1);
+  animation: login-card-appear 350ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes login-card-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.login-close-button {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  display: flex;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.login-close-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: #14202e;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.login-close-button:hover,
+.login-close-button:focus-visible {
+  background: #f1f3f2;
+}
+
+/* Heading, description, sent-to number */
+
+.login-heading {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 30px;
+  color: #14202e;
+}
+
+.login-description {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 22px;
+  color: #6b7280;
+}
+
+.login-sent-to-number {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.login-sent-to-number-regular {
+  font-weight: 500;
+}
+
+.login-sent-to-number-bold {
+  font-weight: 700;
+}
+
+.login-edit-number-button {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #285c3a;
+  cursor: pointer;
+}
+
+.login-edit-number-button:hover,
+.login-edit-number-button:focus-visible {
+  text-decoration: underline;
+}
+
+/* Mobile number field */
+
+.login-field-label {
+  display: block;
+  margin-top: 22px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.login-mobile-number-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 1.5px solid #285c3a;
+  border-radius: 12px;
+}
+
+.login-mobile-number-field:focus-within {
+  box-shadow: 0 0 0 3px rgba(40, 92, 58, 0.15);
+}
+
+.login-country-code {
+  font-size: 16px;
+  font-weight: 500;
+  color: #8a8f8b;
+}
+
+.login-mobile-number-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #14202e;
+  background: transparent;
+  outline: none;
+}
+
+.login-mobile-number-input::placeholder {
+  font-weight: 500;
+  color: #c3c7cb;
+}
+
+.login-field-hint {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 19px;
+  color: #6b7280;
+}
+
+/* OTP boxes: dark border when filled, green when active, light grey when empty; red when expired */
+
+.login-otp-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 9px;
+  margin-top: 24px;
+}
+
+.login-otp-box {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1.5px solid #e2e4e8;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  color: #14202e;
+  text-align: center;
+  caret-color: #14202e;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.login-otp-box-filled {
+  border-color: #14202e;
+}
+
+.login-otp-box-active:focus {
+  border-color: #285c3a;
+  box-shadow: 0 0 0 3px rgba(40, 92, 58, 0.12);
+}
+
+.login-otp-boxes-expired .login-otp-box {
+  border-color: #d94a4a;
+  background: #faf1f0;
+}
+
+/* Countdown with a turning dashed circle, or the expired message */
+
+.login-resend-status,
+.login-error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13.5px;
+  line-height: 20px;
+}
+
+.login-resend-status {
+  color: #6b7280;
+}
+
+.login-resend-status strong {
+  font-weight: 700;
+  color: #14202e;
+}
+
+.login-resend-spinner {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  border: 2px dashed #285c3a;
+  border-radius: 50%;
+  animation: login-resend-spinner-turn 2.5s linear infinite;
+}
+
+@keyframes login-resend-spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+.login-error-message {
+  color: #d94a4a;
+}
+
+.login-error-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border: 1.5px solid #d6d8db;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  color: #d94a4a;
+}
+
+/* Green main button and the small line below it */
+
+.login-primary-button {
+  width: 100%;
+  height: 50px;
+  margin-top: 26px;
+  border-radius: 12px;
+  background: #285c3a;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    opacity 150ms ease;
+}
+
+.login-primary-button:hover:not(:disabled),
+.login-primary-button:focus-visible {
+  background: #1f4a2e;
+}
+
+.login-primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.login-footnote {
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 20px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.login-footnote a,
+.login-footnote-button {
+  font-weight: 700;
+  color: #14202e;
+  cursor: pointer;
+}
+
+.login-footnote a:hover,
+.login-footnote-button:hover,
+.login-footnote a:focus-visible,
+.login-footnote-button:focus-visible {
+  text-decoration: underline;
+}
+
+.login-footnote-button-medium {
+  font-weight: 600;
+}
+
+/* Phones: a little less padding and smaller boxes */
+@media (max-width: 600px) {
+  .login-card {
+    padding: 44px 22px 28px;
+    border-radius: 18px;
+  }
+
+  .login-close-button {
+    top: 20px;
+    right: 18px;
+  }
+
+  .login-heading {
+    font-size: 23px;
+    line-height: 29px;
+  }
+
+  .login-description {
+    font-size: 14.5px;
+    line-height: 24px;
+  }
+
+  /* The line break is written for the wide card; let the text wrap naturally on phones. */
+  .login-description br {
+    display: none;
+  }
+
+  .login-otp-boxes {
+    gap: 8px;
+  }
+
+  .login-otp-box {
+    border-radius: 10px;
+    font-size: 18px;
+  }
+
+  .login-mobile-number-field,
+  .login-primary-button {
+    height: 50px;
+  }
+}
+
+/*
+  Inside the phone bottom sheet (login-bottom-sheet.tsx): the sheet draws the white curved
+  background, so the card itself has no background, corners or width limit.
+*/
+.login-card-in-bottom-sheet {
+  max-width: none;
+  padding: 4px 20px calc(18px + env(safe-area-inset-bottom));
+  border-radius: 0;
+  background: transparent;
+}
+
+.login-card-in-bottom-sheet .login-close-button {
+  top: -6px;
+  right: 14px;
+}
+
+/*
+  Phone bottom sheet, first step: compact layout following the phone design
+  (heading, "+91 | Mobile number" field, full-width button, terms), in the site's green.
+*/
+.login-country-code-divider {
+  display: none;
+}
+
+.login-card-in-bottom-sheet .login-heading {
+  font-size: 21px;
+  line-height: 26px;
+}
+
+.login-card-in-bottom-sheet .login-mobile-number-field {
+  gap: 8px;
+  height: 46px;
+  margin-top: 14px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+}
+
+.login-card-in-bottom-sheet .login-mobile-number-field:focus-within {
+  border-color: #285c3a;
+}
+
+.login-card-in-bottom-sheet .login-country-code-divider {
+  display: block;
+  width: 1px;
+  height: 20px;
+  background: #4b5563;
+}
+
+.login-card-in-bottom-sheet .login-country-code {
+  font-size: 15.5px;
+  color: #4b5563;
+}
+
+.login-card-in-bottom-sheet .login-mobile-number-input {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.login-card-in-bottom-sheet .login-mobile-number-input::placeholder {
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.login-card-in-bottom-sheet .login-field-hint {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.login-card-in-bottom-sheet .login-primary-button {
+  height: 46px;
+  margin-top: 16px;
+  border-radius: 10px;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+
+.login-card-in-bottom-sheet .login-footnote {
+  margin-top: 14px;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card {
+    animation: none;
+  }
+}

@@ -1,0 +1,454 @@
+/*
+  Refer a Friend banner, measured from the design (banner 930 x 341 design pixels).
+  Numbers in calc() are design pixels multiplied by --refer-a-friend-design-pixel: the banner always
+  spans 83.4% of the screen width, as in the design.
+  The section is the top half of a light grey rounded panel; the footer below is the bottom half.
+  The width at the starting zoom comes from the landing layout script, which every page with the
+  footer runs.
+*/
+
+.refer-a-friend-section {
+  --refer-a-friend-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * 0.834 / 930);
+
+  /* Panel: 45 design pixels of grey on each side of the banner, rounded top corners */
+  width: calc(1020 * var(--refer-a-friend-design-pixel));
+  max-width: calc(100% - 32px);
+  margin: calc(24 * var(--refer-a-friend-design-pixel)) auto 0;
+  padding: calc(41 * var(--refer-a-friend-design-pixel)) 0 calc(48 * var(--refer-a-friend-design-pixel));
+  border-radius: calc(21 * var(--refer-a-friend-design-pixel)) calc(21 * var(--refer-a-friend-design-pixel)) 0 0;
+  background: #fafafa;
+}
+
+.refer-a-friend-banner {
+  position: relative;
+  width: calc(930 * var(--refer-a-friend-design-pixel));
+  max-width: 100%;
+  height: calc(341 * var(--refer-a-friend-design-pixel));
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: calc(26 * var(--refer-a-friend-design-pixel));
+  background: linear-gradient(160deg, #285c3a 0%, #2f7148 45%, #3f9c63 100%);
+}
+
+/* Background decorations */
+
+/* Thin white lines over the green, as in the design; they stay 1px thick at every size. */
+.refer-a-friend-background-line-pattern {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.24);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.refer-a-friend-background-line-pattern > * {
+  vector-effect: non-scaling-stroke;
+}
+
+.refer-a-friend-background-leaf {
+  position: absolute;
+  right: calc(13 * var(--refer-a-friend-design-pixel));
+  top: calc(240 * var(--refer-a-friend-design-pixel));
+  width: calc(40 * var(--refer-a-friend-design-pixel));
+  height: calc(20 * var(--refer-a-friend-design-pixel));
+  fill: rgba(255, 255, 255, 0.55);
+}
+
+/*
+  Line drawing (states set by the component each time the section comes into / leaves the view).
+  Each line is one dash as long as the line itself (pathLength 1): moving the dash offset from 1 to 0
+  draws it from its start to its end.
+    hidden  - lines not drawn yet (instant, while off screen), leaf hidden
+    drawing - slow: top circle (3.2s), then the long wave (4.8s), then the bottom circle (3.2s); the
+              leaf fades and grows in at the end (about 6.5s in all)
+    drawn   - fully drawn (before the page script runs, and for reduced motion)
+*/
+.refer-a-friend-background-line-pattern > * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.refer-a-friend-lines-hidden .refer-a-friend-background-line-pattern > * {
+  stroke-dashoffset: 1;
+  transition: none;
+}
+
+.refer-a-friend-lines-drawing .refer-a-friend-background-line-pattern > * {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 3.2s ease-in-out;
+}
+
+.refer-a-friend-lines-drawing .refer-a-friend-line-wave {
+  transition-duration: 4.8s;
+  transition-delay: 1s;
+}
+
+.refer-a-friend-lines-drawing .refer-a-friend-line-bottom-circle {
+  transition-delay: 2.8s;
+}
+
+.refer-a-friend-lines-hidden .refer-a-friend-background-leaf {
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: none;
+}
+
+.refer-a-friend-lines-drawing .refer-a-friend-background-leaf {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 1s ease-out 5.4s,
+    transform 1s ease-out 5.4s;
+}
+
+/* Text: heading, description and Claim Now button (Poppins) */
+
+.refer-a-friend-text-block {
+  position: absolute;
+  left: calc(47 * var(--refer-a-friend-design-pixel));
+  top: calc(86 * var(--refer-a-friend-design-pixel));
+}
+
+.refer-a-friend-heading {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(30 * var(--refer-a-friend-design-pixel));
+  font-weight: 600;
+  line-height: calc(37 * var(--refer-a-friend-design-pixel));
+  color: #ffffff;
+}
+
+.refer-a-friend-heading-highlight {
+  color: #f5bf2c;
+}
+
+.refer-a-friend-description {
+  margin-top: calc(12 * var(--refer-a-friend-design-pixel));
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(14.5 * var(--refer-a-friend-design-pixel));
+  font-weight: 400;
+  line-height: calc(23 * var(--refer-a-friend-design-pixel));
+  color: #ffffff;
+}
+
+.refer-a-friend-description strong {
+  font-weight: 700;
+}
+
+.refer-a-friend-claim-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: calc(118 * var(--refer-a-friend-design-pixel));
+  height: calc(38 * var(--refer-a-friend-design-pixel));
+  margin-top: calc(20 * var(--refer-a-friend-design-pixel));
+  border-radius: calc(8 * var(--refer-a-friend-design-pixel));
+  background: #e5ffee;
+  font-family: var(--font-poppins), sans-serif;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.refer-a-friend-claim-button:hover,
+.refer-a-friend-claim-button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.refer-a-friend-claim-button-title {
+  font-size: calc(13 * var(--refer-a-friend-design-pixel));
+  font-weight: 700;
+  line-height: calc(16 * var(--refer-a-friend-design-pixel));
+  color: #333333;
+}
+
+.refer-a-friend-claim-button-subtitle {
+  font-size: calc(7 * var(--refer-a-friend-design-pixel));
+  font-weight: 500;
+  line-height: calc(9 * var(--refer-a-friend-design-pixel));
+  color: #a6aca8;
+}
+
+/* App screens on the right; they run off the bottom edge of the banner, as in the design */
+
+.refer-a-friend-purity-screen,
+.refer-a-friend-rewards-screen {
+  position: absolute;
+}
+
+/*
+  Both screens end 16 design pixels above the bottom of the banner (341), so their rounded bottoms
+  show with a gap under them:
+    purity screen  170 wide x 239 tall, top 86  -> bottom 325
+    rewards screen 176 wide x 310 tall, top 15  -> bottom 325
+*/
+.refer-a-friend-purity-screen {
+  left: calc(495 * var(--refer-a-friend-design-pixel));
+  top: calc(86 * var(--refer-a-friend-design-pixel));
+  width: calc(170 * var(--refer-a-friend-design-pixel));
+}
+
+.refer-a-friend-rewards-screen {
+  /* Lets the name below be sized as a share of the screen picture's width. */
+  container-type: inline-size;
+  left: calc(682 * var(--refer-a-friend-design-pixel));
+  top: calc(15 * var(--refer-a-friend-design-pixel));
+  width: calc(176 * var(--refer-a-friend-design-pixel));
+}
+
+.refer-a-friend-screen-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Products placed in the empty middle of the purity screen (percentages of the screen picture) */
+
+/*
+  Product carousel on the purity screen: all three products are always shown, standing on the same
+  line (68% down the screen). The one in the centre is full size, in front and glowing; the other two
+  are smaller and softer on the left and right. Every 3 seconds they turn one place:
+    paneer centre (ghee left, milk right) -> milk centre (paneer left, ghee right)
+    -> ghee centre (milk left, paneer right) -> paneer centre again.
+  Every product follows the same path, centre -> left -> right -> centre; they start at different
+  points of it (paneer at the centre, ghee on the left, milk on the right).
+  --product-centre-width is the product's width when it is in the centre (share of the screen width).
+*/
+.refer-a-friend-purity-screen-milk-bottle,
+.refer-a-friend-purity-screen-ghee-jar,
+.refer-a-friend-purity-screen-paneer {
+  --purity-carousel-time: 9s;
+
+  position: absolute;
+  bottom: 32%;
+  left: 50%;
+  width: var(--product-centre-width);
+  height: auto;
+  transform: translateX(-50%) scale(1);
+  transform-origin: bottom center;
+  animation: refer-a-friend-purity-carousel var(--purity-carousel-time) ease-in-out infinite;
+}
+
+.refer-a-friend-purity-screen-paneer {
+  --product-centre-width: 42%;
+
+  animation-delay: 0s;
+}
+
+/* Starts on the left */
+.refer-a-friend-purity-screen-ghee-jar {
+  --product-centre-width: 34%;
+
+  animation-delay: calc(var(--purity-carousel-time) / -3);
+}
+
+/* Starts on the right */
+.refer-a-friend-purity-screen-milk-bottle {
+  --product-centre-width: 17%;
+
+  animation-delay: calc(var(--purity-carousel-time) * -2 / 3);
+}
+
+@keyframes refer-a-friend-purity-carousel {
+  /* Centre: full size, in front, with a warm glow */
+  0%,
+  27% {
+    left: 50%;
+    z-index: 3;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    filter: drop-shadow(0 0 7px rgba(255, 222, 140, 0.95));
+  }
+  /* Left: smaller, behind, softer */
+  33.33%,
+  60% {
+    left: 22%;
+    z-index: 1;
+    opacity: 0.7;
+    transform: translateX(-50%) scale(0.5);
+    filter: drop-shadow(0 0 0 rgba(255, 222, 140, 0));
+  }
+  /* Right: smaller, behind, softer */
+  66.67%,
+  93% {
+    left: 78%;
+    z-index: 1;
+    opacity: 0.7;
+    transform: translateX(-50%) scale(0.5);
+    filter: drop-shadow(0 0 0 rgba(255, 222, 140, 0));
+  }
+  100% {
+    left: 50%;
+    z-index: 3;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    filter: drop-shadow(0 0 7px rgba(255, 222, 140, 0.95));
+  }
+}
+
+/* Visitors who prefer less motion: the first arrangement, standing still */
+@media (prefers-reduced-motion: reduce) {
+  .refer-a-friend-purity-screen-milk-bottle,
+  .refer-a-friend-purity-screen-ghee-jar,
+  .refer-a-friend-purity-screen-paneer {
+    animation: none;
+    opacity: 0.7;
+    transform: translateX(-50%) scale(0.5);
+  }
+
+  .refer-a-friend-purity-screen-paneer {
+    z-index: 3;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+
+  .refer-a-friend-purity-screen-ghee-jar {
+    left: 22%;
+  }
+
+  .refer-a-friend-purity-screen-milk-bottle {
+    left: 78%;
+  }
+}
+
+/* "Harish": placed exactly where the name was in the picture (Poppins Bold, same size and colour) */
+.refer-a-friend-rewards-screen-user-name {
+  position: absolute;
+  left: 30.35%;
+  top: 12.3%;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 7.24cqw;
+  font-weight: 700;
+  line-height: 1;
+  color: #0b1f12;
+  white-space: nowrap;
+}
+
+/* "Jersey Milk" label, placed where the misspelt "Jercy Milk" was in the picture (same font, size, colour) */
+.refer-a-friend-rewards-screen-jersey-milk-label {
+  position: absolute;
+  left: 5.75%;
+  top: 66.4%;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 4.75cqw;
+  font-weight: 700;
+  line-height: 1;
+  color: #0b1609;
+  white-space: nowrap;
+}
+
+.refer-a-friend-rewards-screen-menu-icon {
+  position: absolute;
+  right: 9%;
+  top: 3.6%;
+  width: 7%;
+  fill: none;
+  stroke: #555555;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/*
+  Scroll reveal (states set by the component): the banner fades and slides up as one piece.
+*/
+
+.refer-a-friend-section-waiting .refer-a-friend-banner {
+  opacity: 0;
+  translate: 0 calc(40 * var(--refer-a-friend-design-pixel));
+}
+
+.refer-a-friend-section-revealed .refer-a-friend-banner {
+  transition:
+    opacity 700ms ease-out,
+    translate 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+  Mobile layout (chosen by the landing layout script): text on top, the two app screens below it,
+  side by side, their bottoms in line and ending inside the banner with a gap under them.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .refer-a-friend-section {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 32px 16px;
+    border-radius: 0;
+  }
+
+  .refer-a-friend-banner {
+    width: 100%;
+    height: auto;
+    padding: 28px 20px 18px;
+    border-radius: 22px;
+  }
+
+  .refer-a-friend-text-block {
+    position: static;
+  }
+
+  .refer-a-friend-heading {
+    font-size: 24px;
+    line-height: 31px;
+  }
+
+  .refer-a-friend-description {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  /* The line breaks are written for the wide layout; let the text wrap naturally on phones. */
+  .refer-a-friend-description br {
+    display: none;
+  }
+
+  .refer-a-friend-claim-button {
+    width: 124px;
+    height: 42px;
+    margin-top: 20px;
+    border-radius: 10px;
+  }
+
+  .refer-a-friend-claim-button-title {
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  .refer-a-friend-claim-button-subtitle {
+    font-size: 8.5px;
+    line-height: 10px;
+  }
+
+  /* Both screens side by side under the text; the banner is cut off below them. */
+  .refer-a-friend-purity-screen,
+  .refer-a-friend-rewards-screen {
+    position: relative;
+    display: inline-block;
+    top: auto;
+    left: auto;
+    vertical-align: bottom;
+  }
+
+  .refer-a-friend-purity-screen {
+    width: 46%;
+  }
+
+  .refer-a-friend-rewards-screen {
+    width: 50%;
+    margin-top: 28px;
+    margin-left: 4%;
+  }
+
+  .refer-a-friend-background-leaf {
+    display: none;
+  }
+
+  .refer-a-friend-section-waiting .refer-a-friend-banner {
+    translate: 0 30px;
+  }
+}

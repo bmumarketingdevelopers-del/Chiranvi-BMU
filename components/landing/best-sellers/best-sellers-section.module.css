@@ -1,0 +1,623 @@
+/*
+  Best Sellers, measured from the design against the same 1440 x 916 frame as the hero.
+  Numbers in calc() are design pixels multiplied by --best-sellers-design-pixel, which uses the
+  same zoom-aware formula as the other sections (set by the script in app/page.tsx).
+*/
+
+.best-sellers-section {
+  --best-sellers-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+
+  /* Same side margins as the purity promises card (82 of 1440). */
+  padding: calc(20 * var(--best-sellers-design-pixel)) 5.694% calc(64 * var(--best-sellers-design-pixel));
+  background: #ffffff;
+}
+
+/* Heading with a line and a short dash on each side, the same style as "Shop By Category" */
+
+.best-sellers-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(17 * var(--best-sellers-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(36 * var(--best-sellers-design-pixel));
+  font-weight: 500;
+  line-height: calc(44 * var(--best-sellers-design-pixel));
+  color: #1a1a1a;
+}
+
+/* The long line, drawn as the element itself; the short dash is its ::after. */
+.best-sellers-heading-decoration {
+  position: relative;
+  width: calc(38 * var(--best-sellers-design-pixel));
+  height: calc(3 * var(--best-sellers-design-pixel));
+  margin-right: calc(20 * var(--best-sellers-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+}
+
+.best-sellers-heading-decoration::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 7 * var(--best-sellers-design-pixel));
+  width: calc(13 * var(--best-sellers-design-pixel));
+  height: calc(7 * var(--best-sellers-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+  transform: translateY(-50%);
+}
+
+/* Right side is the mirror image: dash first (next to the text), then the line. */
+.best-sellers-heading-decoration-right {
+  margin-right: 0;
+  margin-left: calc(20 * var(--best-sellers-design-pixel));
+}
+
+.best-sellers-heading-decoration-right::after {
+  left: auto;
+  right: calc(100% + 7 * var(--best-sellers-design-pixel));
+}
+
+/* Six equal product cards in one row */
+
+.best-sellers-product-list {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: calc(16 * var(--best-sellers-design-pixel));
+  margin-top: calc(36 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-card {
+  display: flex;
+  flex-direction: column;
+  padding: calc(18 * var(--best-sellers-design-pixel)) calc(24 * var(--best-sellers-design-pixel))
+    calc(19 * var(--best-sellers-design-pixel));
+  border: 1px solid #e6e6e6;
+  border-radius: calc(14 * var(--best-sellers-design-pixel));
+  background: #ffffff;
+  transition:
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.best-seller-card:hover {
+  border-color: #d5dfd0;
+  box-shadow: 0 8px 24px rgba(22, 26, 23, 0.08);
+}
+
+.best-seller-image-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(128 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-image {
+  width: 90%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Name, rating, pack size and price */
+
+.best-seller-name {
+  margin-top: calc(24 * var(--best-sellers-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(19 * var(--best-sellers-design-pixel));
+  font-weight: 500;
+  line-height: calc(24 * var(--best-sellers-design-pixel));
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.best-seller-rating {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--best-sellers-design-pixel));
+  margin-top: calc(3 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-star-row {
+  display: flex;
+  gap: calc(1 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-star {
+  width: calc(11 * var(--best-sellers-design-pixel));
+  height: calc(11 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-star-empty {
+  fill: #e8e2d6;
+}
+
+.best-seller-star-filled {
+  fill: #f6b64c;
+}
+
+.best-seller-rating-count {
+  font-size: calc(11 * var(--best-sellers-design-pixel));
+  line-height: calc(14 * var(--best-sellers-design-pixel));
+  color: #656565;
+}
+
+.best-seller-pack-size {
+  margin-top: calc(8 * var(--best-sellers-design-pixel));
+  font-size: calc(12.5 * var(--best-sellers-design-pixel));
+  line-height: calc(16 * var(--best-sellers-design-pixel));
+  color: #1a1a1a;
+}
+
+.best-seller-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: calc(4 * var(--best-sellers-design-pixel));
+  margin-top: calc(6 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-price {
+  font-size: calc(19 * var(--best-sellers-design-pixel));
+  font-weight: 600;
+  line-height: calc(24 * var(--best-sellers-design-pixel));
+  color: #1a1a1a;
+}
+
+.best-seller-original-price {
+  font-size: calc(11 * var(--best-sellers-design-pixel));
+  font-weight: 500;
+  color: #948c8c;
+}
+
+/* Text read out by screen readers only */
+.best-seller-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Add to cart: about two thirds of the card width, centred, Ubuntu Bold (same look as on the account dashboard) */
+.best-seller-add-to-cart-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 66%;
+  /* Never so narrow that the text touches the edges (narrow cards on smaller screens) */
+  min-width: min(100%, calc(128 * var(--best-sellers-design-pixel)));
+  height: calc(44 * var(--best-sellers-design-pixel));
+  margin-top: calc(16 * var(--best-sellers-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+  color: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15.5 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.best-seller-add-to-cart-button:hover,
+.best-seller-add-to-cart-button:focus-visible {
+  background: #1f4a2e;
+}
+
+/* Product in the cart: the button becomes "- quantity +", same size and colour */
+.best-seller-quantity-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: center;
+  width: calc(130 * var(--best-sellers-design-pixel));
+  height: calc(44 * var(--best-sellers-design-pixel));
+  margin-top: calc(16 * var(--best-sellers-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.best-seller-quantity-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(40 * var(--best-sellers-design-pixel));
+  height: 100%;
+  color: #ffffff;
+  font-size: calc(18 * var(--best-sellers-design-pixel));
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.best-seller-quantity-button:hover,
+.best-seller-quantity-button:focus-visible {
+  background: #1f4a2e;
+}
+
+.best-seller-quantity {
+  font-size: calc(14 * var(--best-sellers-design-pixel));
+  font-weight: 600;
+}
+
+/*
+  Product in the cart: "- quantity +" and "View Cart" side by side, together as wide as the card.
+  View Cart is the outlined version of the same button (white, green border and text).
+*/
+.best-seller-in-cart-actions {
+  display: flex;
+  gap: calc(6 * var(--best-sellers-design-pixel));
+  align-self: stretch;
+  margin-top: calc(16 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-in-cart-actions .best-seller-quantity-control {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.best-seller-view-cart-button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: calc(44 * var(--best-sellers-design-pixel));
+  border: 1.5px solid #285c3a;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14.5 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  color: #285c3a;
+  transition: background-color 150ms ease;
+}
+
+.best-seller-view-cart-button:hover,
+.best-seller-view-cart-button:focus-visible {
+  background: #eef4ea;
+}
+
+.best-sellers-section-on-account-orders .best-seller-in-cart-actions .best-seller-quantity-control {
+  margin-top: 0;
+}
+
+/*
+  Scroll reveal (states set by the component): the heading and all six cards move as one piece.
+    waiting  - before it scrolls into view: hidden, slightly lower
+    revealed - fades and slides up into place together
+*/
+
+.best-sellers-section-waiting .best-sellers-heading,
+.best-sellers-section-waiting .best-sellers-product-list {
+  opacity: 0;
+  transform: translateY(calc(40 * var(--best-sellers-design-pixel)));
+}
+
+.best-sellers-section-revealed .best-sellers-heading,
+.best-sellers-section-revealed .best-sellers-product-list {
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+  Mobile layout (chosen by the script in app/page.tsx): two cards per row, three rows.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .best-sellers-section {
+    padding: 24px 16px 36px;
+  }
+
+  .best-sellers-heading {
+    gap: 10px;
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .best-sellers-heading-decoration {
+    width: 22px;
+    height: 2px;
+    margin-right: 14px;
+  }
+
+  .best-sellers-heading-decoration::after {
+    left: calc(100% + 5px);
+    width: 9px;
+    height: 5px;
+  }
+
+  .best-sellers-heading-decoration-right {
+    margin-right: 0;
+    margin-left: 14px;
+  }
+
+  .best-sellers-heading-decoration-right::after {
+    left: auto;
+    right: calc(100% + 5px);
+  }
+
+  .best-sellers-product-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  .best-seller-card {
+    padding: 14px 12px 14px;
+    border-radius: 14px;
+  }
+
+  .best-seller-image-area {
+    height: 120px;
+  }
+
+  .best-seller-name {
+    margin-top: 14px;
+    font-size: 15px;
+    line-height: 19px;
+    white-space: normal;
+  }
+
+  .best-seller-rating {
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .best-seller-star {
+    width: 12px;
+    height: 12px;
+  }
+
+  .best-seller-rating-count {
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  .best-seller-pack-size {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .best-seller-price-row {
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .best-seller-price {
+    font-size: 18px;
+    line-height: 22px;
+  }
+
+  .best-seller-original-price {
+    font-size: 11px;
+  }
+
+  .best-seller-add-to-cart-button,
+  .best-seller-quantity-control {
+    width: 100%;
+    height: 36px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  .best-seller-quantity-button {
+    width: 40px;
+    font-size: 18px;
+  }
+
+  .best-seller-quantity {
+    font-size: 14px;
+  }
+
+  /* Phones: the two buttons one above the other, each the full card width */
+  .best-seller-in-cart-actions {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .best-seller-in-cart-actions .best-seller-quantity-control {
+    flex: none;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .best-seller-view-cart-button {
+    flex: none;
+    height: 36px;
+    font-size: 13px;
+  }
+}
+
+/*
+  Under "My Orders" on the account dashboard (placement "account-orders", design): no section
+  background or side margins, heading on the left with "View all Products" on the right (the way
+  to see more products), and one row of five cards with no scrolling (four on phones, two per row).
+  Uses the dashboard fonts and colours (Ubuntu headings and buttons, #1E2A22 / #6E7A72 / #2F6B3F).
+*/
+
+.best-sellers-section-on-account-orders {
+  /* Sized with the account dashboard (80% of its unit): larger cards that still fit on the screen. */
+  --best-sellers-design-pixel: calc(0.8 * var(--account-design-pixel, 1px));
+
+  margin-top: calc(22 * var(--best-sellers-design-pixel));
+  padding: 0;
+  background: transparent;
+}
+
+.best-sellers-account-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.best-sellers-account-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(28 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.best-sellers-view-all-link {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+  transition: color 150ms ease;
+}
+
+.best-sellers-view-all-link:hover,
+.best-sellers-view-all-link:focus-visible {
+  color: #245433;
+  text-decoration: underline;
+}
+
+/* Five equal cards in one row; any further products are shown through "View all Products". */
+.best-sellers-section-on-account-orders .best-sellers-product-list {
+  grid-template-columns: repeat(5, 1fr);
+  gap: calc(18 * var(--best-sellers-design-pixel));
+  margin-top: calc(16 * var(--best-sellers-design-pixel));
+}
+
+.best-sellers-section-on-account-orders .best-seller-card:nth-child(n + 6) {
+  display: none;
+}
+
+.best-sellers-section-on-account-orders .best-seller-card {
+  padding: calc(18 * var(--best-sellers-design-pixel)) calc(20 * var(--best-sellers-design-pixel));
+  border-color: #e8ece6;
+  border-radius: calc(16 * var(--best-sellers-design-pixel));
+  background: #ffffff;
+}
+
+.best-sellers-section-on-account-orders .best-seller-image-area {
+  height: calc(120 * var(--best-sellers-design-pixel));
+}
+
+.best-sellers-section-on-account-orders .best-seller-name {
+  margin-top: calc(14 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+/* Add to cart and "- quantity +": taller, Ubuntu Bold 15 (Add to cart is narrowed just below) */
+.best-sellers-section-on-account-orders .best-seller-add-to-cart-button,
+.best-sellers-section-on-account-orders .best-seller-quantity-control {
+  align-self: stretch;
+  width: auto;
+  height: calc(42 * var(--best-sellers-design-pixel));
+  margin-top: calc(16 * var(--best-sellers-design-pixel));
+  background: #2f6b3f;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+}
+
+/* Add to cart alone: narrower than the card (60%), centred, a little taller with larger text
+   (the in-cart pair keeps the full width) */
+.best-sellers-section-on-account-orders .best-seller-add-to-cart-button {
+  align-self: center;
+  width: 60%;
+  height: calc(46 * var(--best-sellers-design-pixel));
+  font-size: calc(16.5 * var(--best-sellers-design-pixel));
+}
+
+.best-sellers-section-on-account-orders .best-seller-add-to-cart-button:hover,
+.best-sellers-section-on-account-orders .best-seller-add-to-cart-button:focus-visible,
+.best-sellers-section-on-account-orders .best-seller-quantity-button:hover,
+.best-sellers-section-on-account-orders .best-seller-quantity-button:focus-visible {
+  background: #245433;
+}
+
+.best-sellers-section-on-account-orders .best-seller-in-cart-actions {
+  gap: calc(8 * var(--best-sellers-design-pixel));
+  margin-top: calc(16 * var(--best-sellers-design-pixel));
+}
+
+.best-sellers-section-on-account-orders .best-seller-view-cart-button {
+  height: calc(42 * var(--best-sellers-design-pixel));
+  border-color: #2f6b3f;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+}
+
+.best-sellers-section-on-account-orders .best-seller-quantity-button {
+  width: calc(40 * var(--best-sellers-design-pixel));
+  font-size: calc(20 * var(--best-sellers-design-pixel));
+}
+
+.best-sellers-section-on-account-orders .best-seller-quantity {
+  font-size: calc(16 * var(--best-sellers-design-pixel));
+}
+
+/* Phones: two cards per row, four products */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .best-sellers-section-on-account-orders {
+    margin-top: 22px;
+    padding: 0;
+  }
+
+  .best-sellers-account-heading {
+    font-size: 22px;
+  }
+
+  .best-sellers-view-all-link {
+    font-size: 14px;
+  }
+
+  .best-sellers-section-on-account-orders .best-sellers-product-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-card:nth-child(n + 5) {
+    display: none;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-card {
+    padding: 14px 12px;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-image-area {
+    height: 110px;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-add-to-cart-button,
+  .best-sellers-section-on-account-orders .best-seller-quantity-control {
+    height: 38px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-quantity-button {
+    width: 40px;
+    font-size: 18px;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-quantity {
+    font-size: 14px;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-in-cart-actions {
+    margin-top: 12px;
+  }
+
+  .best-sellers-section-on-account-orders .best-seller-view-cart-button {
+    height: 38px;
+    font-size: 14px;
+  }
+}

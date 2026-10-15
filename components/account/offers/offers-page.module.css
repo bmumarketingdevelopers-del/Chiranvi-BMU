@@ -1,0 +1,299 @@
+/*
+  "My Offers" dashboard page, measured from the design (scaled to the 1440 wide frame).
+  Numbers in calc() are design pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+/* All / Available / Used / Expired */
+
+.offers-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--account-design-pixel));
+  align-self: flex-start;
+  margin-top: calc(4 * var(--account-design-pixel));
+}
+
+.offers-filter-button {
+  font-family: var(--font-ubuntu), sans-serif;
+  height: calc(36 * var(--account-design-pixel));
+  padding: 0 calc(18 * var(--account-design-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.offers-filter-button:hover,
+.offers-filter-button:focus-visible {
+  background: #f2f2f2;
+}
+
+.offers-filter-button-selected,
+.offers-filter-button-selected:hover,
+.offers-filter-button-selected:focus-visible {
+  border-color: #2f6b3f;
+  background: #2f6b3f;
+  color: #ffffff;
+}
+
+.offers-section-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  margin-top: calc(28 * var(--account-design-pixel));
+  font-size: calc(16 * var(--account-design-pixel));
+  font-weight: 700;
+}
+
+.offers-coupon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(22 * var(--account-design-pixel));
+  margin-top: calc(14 * var(--account-design-pixel));
+}
+
+/*
+  Coupon ticket: white card with a half-circle notch cut into the middle of each side
+  (drawn with the page colour).
+*/
+.offers-coupon-ticket {
+  position: relative;
+  display: flex;
+  gap: calc(24 * var(--account-design-pixel));
+  padding: calc(24 * var(--account-design-pixel));
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #ffffff;
+}
+
+.offers-coupon-ticket::before,
+.offers-coupon-ticket::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: calc(16 * var(--account-design-pixel));
+  height: calc(16 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: #f0f4ec;
+  transform: translateY(-50%);
+}
+
+.offers-coupon-ticket::before {
+  left: calc(-8 * var(--account-design-pixel));
+}
+
+.offers-coupon-ticket::after {
+  right: calc(-8 * var(--account-design-pixel));
+}
+
+.offers-coupon-icon-box {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(100 * var(--account-design-pixel));
+  height: calc(100 * var(--account-design-pixel));
+  border-radius: calc(12 * var(--account-design-pixel));
+}
+
+.offers-coupon-icon-box svg {
+  width: 30%;
+  height: 30%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.offers-coupon-icon-box-green {
+  background: #e3eedc;
+  color: #2f6b3f;
+}
+
+.offers-coupon-icon-box-yellow {
+  background: #fdf0d2;
+  color: #c98a12;
+}
+
+.offers-coupon-icon-box-blue {
+  background: #e1ebf7;
+  color: #3a6ea5;
+}
+
+.offers-coupon-icon-box-grey {
+  background: #ececec;
+  color: #a0a0a0;
+}
+
+.offers-coupon-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.offers-coupon-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(12 * var(--account-design-pixel));
+}
+
+.offers-coupon-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(22 * var(--account-design-pixel));
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.offers-coupon-validity {
+  flex-shrink: 0;
+  margin-top: calc(4 * var(--account-design-pixel));
+  font-size: calc(12.5 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.offers-coupon-description {
+  margin-top: calc(4 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.offers-coupon-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--account-design-pixel));
+  margin-top: auto;
+  padding-top: calc(12 * var(--account-design-pixel));
+}
+
+/* Code in a dashed box with a copy icon */
+.offers-coupon-code {
+  font-family: var(--font-ubuntu), sans-serif;
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--account-design-pixel));
+  height: calc(30 * var(--account-design-pixel));
+  padding: 0 calc(12 * var(--account-design-pixel));
+  border: 1px dashed #c8c8c8;
+  border-radius: calc(6 * var(--account-design-pixel));
+  font-size: calc(12 * var(--account-design-pixel));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1e2a22;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.offers-coupon-code:hover,
+.offers-coupon-code:focus-visible {
+  background: #f5f5f5;
+}
+
+.offers-coupon-code svg {
+  width: calc(14 * var(--account-design-pixel));
+  height: calc(14 * var(--account-design-pixel));
+  fill: none;
+  stroke: #6e7a72;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.offers-coupon-action-button {
+  font-family: var(--font-ubuntu), sans-serif;
+  min-width: calc(96 * var(--account-design-pixel));
+  height: calc(37 * var(--account-design-pixel));
+  padding: 0 calc(18 * var(--account-design-pixel));
+  border-radius: 9999px;
+  background: #2f6b3f;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.offers-coupon-action-button:hover,
+.offers-coupon-action-button:focus-visible {
+  background: #245433;
+}
+
+.offers-coupon-action-button-applied,
+.offers-coupon-action-button-applied:hover,
+.offers-coupon-action-button-applied:focus-visible {
+  background: #e3eedc;
+  color: #2f6b3f;
+}
+
+/* Used and expired: faded card, smaller icon, status badge on the right */
+
+.offers-coupon-ticket-faded {
+  align-items: center;
+  padding: calc(16 * var(--account-design-pixel)) calc(20 * var(--account-design-pixel));
+  background: #f7f8f5;
+  opacity: 0.85;
+}
+
+.offers-coupon-ticket-faded .offers-coupon-icon-box {
+  width: calc(54 * var(--account-design-pixel));
+  height: calc(54 * var(--account-design-pixel));
+  border-radius: calc(10 * var(--account-design-pixel));
+}
+
+.offers-coupon-ticket-faded .offers-coupon-title-row {
+  align-items: center;
+}
+
+.offers-faded-coupon-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #9e9e9e;
+}
+
+.offers-coupon-ticket-faded .offers-coupon-description {
+  color: #a8a8a8;
+}
+
+.offers-coupon-status-badge {
+  font-family: var(--font-ubuntu), sans-serif;
+  flex-shrink: 0;
+  padding: calc(4 * var(--account-design-pixel)) calc(12 * var(--account-design-pixel));
+  border-radius: 9999px;
+  background: #e6e6e6;
+  font-size: calc(11.5 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #6e7a72;
+}
+
+/* Phone layout (no phone design yet): filters under the title, one coupon per row */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .offers-coupon-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .offers-coupon-ticket {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .offers-coupon-icon-box {
+    width: 54px;
+    height: 54px;
+  }
+
+  .offers-coupon-title {
+    font-size: 16px;
+  }
+
+  .offers-coupon-ticket-faded .offers-coupon-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}

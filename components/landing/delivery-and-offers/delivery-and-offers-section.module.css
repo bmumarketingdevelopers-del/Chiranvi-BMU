@@ -1,0 +1,612 @@
+/*
+  Delivery and offers section, measured from the design and scaled 1.5x to the 1440 x 916 frame.
+  Numbers in calc() are design pixels multiplied by --delivery-and-offers-design-pixel, which uses the
+  screen width at the starting zoom (set by the script in app/page.tsx), see below.
+  Text on the cards is sized in cqw (percent of the card's width), so it stays in the same place
+  on the card pictures at every size.
+*/
+
+.delivery-and-offers-section {
+  /*
+    Sized by screen width: the content (1173 design pixels wide) spans 75% of the screen and is
+    centred (reduced on request from 88.6%, the width of the purity promises card and Best Sellers).
+  */
+  --delivery-and-offers-design-pixel: calc(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) * 0.75 / 1173
+  );
+
+  padding: calc(72 * var(--delivery-and-offers-design-pixel)) 16px calc(80 * var(--delivery-and-offers-design-pixel));
+  /* The van starts outside the screen on the left; this stops it from making the page scroll sideways. */
+  overflow-x: clip;
+  background: #ffffff;
+}
+
+/* Top row: text, van, text */
+
+/*
+  Exactly as wide as the card row below. The left text starts at the Farm Fresh Combo card's left
+  edge, and the right column starts at the Fresh Dairy card's left edge: in the card row that card
+  starts 874.5 design pixels in and is 298.5 wide (see .offer-cards-grid).
+*/
+.delivery-row {
+  display: grid;
+  grid-template-columns:
+    calc(320 * var(--delivery-and-offers-design-pixel)) 1fr
+    calc(298.5 * var(--delivery-and-offers-design-pixel));
+  align-items: center;
+  width: calc(1173 * var(--delivery-and-offers-design-pixel));
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* The right text stays exactly inside the Fresh Dairy card's width (both edges line up). */
+.delivery-text-block-aligned-with-dairy-card {
+  width: 100%;
+}
+
+/* Small label above each heading: Ubuntu Regular */
+.delivery-text-kicker {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-weight: 400;
+  font-size: calc(19.5 * var(--delivery-and-offers-design-pixel));
+  line-height: calc(26 * var(--delivery-and-offers-design-pixel));
+  color: #2e5e8c;
+}
+
+/* Heading: Ubuntu Bold */
+.delivery-text-heading {
+  margin-top: calc(2 * var(--delivery-and-offers-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(25 * var(--delivery-and-offers-design-pixel));
+  font-weight: 700;
+  line-height: calc(32 * var(--delivery-and-offers-design-pixel));
+  color: #222222;
+}
+
+/* Paragraph: Poppins Regular */
+.delivery-text-paragraph {
+  margin-top: calc(14 * var(--delivery-and-offers-design-pixel));
+  font-family: var(--font-poppins), sans-serif;
+  font-weight: 400;
+  font-size: calc(15 * var(--delivery-and-offers-design-pixel));
+  line-height: calc(22 * var(--delivery-and-offers-design-pixel));
+  color: #666666;
+}
+
+/* "Choose what's good for you" paragraph: justified on desktop, laptop and tablet (left-aligned on phones, below). */
+.delivery-text-paragraph-justified {
+  text-align: justify;
+}
+
+/*
+  The van: a box with the van's picture proportions (1840 x 1064). Its layers are placed with
+  percentages measured on that picture, so they line up at every size.
+*/
+/* The van's place in the row; it does not move (the van inside it drives in). */
+.delivery-van-parking-spot {
+  position: relative;
+  z-index: 2;
+  justify-self: center;
+  width: calc(485 * var(--delivery-and-offers-design-pixel));
+}
+
+.delivery-van {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1840 / 1064;
+}
+
+.delivery-van-moving-parts {
+  position: absolute;
+  inset: 0;
+}
+
+.delivery-van-body {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.delivery-van-cargo {
+  position: absolute;
+  left: 21.467%;
+  top: 7.519%;
+  width: 36.957%;
+  height: auto;
+  transform-origin: 50% 100%;
+}
+
+.delivery-van-wheel {
+  position: absolute;
+  top: 65.414%;
+  width: 11.957%;
+  height: auto;
+}
+
+.delivery-van-rear-wheel {
+  left: 32.12%;
+}
+
+.delivery-van-front-wheel {
+  left: 71.196%;
+  top: 65.226%;
+}
+
+/* Air rushing past: three thin green streaks behind the van */
+.delivery-van-air-streak {
+  position: absolute;
+  height: 0.9%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(76, 140, 74, 0), rgba(76, 140, 74, 0.55));
+  opacity: 0;
+  transform-origin: 100% 50%;
+}
+
+.delivery-van-air-streak:nth-child(1) {
+  left: 4.3%;
+  top: 40.7%;
+  width: 18.5%;
+}
+
+.delivery-van-air-streak:nth-child(2) {
+  left: 11.7%;
+  top: 46.9%;
+  width: 16.3%;
+}
+
+.delivery-van-air-streak:nth-child(3) {
+  left: 8.9%;
+  top: 53.2%;
+  width: 11.7%;
+}
+
+/*
+  Leaves start behind the van and are blown back onto the "Goodness, Delivered" text.
+  --leaf-travel-x / --leaf-travel-y / --leaf-spin set each leaf's own path.
+*/
+.delivery-van-leaf {
+  position: absolute;
+  width: 5.4%;
+  height: auto;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.delivery-van-leaf-1 {
+  left: 16%;
+  top: 27%;
+  --leaf-travel-x: -330;
+  --leaf-travel-y: 70;
+  --leaf-spin: -320deg;
+}
+
+.delivery-van-leaf-2 {
+  left: 14.5%;
+  top: 60%;
+  width: 6.7%;
+  --leaf-travel-x: -270;
+  --leaf-travel-y: 40;
+  --leaf-spin: 260deg;
+}
+
+.delivery-van-leaf-3 {
+  left: 20%;
+  top: 18%;
+  --leaf-travel-x: -400;
+  --leaf-travel-y: 120;
+  --leaf-spin: -420deg;
+}
+
+.delivery-van-leaf-4 {
+  left: 18%;
+  top: 45%;
+  width: 6.7%;
+  --leaf-travel-x: -360;
+  --leaf-travel-y: 95;
+  --leaf-spin: 380deg;
+}
+
+.delivery-van-leaf-5 {
+  left: 22%;
+  top: 34%;
+  --leaf-travel-x: -230;
+  --leaf-travel-y: 150;
+  --leaf-spin: -280deg;
+}
+
+/*
+  Van animation timeline (only while .delivery-van-animation-running is on the row,
+  which the component adds the first time the van comes into view and then keeps on):
+    0 - 4s    (once) van drives in from the left edge of the screen and stops in its place;
+              "Goodness, Delivered" is uncovered by the van as it passes (done in the component)
+    then, forever: wheels turn, body bobs, cargo bottles shake, air streaks rush past
+    from 3.6s leaves blow off the van and land on the left text, one after another, repeating
+*/
+
+/* Before its drive-in starts, the van waits off-screen on the left (where the drive-in begins). */
+.delivery-van-waiting-to-drive-in .delivery-van {
+  transform: translateX(-110vw);
+}
+
+.delivery-van-animation-running .delivery-van {
+  /* Starts at a good speed and slows down smoothly as it parks. */
+  animation: delivery-van-drive-in 3.6s cubic-bezier(0.2, 0.5, 0.3, 1) both;
+}
+
+.delivery-van-animation-running .delivery-van-moving-parts {
+  animation: delivery-van-body-bob 0.45s ease-in-out infinite alternate;
+}
+
+.delivery-van-animation-running .delivery-van-wheel {
+  animation: delivery-van-wheel-turn 0.5s linear infinite;
+}
+
+.delivery-van-animation-running .delivery-van-cargo {
+  animation: delivery-van-cargo-shake 0.32s ease-in-out infinite alternate;
+}
+
+.delivery-van-animation-running .delivery-van-air-streak {
+  animation: delivery-van-air-rush 0.9s ease-in infinite;
+}
+
+.delivery-van-animation-running .delivery-van-air-streak:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.delivery-van-animation-running .delivery-van-air-streak:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+.delivery-van-animation-running .delivery-van-leaf {
+  animation: delivery-van-leaf-blown-to-text 3.2s cubic-bezier(0.45, 0, 0.75, 0.6) infinite;
+}
+
+.delivery-van-animation-running .delivery-van-leaf-1 {
+  animation-delay: 3.6s;
+}
+
+.delivery-van-animation-running .delivery-van-leaf-2 {
+  animation-delay: 4.2s;
+}
+
+.delivery-van-animation-running .delivery-van-leaf-3 {
+  animation-delay: 4.8s;
+}
+
+.delivery-van-animation-running .delivery-van-leaf-4 {
+  animation-delay: 5.4s;
+}
+
+.delivery-van-animation-running .delivery-van-leaf-5 {
+  animation-delay: 6s;
+}
+
+@keyframes delivery-van-drive-in {
+  from {
+    transform: translateX(-110vw);
+  }
+}
+
+@keyframes delivery-van-body-bob {
+  to {
+    transform: translateY(calc(-1.5 * var(--delivery-and-offers-design-pixel)));
+  }
+}
+
+@keyframes delivery-van-wheel-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes delivery-van-cargo-shake {
+  from {
+    transform: rotate(-1.2deg);
+  }
+  to {
+    transform: rotate(1.2deg) translateY(calc(-2 * var(--delivery-and-offers-design-pixel)));
+  }
+}
+
+@keyframes delivery-van-air-rush {
+  0% {
+    opacity: 0;
+    transform: translateX(0) scaleX(0.4);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(calc(-70 * var(--delivery-and-offers-design-pixel))) scaleX(1);
+  }
+}
+
+@keyframes delivery-van-leaf-blown-to-text {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+        calc(var(--leaf-travel-x) * var(--delivery-and-offers-design-pixel)),
+        calc(var(--leaf-travel-y) * var(--delivery-and-offers-design-pixel))
+      )
+      rotate(var(--leaf-spin));
+  }
+}
+
+/* Visitors who turn off motion in their system settings see the van standing still. */
+@media (prefers-reduced-motion: reduce) {
+  .delivery-van-animation-running .delivery-van,
+  .delivery-van-animation-running .delivery-van-moving-parts,
+  .delivery-van-animation-running .delivery-van-wheel,
+  .delivery-van-animation-running .delivery-van-cargo,
+  .delivery-van-animation-running .delivery-van-air-streak,
+  .delivery-van-animation-running .delivery-van-leaf {
+    animation: none;
+  }
+}
+
+/*
+  Bottom row: small cards stacked on the left, then the ghee banner and the dairy banner.
+  Column widths keep each card the same shape as its picture.
+*/
+
+.offer-cards-grid {
+  display: grid;
+  grid-template-columns: 252fr 550.5fr 298.5fr;
+  grid-template-rows: auto auto;
+  gap: calc(22.5 * var(--delivery-and-offers-design-pixel)) calc(36 * var(--delivery-and-offers-design-pixel));
+  width: calc(1173 * var(--delivery-and-offers-design-pixel));
+  max-width: 100%;
+  margin: calc(48 * var(--delivery-and-offers-design-pixel)) auto 0;
+}
+
+.offer-card {
+  position: relative;
+  display: block;
+  container-type: inline-size;
+  border-radius: calc(12 * var(--delivery-and-offers-design-pixel));
+  transition: transform 250ms ease;
+}
+
+.offer-card:hover,
+.offer-card:focus-within {
+  transform: translateY(-4px);
+}
+
+.offer-card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.offer-card-pure-cow-ghee {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.offer-card-fresh-dairy {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+
+.offer-card-pure-cow-ghee .offer-card-image,
+.offer-card-fresh-dairy .offer-card-image {
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Text on the two small cards */
+
+.offer-card-small-label {
+  position: absolute;
+  top: 9cqw;
+  left: 10.7cqw;
+  font-size: 6.2cqw;
+  line-height: 8cqw;
+  color: #7b7979;
+}
+
+.offer-card-small-heading {
+  position: absolute;
+  left: 10.7cqw;
+  font-size: 7.4cqw;
+  font-weight: 600;
+  line-height: 8.9cqw;
+  color: #000000;
+}
+
+.offer-card-farm-fresh-combo .offer-card-small-heading {
+  top: 16cqw;
+}
+
+.offer-card-homemade-powders .offer-card-small-heading {
+  top: 18.5cqw;
+}
+
+/* Text on the ghee banner ("PURE COW GHEE" and the button are part of the picture) */
+
+.ghee-banner-label {
+  position: absolute;
+  top: 6.2cqw;
+  left: 6.5cqw;
+  font-size: 2.75cqw;
+  line-height: 3.6cqw;
+  color: #e9dcc8;
+}
+
+.ghee-banner-tagline {
+  position: absolute;
+  top: 25.4cqw;
+  left: 7cqw;
+  font-size: 2.95cqw;
+  line-height: 3.8cqw;
+  color: #ffffff;
+}
+
+.ghee-banner-order-now-link {
+  position: absolute;
+  top: 37.8%;
+  left: 10.4%;
+  width: 27.2%;
+  height: 7.4%;
+  border-radius: 9999px;
+}
+
+.ghee-banner-order-now-link:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Text on the dairy banner */
+
+.dairy-banner-label {
+  position: absolute;
+  top: 11cqw;
+  left: 8.5cqw;
+  font-size: 4.8cqw;
+  line-height: 6cqw;
+  color: #f3e6d8;
+}
+
+.dairy-banner-heading {
+  position: absolute;
+  top: 18cqw;
+  left: 8.5cqw;
+  font-size: 10.6cqw;
+  font-weight: 600;
+  line-height: 10.5cqw;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.dairy-banner-tagline {
+  position: absolute;
+  top: 40cqw;
+  left: 8.5cqw;
+  font-size: 4.9cqw;
+  line-height: 6cqw;
+  color: #ffffff;
+}
+
+/* Text read out by screen readers only */
+.offer-card-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+  Scroll reveal (states set by the component): the top row and the cards move as one piece.
+    waiting  - before it scrolls into view: hidden, slightly lower
+    revealed - fades and slides up into place together
+*/
+
+.delivery-and-offers-section-waiting .delivery-row,
+.delivery-and-offers-section-waiting .offer-cards-grid {
+  opacity: 0;
+  transform: translateY(calc(40 * var(--delivery-and-offers-design-pixel)));
+}
+
+.delivery-and-offers-section-revealed .delivery-row,
+.delivery-and-offers-section-revealed .offer-cards-grid {
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+  Mobile layout (chosen by the script in app/page.tsx):
+  text, van and text stacked and centred; the two small cards stacked on the left with the
+  dairy banner beside them, then the ghee banner full width.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .delivery-and-offers-section {
+    padding: 40px 16px 44px;
+  }
+
+  /* Text blocks left-aligned with the cards below; the van stays centred between them. */
+  .delivery-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    width: 100%;
+  }
+
+  .delivery-text-block-aligned-with-dairy-card {
+    width: auto;
+  }
+
+  .delivery-text-kicker {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .delivery-text-heading {
+    margin-top: 2px;
+    font-size: 21px;
+    line-height: 28px;
+  }
+
+  .delivery-text-paragraph {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 21px;
+  }
+
+  /* Justified text leaves big gaps between words on narrow screens. */
+  .delivery-text-paragraph-justified {
+    text-align: left;
+  }
+
+  .delivery-van-parking-spot {
+    width: min(320px, 85vw);
+  }
+
+  /* On phones the text is above the van, so the leaves blow up and to the left onto it. */
+  .delivery-van-leaf {
+    --leaf-travel-x: -420;
+    --leaf-travel-y: -560;
+  }
+
+  /* Small cards stacked on the left, the tall dairy banner beside them, then the ghee banner below. */
+  .offer-cards-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    margin-top: 28px;
+  }
+
+  .offer-card-farm-fresh-combo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .offer-card-homemade-powders {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .offer-card-fresh-dairy {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    overflow: hidden;
+  }
+
+  .offer-card-pure-cow-ghee {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}

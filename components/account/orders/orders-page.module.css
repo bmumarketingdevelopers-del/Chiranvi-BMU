@@ -1,0 +1,345 @@
+/*
+  "My Orders" dashboard page, measured from the design (scaled to the 1440 wide frame).
+  Numbers in calc() are design pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+.orders-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: calc(20 * var(--account-design-pixel));
+  padding: calc(20 * var(--account-design-pixel)) calc(24 * var(--account-design-pixel));
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #ffffff;
+  text-align: center;
+}
+
+.orders-empty-icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(72 * var(--account-design-pixel));
+  height: calc(72 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: #e9f2e2;
+}
+
+.orders-empty-icon {
+  width: calc(36 * var(--account-design-pixel));
+  height: calc(36 * var(--account-design-pixel));
+  fill: none;
+  stroke: #bdbdbd;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.orders-empty-icon circle {
+  fill: #bdbdbd;
+}
+
+.orders-empty-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  margin-top: calc(12 * var(--account-design-pixel));
+  font-size: calc(20 * var(--account-design-pixel));
+  font-weight: 500;
+  color: #6e7a72;
+}
+
+.orders-empty-description {
+  margin-top: calc(4 * var(--account-design-pixel));
+  font-size: calc(14 * var(--account-design-pixel));
+  color: #9e9e9e;
+}
+
+/* Orders list (after ordering), from the design, using the dashboard type system */
+
+/* All / Active / Delivered / Cancelled (same style as the Offers filters) */
+.orders-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--account-design-pixel));
+  align-self: flex-start;
+  margin-top: calc(4 * var(--account-design-pixel));
+}
+
+.orders-filter-button {
+  height: calc(36 * var(--account-design-pixel));
+  padding: 0 calc(18 * var(--account-design-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.orders-filter-button:hover,
+.orders-filter-button:focus-visible {
+  background: #f2f5f0;
+}
+
+.orders-filter-button-selected,
+.orders-filter-button-selected:hover,
+.orders-filter-button-selected:focus-visible {
+  border-color: #2f6b3f;
+  background: #2f6b3f;
+  color: #ffffff;
+}
+
+.orders-none-in-filter {
+  margin-top: calc(24 * var(--account-design-pixel));
+  font-size: calc(14 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(18 * var(--account-design-pixel));
+  margin-top: calc(18 * var(--account-design-pixel));
+}
+
+/* One white card per order */
+.order-card {
+  padding: calc(22 * var(--account-design-pixel)) calc(24 * var(--account-design-pixel));
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #ffffff;
+}
+
+.order-summary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(20 * var(--account-design-pixel));
+}
+
+/* Product pictures side by side in one light frame */
+.order-pictures {
+  display: flex;
+  flex-shrink: 0;
+  gap: calc(4 * var(--account-design-pixel));
+  padding: calc(4 * var(--account-design-pixel));
+  border: 1px solid #e8ece6;
+  border-radius: calc(12 * var(--account-design-pixel));
+}
+
+.order-picture-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(64 * var(--account-design-pixel));
+  height: calc(76 * var(--account-design-pixel));
+  padding: calc(6 * var(--account-design-pixel));
+  border-radius: calc(9 * var(--account-design-pixel));
+  background: #f7f8f5;
+}
+
+.order-picture {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.order-details {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Items: Ubuntu Bold 16 */
+.order-items {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--account-design-pixel));
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1e2a22;
+}
+
+/* Order number, date, delivered time: Poppins 12.5, grey */
+.order-number-and-date {
+  margin-top: calc(6 * var(--account-design-pixel));
+  font-size: calc(12.5 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+/* "Arriving tomorrow by 7:00 AM": Ubuntu Bold, green */
+.order-arrival {
+  margin-top: calc(6 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13.5 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+}
+
+/* Status, total and button on the right */
+.order-status-area {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.order-status {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(12 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+}
+
+.order-status-cancelled {
+  color: #e03a3a;
+}
+
+.order-total {
+  margin-top: calc(14 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(18 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.order-reorder-button,
+.order-help-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(36 * var(--account-design-pixel));
+  margin-top: calc(8 * var(--account-design-pixel));
+  padding: 0 calc(22 * var(--account-design-pixel));
+  border-radius: 9999px;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.order-reorder-button {
+  background: #2f6b3f;
+  color: #ffffff;
+}
+
+.order-reorder-button:hover,
+.order-reorder-button:focus-visible {
+  background: #245433;
+}
+
+.order-help-button {
+  margin-top: calc(14 * var(--account-design-pixel));
+  border: 1px solid #d9e2d8;
+  background: #ffffff;
+  color: #1e2a22;
+}
+
+.order-help-button:hover,
+.order-help-button:focus-visible {
+  background: #f2f5f0;
+}
+
+/* Delivery steps: four dots on a line, label under each dot */
+.order-tracker {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(18 * var(--account-design-pixel));
+  padding-top: calc(18 * var(--account-design-pixel));
+  border-top: 1px solid #e8ece6;
+}
+
+.order-tracker-line {
+  position: absolute;
+  top: calc(18 * var(--account-design-pixel) + 5.5 * var(--account-design-pixel));
+  left: calc(55 * var(--account-design-pixel));
+  right: calc(55 * var(--account-design-pixel));
+  height: calc(3 * var(--account-design-pixel));
+  border-radius: 9999px;
+  background: #e2e8e0;
+}
+
+.order-tracker-line-filled {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2f6b3f;
+}
+
+.order-tracker-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--account-design-pixel));
+  width: calc(110 * var(--account-design-pixel));
+  font-size: calc(12 * var(--account-design-pixel));
+  text-align: center;
+  color: #6e7a72;
+}
+
+.order-tracker-step-done {
+  color: #1e2a22;
+}
+
+.order-tracker-dot {
+  width: calc(14 * var(--account-design-pixel));
+  height: calc(14 * var(--account-design-pixel));
+  border: 1.5px solid #c5cec4;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.order-tracker-step-done .order-tracker-dot {
+  border-color: #2f6b3f;
+  background: #2f6b3f;
+}
+
+
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .orders-empty-heading {
+    font-size: 16px;
+  }
+
+  .orders-empty-description {
+    font-size: 13px;
+  }
+
+  /* Orders list on phones: filters under the title, status and button under the details */
+  .order-card {
+    padding: 16px 14px;
+  }
+
+  .order-summary-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .order-details {
+    flex-basis: calc(100% - 100px);
+  }
+
+  .order-status-area {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .order-total,
+  .order-reorder-button,
+  .order-help-button {
+    margin-top: 0;
+  }
+
+  .order-tracker-step {
+    width: 72px;
+    font-size: 10px;
+  }
+
+  .order-tracker-line {
+    left: 36px;
+    right: 36px;
+  }
+}

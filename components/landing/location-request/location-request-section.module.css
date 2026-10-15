@@ -1,0 +1,159 @@
+/*
+  Location request section, measured from the design (a 1148 pixel wide frame).
+  Numbers in calc() are design pixels multiplied by --location-request-design-pixel
+  (screen width at the starting zoom / 1148, set by the script in app/page.tsx),
+  so the section keeps the design's proportions on every screen width.
+*/
+
+.location-request-section {
+  --location-request-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1148);
+
+  padding: calc(56 * var(--location-request-design-pixel)) 16px calc(64 * var(--location-request-design-pixel));
+  background: #ffffff;
+}
+
+/* Illustration on the left, text on the right; the pair is centred as in the design. */
+.location-request-content {
+  display: flex;
+  align-items: center;
+  gap: calc(22 * var(--location-request-design-pixel));
+  /* Only as wide as its contents, centred (sizes reduced on request from the design). */
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.location-request-illustration {
+  flex-shrink: 0;
+  width: calc(400 * var(--location-request-design-pixel));
+  height: auto;
+}
+
+/* Text: heading (Ubuntu), description (Poppins Regular), Request button */
+
+.location-request-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(26 * var(--location-request-design-pixel));
+  font-weight: 500;
+  line-height: calc(32 * var(--location-request-design-pixel));
+  color: #285c3a;
+  white-space: nowrap;
+}
+
+.location-request-description {
+  margin-top: calc(10 * var(--location-request-design-pixel));
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(11 * var(--location-request-design-pixel));
+  font-weight: 400;
+  line-height: calc(22 * var(--location-request-design-pixel));
+  color: #000000;
+}
+
+.location-request-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(7 * var(--location-request-design-pixel));
+  width: calc(138 * var(--location-request-design-pixel));
+  height: calc(36 * var(--location-request-design-pixel));
+  margin-top: calc(20 * var(--location-request-design-pixel));
+  margin-left: calc(4 * var(--location-request-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+  color: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14.5 * var(--location-request-design-pixel));
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.location-request-button:hover,
+.location-request-button:focus-visible {
+  background: #1f4a2e;
+}
+
+.location-request-button-icon {
+  width: calc(14 * var(--location-request-design-pixel));
+  height: calc(14 * var(--location-request-design-pixel));
+  fill: currentColor;
+}
+
+/*
+  Scroll reveal (states set by the component): illustration and text move as one piece.
+    waiting  - before it scrolls into view: hidden, slightly lower
+    revealed - fades and slides up into place
+*/
+
+.location-request-section-waiting .location-request-content {
+  opacity: 0;
+  translate: 0 calc(40 * var(--location-request-design-pixel));
+}
+
+.location-request-section-revealed .location-request-content {
+  transition:
+    opacity 700ms ease-out,
+    translate 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+  Mobile layout (chosen by the script in app/page.tsx): illustration on top, text below,
+  both left-aligned with the other sections.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .location-request-section {
+    padding: 36px 16px 44px;
+  }
+
+  .location-request-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .location-request-illustration {
+    width: 100%;
+  }
+
+  /* Full width, so the Request button can be centred inside it. */
+  .location-request-text-block {
+    width: 100%;
+  }
+
+  .location-request-heading {
+    font-size: 21px;
+    line-height: 28px;
+    white-space: normal;
+  }
+
+  .location-request-description {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  /* The line break is written for the wide layout; let the text wrap naturally on phones. */
+  .location-request-description br {
+    display: none;
+  }
+
+  .location-request-button {
+    /* Centred on phones. */
+    display: flex;
+    gap: 7px;
+    width: 136px;
+    height: 38px;
+    margin: 18px auto 0;
+    font-size: 14px;
+  }
+
+  .location-request-button-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .location-request-section-waiting .location-request-content {
+    translate: 0 30px;
+  }
+}

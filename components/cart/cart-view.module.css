@@ -1,0 +1,587 @@
+/*
+  "My Cart" page, measured from the desktop and phone designs.
+  Desktop: the landing page navigation bar, back button + "My Cart (0)", and the empty-cart
+  message in a bordered card. Phone (layout chosen by the landing page script): title centred
+  between the back arrow and the right edge, and the message without a card border.
+*/
+
+.cart-page {
+  /*
+    Same units as the landing page hero (hero-section.module.css), so the navigation bar is the same
+    size and in the same place as on the landing page, and the cart scales with the screen like it.
+    The window size at the starting zoom comes from the landing zoom and layout script.
+  */
+  --landing-page-horizontal-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440);
+  --landing-page-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
+  /* Cart sizes below are design pixels multiplied by this unit. */
+  --cart-design-pixel: var(--landing-page-design-pixel);
+  /* The address pop-up (shared with My Addresses) sizes itself with this dashboard unit. */
+  --account-design-pixel: var(--cart-design-pixel);
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  background: #ffffff;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+/*
+  Navigation bar: placed as on the landing page (47 from the sides, 27 from the top),
+  on the landing page hero's top colour, so the white bar looks the same as there.
+*/
+.cart-page-navigation {
+  padding: calc(27 * var(--landing-page-vertical-design-pixel)) calc(47 * var(--landing-page-horizontal-design-pixel))
+    calc(20 * var(--cart-design-pixel));
+  background: linear-gradient(180deg, #e5f0dc 0%, #f3f8ef 100%);
+}
+
+/* Fills the height below the navigation bar, so the empty-cart box can sit in its middle. */
+.cart-page-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(1200 * var(--cart-design-pixel));
+  margin: 0 auto;
+  padding: calc(28 * var(--cart-design-pixel)) calc(24 * var(--cart-design-pixel)) calc(64 * var(--cart-design-pixel));
+}
+
+/* Back button and title */
+
+.cart-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--cart-design-pixel));
+  max-width: calc(1040 * var(--cart-design-pixel));
+  width: 100%;
+  margin: 0 auto;
+}
+
+.cart-page-back-button {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(38 * var(--cart-design-pixel));
+  height: calc(38 * var(--cart-design-pixel));
+  border-radius: 50%;
+  background: #e9f2e2;
+  transition: background-color 150ms ease;
+}
+
+.cart-page-back-button:hover,
+.cart-page-back-button:focus-visible {
+  background: #d9e9cf;
+}
+
+.cart-page-back-button svg {
+  width: calc(21 * var(--cart-design-pixel));
+  height: calc(21 * var(--cart-design-pixel));
+  fill: none;
+  stroke: #1a1a1a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cart-page-title {
+  font-size: calc(25 * var(--cart-design-pixel));
+  font-weight: 600;
+  line-height: 1.3;
+  color: #1a1a1a;
+}
+
+.cart-page-item-count {
+  font-size: calc(20 * var(--cart-design-pixel));
+  font-weight: 500;
+  color: #9e9e9e;
+}
+
+/* Empty-cart message in a bordered card, centred across and up/down in the space below the title */
+
+.empty-cart-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: calc(500 * var(--cart-design-pixel));
+  margin: auto;
+  padding: calc(60 * var(--cart-design-pixel)) calc(36 * var(--cart-design-pixel));
+  border: 1px solid #f1ebe5;
+  border-radius: calc(16 * var(--cart-design-pixel));
+  background: #ffffff;
+  text-align: center;
+}
+
+.empty-cart-icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(128 * var(--cart-design-pixel));
+  height: calc(128 * var(--cart-design-pixel));
+  border-radius: 50%;
+  background: #e9f2e2;
+}
+
+.empty-cart-icon {
+  width: calc(68 * var(--cart-design-pixel));
+  height: calc(68 * var(--cart-design-pixel));
+  fill: none;
+  stroke: #bdbdbd;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.empty-cart-icon circle {
+  fill: #bdbdbd;
+}
+
+/* Cart icon clicked while on the cart page: the trolley shakes left and right, then stops. */
+.empty-cart-icon-shaking {
+  animation: empty-cart-trolley-shake 600ms ease-in-out;
+}
+
+@keyframes empty-cart-trolley-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15%,
+  45%,
+  75% {
+    transform: translateX(-8%) rotate(-4deg);
+  }
+  30%,
+  60%,
+  90% {
+    transform: translateX(8%) rotate(4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-cart-icon-shaking {
+    animation: none;
+  }
+}
+
+.empty-cart-heading {
+  margin-top: calc(22 * var(--cart-design-pixel));
+  font-size: calc(23 * var(--cart-design-pixel));
+  font-weight: 500;
+  line-height: 1.4;
+  color: #757575;
+}
+
+.empty-cart-description {
+  margin-top: calc(6 * var(--cart-design-pixel));
+  font-size: calc(16 * var(--cart-design-pixel));
+  line-height: 1.5;
+  color: #9e9e9e;
+}
+
+.empty-cart-start-shopping-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(48 * var(--cart-design-pixel));
+  margin-top: calc(20 * var(--cart-design-pixel));
+  padding: 0 calc(24 * var(--cart-design-pixel));
+  border-radius: calc(6 * var(--cart-design-pixel));
+  background: #337e4e;
+  font-size: calc(16 * var(--cart-design-pixel));
+  font-weight: 600;
+  color: #ffffff;
+  transition: background-color 150ms ease;
+}
+
+.empty-cart-start-shopping-button:hover,
+.empty-cart-start-shopping-button:focus-visible {
+  background: #285c3a;
+}
+
+/* Products in the cart: one row each, in a card as wide as the title row, with the subtotal below */
+
+.cart-items-card {
+  width: 100%;
+  max-width: calc(1040 * var(--cart-design-pixel));
+  margin: calc(24 * var(--cart-design-pixel)) auto 0;
+  padding: calc(8 * var(--cart-design-pixel)) calc(28 * var(--cart-design-pixel));
+  border: 1px solid #f1ebe5;
+  border-radius: calc(16 * var(--cart-design-pixel));
+  background: #ffffff;
+}
+
+.cart-item-row {
+  display: flex;
+  align-items: center;
+  gap: calc(20 * var(--cart-design-pixel));
+  padding: calc(20 * var(--cart-design-pixel)) 0;
+  border-bottom: 1px solid #f1ebe5;
+}
+
+.cart-item-image-area {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(96 * var(--cart-design-pixel));
+  height: calc(96 * var(--cart-design-pixel));
+  padding: calc(8 * var(--cart-design-pixel));
+  border-radius: calc(12 * var(--cart-design-pixel));
+  background: #f4f8f0;
+}
+
+.cart-item-image {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cart-item-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-item-name {
+  font-size: calc(18 * var(--cart-design-pixel));
+  font-weight: 600;
+  line-height: 1.3;
+  color: #1a1a1a;
+}
+
+.cart-item-pack-size {
+  margin-top: calc(4 * var(--cart-design-pixel));
+  font-size: calc(14 * var(--cart-design-pixel));
+  color: #9e9e9e;
+}
+
+.cart-item-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: calc(8 * var(--cart-design-pixel));
+  margin-top: calc(6 * var(--cart-design-pixel));
+}
+
+.cart-item-price {
+  font-size: calc(16 * var(--cart-design-pixel));
+  font-weight: 600;
+  color: #337e4e;
+}
+
+.cart-item-original-price {
+  font-size: calc(13 * var(--cart-design-pixel));
+  color: #9e9e9e;
+}
+
+/* "- quantity +" control */
+.cart-item-quantity-control {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: calc(40 * var(--cart-design-pixel));
+  border: 1px solid #337e4e;
+  border-radius: calc(8 * var(--cart-design-pixel));
+  overflow: hidden;
+}
+
+.cart-item-quantity-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(38 * var(--cart-design-pixel));
+  height: 100%;
+  font-size: calc(20 * var(--cart-design-pixel));
+  font-weight: 500;
+  color: #337e4e;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.cart-item-quantity-button:hover,
+.cart-item-quantity-button:focus-visible {
+  background: #e9f2e2;
+}
+
+.cart-item-quantity {
+  min-width: calc(32 * var(--cart-design-pixel));
+  font-size: calc(16 * var(--cart-design-pixel));
+  font-weight: 600;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.cart-item-total {
+  flex-shrink: 0;
+  min-width: calc(90 * var(--cart-design-pixel));
+  font-size: calc(18 * var(--cart-design-pixel));
+  font-weight: 600;
+  text-align: right;
+  color: #1a1a1a;
+}
+
+/*
+  Checkout bar at the bottom of the card: one wide green button with the total amount on the left
+  and "Pay now" on the right (as in the reference app). It stays at the bottom of the screen while
+  a long list scrolls.
+*/
+.cart-checkout-bar {
+  position: sticky;
+  bottom: 0;
+  padding: calc(16 * var(--cart-design-pixel)) 0 calc(20 * var(--cart-design-pixel));
+  background: #ffffff;
+}
+
+.cart-pay-now-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: calc(60 * var(--cart-design-pixel));
+  padding: 0 calc(24 * var(--cart-design-pixel));
+  border-radius: calc(12 * var(--cart-design-pixel));
+  background: #337e4e;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.cart-pay-now-button:hover,
+.cart-pay-now-button:focus-visible {
+  background: #285c3a;
+}
+
+.cart-pay-now-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.cart-pay-now-total-amount {
+  font-size: calc(20 * var(--cart-design-pixel));
+  font-weight: 600;
+}
+
+.cart-pay-now-total-label {
+  font-size: calc(12 * var(--cart-design-pixel));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.cart-pay-now-label {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--cart-design-pixel));
+  font-size: calc(19 * var(--cart-design-pixel));
+  font-weight: 600;
+}
+
+.cart-pay-now-label svg {
+  width: calc(20 * var(--cart-design-pixel));
+  height: calc(20 * var(--cart-design-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Phone layout (sizes in plain pixels, as approved) */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .cart-page {
+    --cart-design-pixel: 1px;
+  }
+
+  /* Products: no card border; the quantity control and total move under the product details */
+  .cart-items-card {
+    margin-top: 16px;
+    padding: 0;
+    border: none;
+  }
+
+  .cart-item-row {
+    display: grid;
+    grid-template-columns: 76px 1fr auto;
+    grid-template-areas:
+      "image details details"
+      "image quantity total";
+    gap: 10px 14px;
+    align-items: center;
+    padding: 16px 0;
+  }
+
+  .cart-item-image-area {
+    grid-area: image;
+    width: 76px;
+    height: 76px;
+    padding: 6px;
+  }
+
+  .cart-item-details {
+    grid-area: details;
+  }
+
+  .cart-item-name {
+    font-size: 15px;
+  }
+
+  .cart-item-pack-size {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+
+  .cart-item-price-row {
+    margin-top: 2px;
+  }
+
+  .cart-item-price {
+    font-size: 14px;
+  }
+
+  .cart-item-original-price {
+    font-size: 12px;
+  }
+
+  .cart-item-quantity-control {
+    grid-area: quantity;
+    justify-self: start;
+    height: 34px;
+  }
+
+  .cart-item-quantity-button {
+    width: 34px;
+    font-size: 18px;
+  }
+
+  .cart-item-quantity {
+    min-width: 28px;
+    font-size: 14px;
+  }
+
+  .cart-item-total {
+    grid-area: total;
+    min-width: 0;
+    font-size: 15px;
+  }
+
+  /* Checkout bar fixed to the bottom of the screen, on a white strip with a soft shadow above it */
+  .cart-items-card {
+    padding-bottom: 92px;
+  }
+
+  .cart-checkout-bar {
+    position: fixed;
+    z-index: 4;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 18px rgba(22, 26, 23, 0.08);
+  }
+
+  .cart-pay-now-button {
+    height: 56px;
+    padding: 0 18px;
+  }
+
+  .cart-pay-now-total-amount {
+    font-size: 18px;
+  }
+
+  .cart-pay-now-total-label {
+    font-size: 11px;
+  }
+
+  .cart-pay-now-label {
+    font-size: 17px;
+  }
+
+  .cart-pay-now-label svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Phone navigation bar: 12px from the top and sides, as on the landing page. */
+  .cart-page-navigation {
+    padding: 12px 12px 0;
+    background: none;
+  }
+
+  .cart-page-content {
+    padding: 22px 16px 48px;
+  }
+
+  /* Back arrow on the left, title centred across the width */
+  .cart-page-title-row {
+    position: relative;
+    justify-content: center;
+  }
+
+  .cart-page-back-button {
+    position: absolute;
+    left: 4px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+  }
+
+  .cart-page-back-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .cart-page-title {
+    font-size: 19px;
+    line-height: 28px;
+  }
+
+  .cart-page-item-count {
+    font-size: 16px;
+  }
+
+  /* No card border on phones; the message sits in the middle of the page */
+  .empty-cart-card {
+    max-width: 440px;
+    margin: 150px auto 0;
+    padding: 0;
+    border: none;
+  }
+
+  .empty-cart-icon-circle {
+    width: auto;
+    height: auto;
+    background: transparent;
+  }
+
+  .empty-cart-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .empty-cart-heading {
+    margin-top: 18px;
+    font-size: 17px;
+    line-height: 24px;
+  }
+
+  .empty-cart-description {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 21px;
+  }
+
+  .empty-cart-start-shopping-button {
+    height: 38px;
+    margin-top: 16px;
+    padding: 0 18px;
+    font-size: 13px;
+  }
+}

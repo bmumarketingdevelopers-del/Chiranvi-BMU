@@ -1,0 +1,540 @@
+/*
+  Sizes are written in Figma pixels from the landing page frame (1440 x 916).
+  --landing-page-design-pixel is set by the landing page so the bar scales with the screen.
+  Outside the landing page it falls back to 1px (the Figma size).
+*/
+
+.site-navigation-bar {
+  --navigation-design-pixel: var(--landing-page-design-pixel, 1px);
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: calc(86 * var(--navigation-design-pixel));
+  padding-left: calc(24 * var(--navigation-design-pixel));
+  padding-right: calc(47.5 * var(--navigation-design-pixel));
+  border-radius: calc(20 * var(--navigation-design-pixel));
+  background: #ffffff;
+}
+
+/* Logo */
+
+.site-navigation-bar-logo-link {
+  display: block;
+  flex-shrink: 0;
+}
+
+.site-navigation-bar-logo-image {
+  width: auto;
+  height: calc(56 * var(--navigation-design-pixel));
+}
+
+/* Page links */
+
+.site-navigation-bar-links-list {
+  display: flex;
+  align-items: center;
+  gap: calc(39 * var(--navigation-design-pixel));
+  /*
+    In Figma the link group's centre sits 41 to the right of the bar's centre.
+    Positioning from the centre keeps that placement on every screen width.
+  */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(calc(-50% + 41 * var(--navigation-design-pixel)), -50%);
+}
+
+.site-navigation-bar-link {
+  font-size: calc(18 * var(--navigation-design-pixel));
+  font-weight: 400;
+  color: #161a17;
+  white-space: nowrap;
+  transition: color 150ms ease;
+}
+
+.site-navigation-bar-link:hover,
+.site-navigation-bar-link:focus-visible {
+  color: #285c3a;
+}
+
+/* The page you are on (e.g. Join Community on /community): green text with a green underline */
+.site-navigation-bar-link-current {
+  font-weight: 500;
+  color: #2f6b3f;
+  text-decoration: underline;
+  text-decoration-color: #2f6b3f;
+  text-decoration-thickness: calc(2 * var(--navigation-design-pixel));
+  text-underline-offset: calc(8 * var(--navigation-design-pixel));
+}
+
+/* Search, account and cart icons */
+
+/* The profile icon while on the account dashboard: a light green circle behind it (design). */
+.site-navigation-bar-icon-button-current-page {
+  border-radius: 50%;
+  background: #e3eedc;
+  box-shadow: 0 0 0 calc(7 * var(--navigation-design-pixel)) #e3eedc;
+}
+
+.site-navigation-bar-icon-group {
+  display: flex;
+  align-items: center;
+  gap: calc(23.5 * var(--navigation-design-pixel));
+  margin-left: auto;
+}
+
+.site-navigation-bar-icon-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(24 * var(--navigation-design-pixel));
+  height: calc(24 * var(--navigation-design-pixel));
+  color: #161a17;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.site-navigation-bar-icon-button:hover,
+.site-navigation-bar-icon-button:focus-visible {
+  color: #285c3a;
+}
+
+.site-navigation-bar-icon {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.site-navigation-bar-cart-count-badge {
+  position: absolute;
+  top: calc(-8 * var(--navigation-design-pixel));
+  right: calc(-5 * var(--navigation-design-pixel));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(18 * var(--navigation-design-pixel));
+  height: calc(18 * var(--navigation-design-pixel));
+  border-radius: 50%;
+  background: #daab24;
+  color: #161a17;
+  font-size: calc(11 * var(--navigation-design-pixel));
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Phone-only pieces (menu button, Log in menu item, menu icons); hidden on larger screens. */
+
+.site-navigation-bar-link-mobile-icon,
+.site-navigation-bar-link-mobile-label,
+.site-navigation-bar-link-phone-menu-only,
+.site-navigation-bar-phone-menu-area {
+  display: none;
+}
+
+/*
+  Phone layout, chosen by the script on the landing page (its <style data-landing-layout="mobile"> tag):
+  phones, upright tablets, and desktops zoomed in too far for the desktop design.
+  A white bar at the top: logo on the left; search, cart and a three lines menu button on the right.
+  The menu button opens the page links (and Log in) as a small menu below the bar.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .site-navigation-bar {
+    height: 52px;
+    padding: 0 16px 0 12px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(22, 26, 23, 0.08);
+  }
+
+  .site-navigation-bar-logo-image {
+    height: 34px;
+  }
+
+  /* The page links become a small menu card below the bar, shown only while open. */
+  .site-navigation-bar-links-list {
+    display: none;
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    z-index: 5;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    min-width: 210px;
+    padding: 8px;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 12px 32px rgba(22, 26, 23, 0.16);
+    transform: none;
+  }
+
+  .site-navigation-bar-links-list-open {
+    display: flex;
+    animation: site-navigation-bar-phone-menu-open 180ms ease-out;
+  }
+
+  .site-navigation-bar-link,
+  .site-navigation-bar-link-phone-menu-only {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .site-navigation-bar-link:hover,
+  .site-navigation-bar-link:focus-visible {
+    background: #eef4ea;
+  }
+
+  /* Phone menu: the page you are on is shaded green instead of underlined */
+  .site-navigation-bar-link-current {
+    background: #eef4ea;
+    text-decoration: none;
+  }
+
+  .site-navigation-bar-link-mobile-icon {
+    display: block;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Right side: search, cart and the menu button (the account icon moves into the menu as Log in). */
+  .site-navigation-bar-icon-group {
+    gap: 18px;
+  }
+
+  .site-navigation-bar-icon-group > a[aria-label="Log in to my account"],
+  .site-navigation-bar-icon-group > a[aria-label="My account"] {
+    display: none;
+  }
+
+  .site-navigation-bar-phone-menu-area {
+    display: flex;
+  }
+
+  .site-navigation-bar-icon-button {
+    width: 24px;
+    height: 24px;
+  }
+
+  .site-navigation-bar-cart-count-badge {
+    top: -7px;
+    right: -7px;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+}
+
+@keyframes site-navigation-bar-phone-menu-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/*
+  Small search box that opens where the search icon is.
+  Desktop: its right edge stays at the search icon (account and cart stay visible), and it grows
+  to the left all the way to "Join Community", stopping 24 after the page links. The box is positioned against the whole navigation bar for this.
+*/
+
+.site-navigation-bar-search-area {
+  display: flex;
+}
+
+.site-navigation-bar-search-box {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  /* 142.5 = bar padding 47.5 + cart 24 + gap 23.5 + account 24 + gap 23.5 (to the search icon's right edge). */
+  right: calc(142.5 * var(--navigation-design-pixel));
+  /*
+    The page links end 265 right of the bar's centre (centre offset 41 + half their 448 width);
+    the box starts 24 after that.
+  */
+  left: calc(50% + 289 * var(--navigation-design-pixel));
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--navigation-design-pixel));
+  height: calc(54 * var(--navigation-design-pixel));
+  padding: 0 calc(18 * var(--navigation-design-pixel));
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgba(22, 26, 23, 0.18);
+  transform: translateY(-50%);
+  animation: site-navigation-bar-search-box-open 200ms ease-out;
+}
+
+.site-navigation-bar-search-box-icon {
+  flex-shrink: 0;
+  width: calc(20 * var(--navigation-design-pixel));
+  height: calc(20 * var(--navigation-design-pixel));
+  fill: none;
+  stroke: #285c3a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.site-navigation-bar-search-box-input {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(16 * var(--navigation-design-pixel));
+  color: #161a17;
+  background: transparent;
+  outline: none;
+}
+
+.site-navigation-bar-search-box-input::placeholder {
+  color: #8a8f8b;
+}
+
+/* Hides the browser's own "x" in search inputs; the box has its own close button. */
+.site-navigation-bar-search-box-input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.site-navigation-bar-search-box-close-button {
+  display: flex;
+  padding: calc(3 * var(--navigation-design-pixel));
+  border-radius: 9999px;
+  cursor: pointer;
+}
+
+.site-navigation-bar-search-box-close-button:hover,
+.site-navigation-bar-search-box-close-button:focus-visible {
+  background: #eef4ea;
+}
+
+/* Grows from the size of the icon to its full width, toward the left. */
+@keyframes site-navigation-bar-search-box-open {
+  from {
+    left: calc(100% - 196.5 * var(--navigation-design-pixel));
+    opacity: 0;
+  }
+}
+
+/*
+  Search results: a white card under the search box, listing matching products.
+  Desktop and sideways tablets: it starts right at the bar's bottom edge (the box is 54 tall in the
+  86 tall bar, so 16 below the box), lines up with the box's right edge, and is at least 340px wide
+  so product names are not cut off when the box itself is narrow.
+*/
+.site-navigation-bar-search-results {
+  position: absolute;
+  top: calc(100% + 16 * var(--navigation-design-pixel));
+  right: 0;
+  width: max(100%, 340px);
+  max-height: 320px;
+  overflow-y: auto;
+  /* Thin, faint scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 26, 23, 0.18) transparent;
+  padding: 6px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(22, 26, 23, 0.16);
+}
+
+/* Thin, faint scrollbar in browsers that use these settings instead */
+.site-navigation-bar-search-results::-webkit-scrollbar {
+  width: 4px;
+}
+
+.site-navigation-bar-search-results::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.site-navigation-bar-search-results::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgba(22, 26, 23, 0.18);
+}
+
+.site-navigation-bar-search-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  border-radius: 10px;
+}
+
+.site-navigation-bar-search-result-highlighted {
+  background: #eef4ea;
+}
+
+.site-navigation-bar-search-result-image-area {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f5f8f3;
+}
+
+.site-navigation-bar-search-result-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.site-navigation-bar-search-result-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.site-navigation-bar-search-result-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+  color: #161a17;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.site-navigation-bar-search-result-label {
+  font-size: 12px;
+  line-height: 16px;
+  color: #7a877e;
+}
+
+/* "View all products" link: pinned to the bottom of the results box, in green */
+.site-navigation-bar-search-view-all {
+  position: sticky;
+  bottom: -6px;
+  display: block;
+  margin: 4px -6px -6px;
+  padding: 11px 14px;
+  border-top: 1px solid #eef1ed;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+  color: #285c3a;
+  text-align: center;
+}
+
+.site-navigation-bar-search-view-all:hover,
+.site-navigation-bar-search-view-all:focus-visible {
+  background: #f3f8f1;
+}
+
+.site-navigation-bar-search-no-results {
+  padding: 12px 10px;
+  font-size: 13.5px;
+  line-height: 19px;
+  color: #6b7280;
+}
+
+/* Closing: shrinks back into the search icon and fades out, slowly and smoothly. */
+.site-navigation-bar-search-box-closing {
+  animation: site-navigation-bar-search-box-close 260ms ease-in forwards;
+}
+
+@keyframes site-navigation-bar-search-box-close {
+  to {
+    left: calc(100% - 196.5 * var(--navigation-design-pixel));
+    opacity: 0;
+  }
+}
+
+/*
+  Phone top bar: like on the laptop, the box opens inside the bar and grows left from the search icon.
+  While it is open, the cart and the menu button are hidden, so the box uses all the space between
+  the logo and the bar's right edge.
+    left 97px  = bar padding 12 + logo width (34px tall logo is 77px wide) + 8 of space
+    right 12px = a little space before the bar's right edge
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .site-navigation-bar-search-box {
+    position: absolute;
+    top: 50%;
+    left: 97px;
+    right: 12px;
+    bottom: auto;
+    gap: 6px;
+    width: auto;
+    height: 38px;
+    padding: 0 10px;
+    border-radius: 10px;
+    transform: translateY(-50%);
+    animation-name: site-navigation-bar-search-box-open-on-phone;
+  }
+
+  .site-navigation-bar-search-box-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .site-navigation-bar-search-box-input {
+    /* 16px stops phones from zooming in when the box is tapped. */
+    font-size: 16px;
+  }
+
+  /*
+    Results on phones: as wide as the bar contents (from the logo's left edge to the menu button's
+    right edge) and a little below the bar. Measured from the search box:
+      left  -85px = the logo starts 85px left of the box (box at 97px, logo at 12px)
+      right   4px = the menu button ends 4px inside the box's right edge (box ends 12px, menu 16px from the bar's edge)
+      top         = right where the bar ends (the bar ends 7px below the box), with no gap
+  */
+  .site-navigation-bar-search-results {
+    top: calc(100% + 7px);
+    left: -85px;
+    right: 4px;
+    width: auto;
+  }
+
+  /* The hint is smaller than the typed text, so it fits comfortably. */
+  .site-navigation-bar-search-box-input::placeholder {
+    font-size: 13.5px;
+  }
+
+  .site-navigation-bar-search-box-closing {
+    animation-name: site-navigation-bar-search-box-close-on-phone;
+  }
+
+  .site-navigation-bar-search-box-close-button {
+    padding: 2px;
+  }
+
+  /* Search open: hide the cart and the menu button to give the search box their space. */
+  .site-navigation-bar-search-open .site-navigation-bar-icon-group > a[aria-label^="Cart"],
+  .site-navigation-bar-search-open .site-navigation-bar-phone-menu-area {
+    visibility: hidden;
+  }
+}
+
+/* Phone: closes back toward the bar's right side, fading out. */
+@keyframes site-navigation-bar-search-box-close-on-phone {
+  to {
+    left: calc(100% - 124px);
+    opacity: 0;
+  }
+}
+
+/* Phone: grows out to the left from the bar's right side, where the search icon area is. */
+@keyframes site-navigation-bar-search-box-open-on-phone {
+  from {
+    left: calc(100% - 124px);
+    opacity: 0;
+  }
+}
+

@@ -1,0 +1,283 @@
+/*
+  "Where Goodness Gets a Voice", measured from the design against the same 1440 x 916 frame as the hero.
+  Numbers in calc() are design pixels multiplied by --customer-reviews-design-pixel, which uses the
+  same zoom-aware formula as the other sections (set by the script in app/page.tsx).
+*/
+
+.customer-reviews-section {
+  --customer-reviews-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  /*
+    Each card is 24.67% of the screen width with a 1.8% gap between cards,
+    so they grow on wide screens. Everything inside a card is sized with --customer-reviews-card-pixel
+    (card width / 420), so cards keep their shape and their text grows with them.
+  */
+  --customer-reviews-screen-width: var(--landing-viewport-width-at-starting-zoom, 100vw);
+  --customer-reviews-card-gap: calc(var(--customer-reviews-screen-width) * 0.018);
+  --customer-reviews-card-width: calc(var(--customer-reviews-screen-width) * 0.2467);
+  --customer-reviews-card-pixel: calc(var(--customer-reviews-card-width) / 420);
+
+  /* Same side margins as the purity promises card (82 of 1440). */
+  padding: calc(56 * var(--customer-reviews-design-pixel)) 16px calc(64 * var(--customer-reviews-design-pixel));
+  background: #fafafa;
+}
+
+/* Heading and line below it */
+
+.customer-reviews-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(36 * var(--customer-reviews-design-pixel));
+  font-weight: 500;
+  line-height: calc(44 * var(--customer-reviews-design-pixel));
+  color: #111111;
+  text-align: center;
+}
+
+.customer-reviews-subheading {
+  margin-top: calc(6 * var(--customer-reviews-design-pixel));
+  font-size: calc(18 * var(--customer-reviews-design-pixel));
+  line-height: calc(26 * var(--customer-reviews-design-pixel));
+  color: #5a5757;
+  text-align: center;
+}
+
+/*
+  Swipeable row of cards: three fit on desktop. Extra cards sit off to the right and can be
+  reached by swiping, scrolling sideways or clicking the dots; each card snaps into place.
+*/
+.customer-reviews-track {
+  display: flex;
+  gap: var(--customer-reviews-card-gap);
+  /* Exactly three cards wide, centred; never wider than the screen. */
+  width: calc(3 * var(--customer-reviews-card-width) + 2 * var(--customer-reviews-card-gap) + 4px);
+  max-width: 100%;
+  margin: calc(56 * var(--customer-reviews-design-pixel)) auto 0;
+  /* Room for the highlighted card's border so it isn't cut off. */
+  padding: 2px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.customer-reviews-track::-webkit-scrollbar {
+  display: none;
+}
+
+.customer-review-card {
+  /* Keeps the screen-reader-only text inside the card, so off-screen cards don't widen the page. */
+  position: relative;
+  display: flex;
+  flex: 0 0 var(--customer-reviews-card-width);
+  flex-direction: column;
+  padding: calc(26 * var(--customer-reviews-card-pixel)) calc(24 * var(--customer-reviews-card-pixel))
+    calc(24 * var(--customer-reviews-card-pixel));
+  border: 1px solid #c1c2ca;
+  border-radius: calc(13 * var(--customer-reviews-card-pixel));
+  background: #ffffff;
+  scroll-snap-align: start;
+  transition:
+    border-color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+/* The card in the middle of the visible ones */
+.customer-review-card-highlighted {
+  /* Softer than the design's #9fa1ae: a slightly darker border with a faint outline. */
+  border-color: #b0b2bd;
+  box-shadow: 0 0 0 1px rgba(159, 161, 174, 0.35);
+}
+
+/* Rating, review text and reviewer */
+
+.customer-review-rating {
+  display: flex;
+  align-items: center;
+  gap: calc(5 * var(--customer-reviews-card-pixel));
+  font-size: calc(19 * var(--customer-reviews-card-pixel));
+  font-weight: 600;
+  line-height: calc(24 * var(--customer-reviews-card-pixel));
+  color: #333333;
+}
+
+.customer-review-rating-star {
+  width: calc(18 * var(--customer-reviews-card-pixel));
+  height: calc(18 * var(--customer-reviews-card-pixel));
+  fill: #d4a932;
+}
+
+.customer-review-text {
+  margin-top: calc(22 * var(--customer-reviews-card-pixel));
+  font-size: calc(16 * var(--customer-reviews-card-pixel));
+  line-height: calc(26 * var(--customer-reviews-card-pixel));
+  color: #535353;
+}
+
+.customer-review-author {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--customer-reviews-card-pixel));
+  margin-top: auto;
+  padding-top: calc(22 * var(--customer-reviews-card-pixel));
+  padding-left: calc(16 * var(--customer-reviews-card-pixel));
+}
+
+.customer-review-author-photo {
+  flex-shrink: 0;
+  width: calc(52 * var(--customer-reviews-card-pixel));
+  height: calc(52 * var(--customer-reviews-card-pixel));
+  border-radius: 50%;
+  background: #e7e7e7;
+}
+
+.customer-review-author-name {
+  display: block;
+  font-size: calc(18.5 * var(--customer-reviews-card-pixel));
+  font-weight: 600;
+  line-height: calc(24 * var(--customer-reviews-card-pixel));
+  color: #111111;
+}
+
+.customer-review-author-role {
+  display: block;
+  font-size: calc(16 * var(--customer-reviews-card-pixel));
+  line-height: calc(22 * var(--customer-reviews-card-pixel));
+  color: #999999;
+}
+
+/* Text read out by screen readers only */
+.customer-review-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Dots below the cards; the dark one marks the first card on screen */
+
+.customer-reviews-dots {
+  display: flex;
+  justify-content: center;
+  gap: calc(6 * var(--customer-reviews-design-pixel));
+  margin-top: calc(52 * var(--customer-reviews-design-pixel));
+}
+
+.customer-reviews-dot {
+  width: calc(32 * var(--customer-reviews-design-pixel));
+  height: calc(9 * var(--customer-reviews-design-pixel));
+  border-radius: 9999px;
+  background: #dedee5;
+  cursor: pointer;
+  transition: background-color 300ms ease;
+}
+
+.customer-reviews-dot-active {
+  background: #222b75;
+}
+
+/*
+  Scroll reveal (states set by the component): heading, cards and dots move as one piece.
+    waiting  - before it scrolls into view: hidden, slightly lower
+    revealed - fades and slides up into place together
+*/
+
+.customer-reviews-section-waiting .customer-reviews-heading,
+.customer-reviews-section-waiting .customer-reviews-subheading,
+.customer-reviews-section-waiting .customer-reviews-track,
+.customer-reviews-section-waiting .customer-reviews-dots {
+  opacity: 0;
+  transform: translateY(calc(40 * var(--customer-reviews-design-pixel)));
+}
+
+.customer-reviews-section-revealed .customer-reviews-heading,
+.customer-reviews-section-revealed .customer-reviews-subheading,
+.customer-reviews-section-revealed .customer-reviews-track,
+.customer-reviews-section-revealed .customer-reviews-dots {
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+  Mobile layout (chosen by the script in app/page.tsx): one card at a time, swipe for the next.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .customer-reviews-section {
+    padding: 36px 16px 40px;
+  }
+
+  .customer-reviews-heading {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .customer-reviews-subheading {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .customer-reviews-track {
+    width: 100%;
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .customer-review-card {
+    flex-basis: 100%;
+    min-height: 0;
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .customer-review-rating {
+    gap: 5px;
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .customer-review-rating-star {
+    width: 15px;
+    height: 15px;
+  }
+
+  .customer-review-text {
+    margin-top: 14px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .customer-review-author {
+    gap: 12px;
+    padding-top: 18px;
+    padding-left: 0;
+  }
+
+  .customer-review-author-photo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .customer-review-author-name {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .customer-review-author-role {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .customer-reviews-dots {
+    gap: 6px;
+    margin-top: 22px;
+  }
+
+  .customer-reviews-dot {
+    width: 26px;
+    height: 7px;
+  }
+}

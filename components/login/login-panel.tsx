@@ -1,0 +1,309 @@
+"use client";
+
+import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { addPendingProductToCart } from "@/store/cart-store";
+import { rememberLogin, takePageAfterLogin } from "./login-status";
+import styles from "./login-panel.module.css";
+
+/*
+  Login with a mobile number and a 6-digit OTP, in three steps (designs: Log in, Verify OTP, OTP expired):
+    1. "enter-mobile-number"  - type a 10-digit mobile number, then Send OTP
+    2. "verify-otp"           - type the 6-digit code; a countdown shows when a new code can be requested
+    3. "otp-expired"          - the code's time ran out; request a new one or change the number
+  Frontend only for now: no OTP is really sent or checked. The places to connect the real
+  service later are marked with "Connect to the OTP service".
+*/
+
+type LoginStep = "enter-mobile-number" | "verify-otp" | "otp-expired";
+
+const OTP_LENGTH = 6;
+// Seconds a code stays valid. The countdown shows this; when it reaches 00:00 the boxes turn red
+// ("OTP expired") and a new code can be requested.
+const OTP_VALID_SECONDS = 30;
+
+// "9876543210" -> "98765 43210"
+function formatMobileNumber(digits: string) {
+  return digits.length > 5 ? `${digits.slice(0, 5)} ${digits.slice(5)}` : digits;
+}
+
+function formatCountdown(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+/*
+  layout "page"         - the /login page: a centred card on a grey page (desktop and direct visits).
+  layout "bottom-sheet" - inside the phone bottom sheet (login-bottom-sheet.tsx): no grey page, and the
+                         close button calls onClose instead of going to the home page.
+*/
+export default function LoginPanel({
+  layout = "page",
+  onClose,
+}: {
+  layout?: "page" | "bottom-sheet";
+  onClose?: () => void;
+}) {
+  const [loginStep, setLoginStep] = useState<LoginStep>("enter-mobile-number");
+  const [mobileNumberDigits, setMobileNumberDigits] = useState("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [focusedOtpBoxIndex, setFocusedOtpBoxIndex] = useState(0);
+  const [secondsUntilOtpExpires, setSecondsUntilOtpExpires] = useState(OTP_VALID_SECONDS);
+  // Time (in milliseconds) when the current code expires.
+  const otpExpiresAtRef = useRef(0);
+  const otpBoxRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const router = useRouter();
+
+  const isMobileNumberComplete = mobileNumberDigits.length === 10;
+  const isOtpComplete = otpDigits.every((otpDigit) => otpDigit !== "");
+  const fullMobileNumber = `+91 ${formatMobileNumber(mobileNumberDigits)}`;
+
+  // While verifying: count down once per second; when the code's time runs out, show "OTP expired".
+  useEffect(() => {
+    if (loginStep !== "verify-otp") return;
+    const countdownTimer = window.setInterval(() => {
+      const now = Date.now();
+      setSecondsUntilOtpExpires(Math.max(0, Math.ceil((otpExpiresAtRef.current - now) / 1000)));
+      if (now >= otpExpiresAtRef.current) setLoginStep("otp-expired");
+    }, 1000);
+    return () => window.clearInterval(countdownTimer);
+  }, [loginStep]);
+
+  // Put the cursor in the first OTP box when the verify step opens.
+  useEffect(() => {
+    if (loginStep === "verify-otp") otpBoxRefs.current[0]?.focus();
+  }, [loginStep]);
+
+  function sendOtp() {
+    // Connect to the OTP service: send a code to fullMobileNumber by WhatsApp here.
+    setOtpDigits(Array(OTP_LENGTH).fill(""));
+    setFocusedOtpBoxIndex(0);
+    setSecondsUntilOtpExpires(OTP_VALID_SECONDS);
+    otpExpiresAtRef.current = Date.now() + OTP_VALID_SECONDS * 1000;
+    setLoginStep("verify-otp");
+  }
+
+  function verifyOtpAndLogIn() {
+    if (!isOtpComplete) return;
+    // Connect to the OTP service: check otpDigits.join("") for fullMobileNumber and log the user in here.
+    rememberLogin();
+    // Login started from "Add to cart": the product goes into the cart and the visitor stays on the
+    // landing page (the phone sheet just closes; the login page goes back to the landing page).
+    if (addPendingProductToCart()) {
+      if (layout === "bottom-sheet") onClose?.();
+      else router.back();
+      return;
+    }
+    // Login started from the cart icon, profile icon or an account page: open that page
+    // (the cart page when nothing was noted).
+    onClose?.();
+    router.push(takePageAfterLogin() ?? "/cart");
+  }
+
+  function changeMobileNumber() {
+    setLoginStep("enter-mobile-number");
+  }
+
+  function updateOtpDigit(boxIndex: number, typedValue: string) {
+    const typedDigit = typedValue.replace(/\D/g, "").slice(-1);
+    setOtpDigits((digits) => digits.map((digit, index) => (index === boxIndex ? typedDigit : digit)));
+    if (typedDigit && boxIndex < OTP_LENGTH - 1) otpBoxRefs.current[boxIndex + 1]?.focus();
+  }
+
+  function handleOtpBoxKeyDown(boxIndex: number, event: KeyboardEvent<HTMLInputElement>) {
+    // Backspace in an empty box goes back to the previous box.
+    if (event.key === "Backspace" && !otpDigits[boxIndex] && boxIndex > 0) {
+      otpBoxRefs.current[boxIndex - 1]?.focus();
+    }
+  }
+
+  function handleOtpPaste(event: ClipboardEvent<HTMLInputElement>) {
+    const pastedDigits = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    if (!pastedDigits) return;
+    event.preventDefault();
+    setOtpDigits(Array.from({ length: OTP_LENGTH }, (_, index) => pastedDigits[index] ?? ""));
+    otpBoxRefs.current[Math.min(pastedDigits.length, OTP_LENGTH - 1)]?.focus();
+  }
+
+  const closeIcon = (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 5l14 14M19 5 5 19" />
+    </svg>
+  );
+  const closeButton =
+    layout === "bottom-sheet" ? (
+      <button type="button" onClick={onClose} aria-label="Close login" className={styles["login-close-button"]}>
+        {closeIcon}
+      </button>
+    ) : (
+      <Link href="/" aria-label="Close and go back to the home page" className={styles["login-close-button"]}>
+        {closeIcon}
+      </Link>
+    );
+
+  return (
+    <div className={layout === "bottom-sheet" ? undefined : styles["login-page-background"]}>
+      <section
+        className={`${styles["login-card"]} ${layout === "bottom-sheet" ? styles["login-card-in-bottom-sheet"] : ""}`}
+        aria-labelledby="login-card-heading"
+      >
+        {/* The bottom sheet has no close button; tapping the dimmed page above it closes it. */}
+        {layout === "bottom-sheet" ? null : closeButton}
+
+        {loginStep === "enter-mobile-number" && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (isMobileNumberComplete) sendOtp();
+            }}
+          >
+            <h1 id="login-card-heading" className={styles["login-heading"]}>
+              Log in
+            </h1>
+            {/* Phone bottom sheet: compact, like the phone design (no description or field label). */}
+            {layout === "bottom-sheet" ? null : (
+              <>
+                <p className={styles["login-description"]}>
+                  Enter your mobile number. We’ll send you{" "}
+                  <br />
+                  a 6-digit OTP to verify it’s you.
+                </p>
+                <label htmlFor="login-mobile-number" className={styles["login-field-label"]}>
+                  Mobile number
+                </label>
+              </>
+            )}
+            <div className={styles["login-mobile-number-field"]}>
+              <span className={styles["login-country-code"]}>+91</span>
+              <span className={styles["login-country-code-divider"]} aria-hidden="true" />
+              <input
+                id="login-mobile-number"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder={layout === "bottom-sheet" ? "Mobile number" : "98765 43210"}
+                aria-label="Mobile number"
+                value={formatMobileNumber(mobileNumberDigits)}
+                onChange={(event) => setMobileNumberDigits(event.target.value.replace(/\D/g, "").slice(0, 10))}
+                className={styles["login-mobile-number-input"]}
+              />
+            </div>
+            <p className={styles["login-field-hint"]}>OTP will be sent by Whatsapp to this number.</p>
+
+            <button type="submit" disabled={!isMobileNumberComplete} className={styles["login-primary-button"]}>
+              Send OTP
+            </button>
+            <p className={styles["login-footnote"]}>
+              By continuing you agree to our <Link href="#">Terms</Link> and <Link href="#">Privacy Policy</Link>
+            </p>
+          </form>
+        )}
+
+        {loginStep !== "enter-mobile-number" && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (loginStep === "otp-expired") sendOtp();
+              else verifyOtpAndLogIn();
+            }}
+          >
+            <h1 id="login-card-heading" className={styles["login-heading"]}>
+              {loginStep === "otp-expired" ? "OTP expired" : "Verify OTP"}
+            </h1>
+            <p className={styles["login-description"]}>Enter the 6-digit code sent to</p>
+            <p className={styles["login-sent-to-number"]}>
+              <span
+                className={
+                  loginStep === "otp-expired"
+                    ? styles["login-sent-to-number-bold"]
+                    : styles["login-sent-to-number-regular"]
+                }
+              >
+                {fullMobileNumber}
+              </span>
+              {loginStep === "otp-expired" && (
+                <button type="button" onClick={changeMobileNumber} className={styles["login-edit-number-button"]}>
+                  Edit
+                </button>
+              )}
+            </p>
+
+            <div
+              className={`${styles["login-otp-boxes"]} ${
+                loginStep === "otp-expired" ? styles["login-otp-boxes-expired"] : ""
+              }`}
+              role="group"
+              aria-label="6-digit code"
+            >
+              {otpDigits.map((otpDigit, boxIndex) => (
+                <input
+                  key={boxIndex}
+                  ref={(otpBox) => {
+                    otpBoxRefs.current[boxIndex] = otpBox;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={boxIndex === 0 ? "one-time-code" : "off"}
+                  maxLength={1}
+                  aria-label={`Digit ${boxIndex + 1}`}
+                  value={loginStep === "otp-expired" ? "" : otpDigit}
+                  disabled={loginStep === "otp-expired"}
+                  onChange={(event) => updateOtpDigit(boxIndex, event.target.value)}
+                  onKeyDown={(event) => handleOtpBoxKeyDown(boxIndex, event)}
+                  onPaste={handleOtpPaste}
+                  onFocus={() => setFocusedOtpBoxIndex(boxIndex)}
+                  className={`${styles["login-otp-box"]} ${otpDigit ? styles["login-otp-box-filled"] : ""} ${
+                    boxIndex === focusedOtpBoxIndex ? styles["login-otp-box-active"] : ""
+                  }`}
+                />
+              ))}
+            </div>
+
+            {loginStep === "verify-otp" ? (
+              <p className={styles["login-resend-status"]}>
+                <span className={styles["login-resend-spinner"]} aria-hidden="true" />
+                Resend OTP in <strong>{formatCountdown(secondsUntilOtpExpires)}</strong>
+              </p>
+            ) : (
+              <p className={styles["login-error-message"]} role="alert">
+                <span className={styles["login-error-icon"]} aria-hidden="true">
+                  !
+                </span>
+                The code has expired. Request a new one.
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginStep === "verify-otp" && !isOtpComplete}
+              className={styles["login-primary-button"]}
+            >
+              {loginStep === "otp-expired" ? "Resend OTP" : "Verify & log in"}
+            </button>
+
+            {loginStep === "verify-otp" ? (
+              <p className={styles["login-footnote"]}>
+                Entered Wrong Number?{" "}
+                <button type="button" onClick={changeMobileNumber} className={styles["login-footnote-button"]}>
+                  Change It
+                </button>
+              </p>
+            ) : (
+              <p className={styles["login-footnote"]}>
+                <button
+                  type="button"
+                  onClick={changeMobileNumber}
+                  className={`${styles["login-footnote-button"]} ${styles["login-footnote-button-medium"]}`}
+                >
+                  Or try a different number
+                </button>
+              </p>
+            )}
+          </form>
+        )}
+      </section>
+    </div>
+  );
+}

@@ -1,0 +1,283 @@
+/*
+  "Add new address" / "Edit address" pop-up, in the dashboard style:
+  Ubuntu for the heading, labels and buttons; Poppins for typed text; #1E2A22 / #6E7A72 / #2F6B3F,
+  field borders #D9E2D8 (same fields as My Profile).
+  Numbers in calc() are design pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+.address-dialog-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* The dashboard behind, dimmed (same as the "Log out?" box) */
+.address-dialog-dimmed-page {
+  position: absolute;
+  inset: 0;
+  background: rgba(60, 72, 60, 0.32);
+  cursor: default;
+  animation: address-dialog-fade-in 150ms ease-out;
+}
+
+.address-dialog {
+  position: relative;
+  width: 100%;
+  max-width: calc(560 * var(--account-design-pixel));
+  max-height: calc(100svh - 32px);
+  padding: calc(24 * var(--account-design-pixel)) calc(28 * var(--account-design-pixel));
+  overflow-y: auto;
+  border-radius: calc(20 * var(--account-design-pixel));
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(22, 26, 23, 0.18);
+  animation: address-dialog-pop-in 180ms ease-out;
+}
+
+.address-dialog-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.address-dialog-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(20 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.address-dialog-close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(34 * var(--account-design-pixel));
+  height: calc(34 * var(--account-design-pixel));
+  border-radius: 50%;
+  color: #6e7a72;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.address-dialog-close-button:hover,
+.address-dialog-close-button:focus-visible {
+  background: #f2f5f0;
+}
+
+.address-dialog-close-button svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.address-dialog-description {
+  margin-top: calc(2 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+/* Home / Work / Other */
+.address-form-labels {
+  display: flex;
+  gap: calc(8 * var(--account-design-pixel));
+  margin-top: calc(18 * var(--account-design-pixel));
+}
+
+.address-form-label-chip {
+  height: calc(34 * var(--account-design-pixel));
+  padding: 0 calc(18 * var(--account-design-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.address-form-label-chip:hover,
+.address-form-label-chip:focus-visible {
+  background: #f2f5f0;
+}
+
+.address-form-label-chip-selected,
+.address-form-label-chip-selected:hover,
+.address-form-label-chip-selected:focus-visible {
+  border-color: #2f6b3f;
+  background: #2f6b3f;
+  color: #ffffff;
+}
+
+/* Fields: two per row; the street and city rows use the full width */
+.address-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(12 * var(--account-design-pixel)) calc(16 * var(--account-design-pixel));
+  margin-top: calc(16 * var(--account-design-pixel));
+}
+
+.address-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--account-design-pixel));
+  min-width: 0;
+}
+
+.address-form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.address-form-label {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(12 * var(--account-design-pixel));
+  line-height: calc(14 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.address-form-input {
+  width: 100%;
+  height: calc(46 * var(--account-design-pixel));
+  padding: 0 calc(16 * var(--account-design-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: calc(10 * var(--account-design-pixel));
+  background: #ffffff;
+  font: inherit;
+  font-size: calc(14 * var(--account-design-pixel));
+  color: #1e2a22;
+  transition: border-color 150ms ease;
+}
+
+.address-form-input::placeholder {
+  color: #a6a6a6;
+}
+
+.address-form-input:focus {
+  border-color: #2f6b3f;
+  outline: none;
+}
+
+.address-form-input-error,
+.address-form-input-error:focus {
+  border-color: #e03a3a;
+}
+
+/* City is fixed to Bengaluru */
+.address-form-input-locked {
+  background: #f5f7f3;
+  color: #6e7a72;
+  cursor: default;
+}
+
+.address-form-error {
+  font-size: calc(11.5 * var(--account-design-pixel));
+  color: #e03a3a;
+}
+
+.address-form-default-option {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--account-design-pixel));
+  margin-top: calc(16 * var(--account-design-pixel));
+  font-size: calc(13.5 * var(--account-design-pixel));
+  color: #1e2a22;
+  cursor: pointer;
+}
+
+.address-form-default-option input {
+  width: calc(17 * var(--account-design-pixel));
+  height: calc(17 * var(--account-design-pixel));
+  accent-color: #2f6b3f;
+  cursor: pointer;
+}
+
+.address-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(12 * var(--account-design-pixel));
+  margin-top: calc(22 * var(--account-design-pixel));
+}
+
+.address-dialog-cancel-button,
+.address-dialog-save-button {
+  height: calc(42 * var(--account-design-pixel));
+  padding: 0 calc(26 * var(--account-design-pixel));
+  border-radius: 9999px;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.address-dialog-cancel-button {
+  border: 1px solid #d9e2d8;
+  background: #ffffff;
+  color: #1e2a22;
+}
+
+.address-dialog-cancel-button:hover,
+.address-dialog-cancel-button:focus-visible {
+  background: #f2f5f0;
+}
+
+.address-dialog-save-button {
+  border: 1px solid #2f6b3f;
+  background: #2f6b3f;
+  color: #ffffff;
+}
+
+.address-dialog-save-button:hover,
+.address-dialog-save-button:focus-visible {
+  background: #245433;
+}
+
+@keyframes address-dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes address-dialog-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .address-dialog,
+  .address-dialog-dimmed-page {
+    animation: none;
+  }
+}
+
+/* Phones: a little tighter; typed text 16px so phones do not zoom in */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .address-dialog {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
+
+  .address-form-grid {
+    gap: 12px 10px;
+  }
+
+  .address-form-input {
+    height: 44px;
+    padding: 0 12px;
+    font-size: 16px;
+  }
+
+  .address-dialog-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

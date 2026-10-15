@@ -1,0 +1,151 @@
+/*
+  "My Addresses" dashboard page, measured from the design (scaled to the 1440 wide frame).
+  Numbers in calc() are design pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+.address-add-button {
+  font-family: var(--font-ubuntu), sans-serif;
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--account-design-pixel));
+  margin-bottom: calc(8 * var(--account-design-pixel));
+  font-size: calc(16 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+  cursor: pointer;
+}
+
+.address-add-button svg {
+  width: calc(18 * var(--account-design-pixel));
+  height: calc(18 * var(--account-design-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.address-add-button:hover,
+.address-add-button:focus-visible {
+  color: #245433;
+}
+
+.address-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: start;
+  gap: calc(22 * var(--account-design-pixel));
+  margin-top: calc(18 * var(--account-design-pixel));
+}
+
+.address-card {
+  padding: calc(24 * var(--account-design-pixel)) calc(26 * var(--account-design-pixel));
+  border: 1.5px solid transparent;
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #ffffff;
+}
+
+/* The default address: green border, white card */
+.address-card-default {
+  border-color: #2f6b3f;
+}
+
+.address-card-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(28 * var(--account-design-pixel));
+}
+
+.address-label {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+}
+
+/* "Default" badge and "Set as Default" button: same pill size as on My Subscription */
+.address-default-badge,
+.address-switch-button {
+  display: flex;
+  align-items: center;
+  height: calc(32 * var(--account-design-pixel));
+  padding: 0 calc(18 * var(--account-design-pixel));
+  border-radius: 9999px;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 700;
+}
+
+.address-default-badge {
+  background: #e3eedc;
+  color: #2f6b3f;
+}
+
+.address-switch-button {
+  border: 1px solid #d9e2d8;
+  background: #ffffff;
+  color: #1e2a22;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.address-switch-button:hover,
+.address-switch-button:focus-visible {
+  background: #f2f2f2;
+}
+
+.address-name {
+  font-family: var(--font-ubuntu), sans-serif;
+  margin-top: calc(14 * var(--account-design-pixel));
+  font-size: calc(15 * var(--account-design-pixel));
+  font-weight: 700;
+}
+
+.address-line {
+  margin-top: calc(6 * var(--account-design-pixel));
+  font-size: calc(13.5 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.address-actions {
+  display: flex;
+  gap: calc(22 * var(--account-design-pixel));
+  margin-top: calc(14 * var(--account-design-pixel));
+}
+
+.address-action-button {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13.5 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+  cursor: pointer;
+}
+
+.address-action-button:hover,
+.address-action-button:focus-visible {
+  text-decoration: underline;
+}
+
+.address-remove-button {
+  color: #e53935;
+}
+
+.address-empty-message {
+  margin-top: calc(24 * var(--account-design-pixel));
+  font-size: calc(15 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+/* Phone layout (no phone design yet): one address per row, Add new address under the title */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .address-list {
+    grid-template-columns: 1fr;
+  }
+
+  .address-card {
+    padding: 16px 14px;
+  }
+
+  .address-add-button {
+    font-size: 13px;
+  }
+}

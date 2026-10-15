@@ -1,0 +1,338 @@
+/*
+  "My Profile" dashboard page, from the Figma design (1440 wide frame, page content 1076 wide).
+  Numbers in calc() are Figma pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+/* Welcome banner: 1076 x 120, green #2F6B3F, gold ring (#F5B82E at 35%, 22 thick) and softer circles */
+
+.profile-welcome-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(24 * var(--account-design-pixel));
+  min-height: calc(120 * var(--account-design-pixel));
+  margin-top: calc(18 * var(--account-design-pixel));
+  padding: calc(20 * var(--account-design-pixel)) calc(28 * var(--account-design-pixel));
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #2f6b3f;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.profile-welcome-banner-ring {
+  position: absolute;
+  top: calc(-40 * var(--account-design-pixel));
+  left: 57%;
+  width: calc(330 * var(--account-design-pixel));
+  height: calc(330 * var(--account-design-pixel));
+  border: calc(22 * var(--account-design-pixel)) solid rgba(245, 184, 46, 0.35);
+  border-radius: 50%;
+}
+
+.profile-welcome-banner-circle {
+  position: absolute;
+  top: calc(78 * var(--account-design-pixel));
+  left: 39%;
+  width: calc(210 * var(--account-design-pixel));
+  height: calc(210 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: #3b7d4f;
+}
+
+/* A large, lighter green circle at the right end (behind the numbers) */
+.profile-welcome-banner::after {
+  content: "";
+  position: absolute;
+  top: calc(-90 * var(--account-design-pixel));
+  right: calc(-110 * var(--account-design-pixel));
+  width: calc(330 * var(--account-design-pixel));
+  height: calc(330 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.profile-welcome-banner-text,
+.profile-welcome-numbers {
+  position: relative;
+  z-index: 1;
+}
+
+/* "Welcome back, Priya": Ubuntu Bold 24, the name in gold */
+.profile-welcome-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(24 * var(--account-design-pixel));
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.profile-welcome-name {
+  color: #f5b82e;
+}
+
+/* Member line: Poppins Regular 12, #CFE3D2 */
+.profile-welcome-member-details {
+  margin-top: calc(10 * var(--account-design-pixel));
+  font-size: calc(12 * var(--account-design-pixel));
+  color: #cfe3d2;
+}
+
+.profile-welcome-numbers {
+  display: flex;
+}
+
+/* Value above its label, with a thin line between the numbers */
+.profile-welcome-number {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: center;
+  min-height: calc(46 * var(--account-design-pixel));
+  padding: 0 calc(16 * var(--account-design-pixel));
+  border-left: 1px solid rgba(207, 227, 210, 0.35);
+}
+
+.profile-welcome-number:first-child {
+  border-left: none;
+}
+
+.profile-welcome-number:last-child {
+  padding-right: 0;
+}
+
+/* Number: Ubuntu Bold 24, white */
+.profile-welcome-number-value {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(24 * var(--account-design-pixel));
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* Label: Ubuntu Regular 12, #CFE3D2 */
+.profile-welcome-number-label {
+  margin-top: calc(2 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(12 * var(--account-design-pixel));
+  color: #cfe3d2;
+}
+
+/* White cards: personal details (1076 x 360) and notifications (1076 x 236) */
+
+.profile-card {
+  margin-top: calc(20 * var(--account-design-pixel));
+  padding: calc(22 * var(--account-design-pixel)) calc(28 * var(--account-design-pixel)) calc(24 * var(--account-design-pixel));
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #ffffff;
+}
+
+/* Card heading: Ubuntu Bold 16 */
+.profile-card-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(12 * var(--account-design-pixel)) calc(20 * var(--account-design-pixel));
+  margin-top: calc(14 * var(--account-design-pixel));
+}
+
+.profile-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--account-design-pixel));
+}
+
+/* Field label: Ubuntu Regular 12, #6E7A72 */
+.profile-form-label {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(12 * var(--account-design-pixel));
+  line-height: calc(14 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+/* Field box: 498 x 46, white, 1px #D9E2D8 border; typed text Poppins 14 */
+.profile-form-input {
+  width: 100%;
+  height: calc(46 * var(--account-design-pixel));
+  padding: 0 calc(16 * var(--account-design-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: calc(10 * var(--account-design-pixel));
+  background: #ffffff;
+  font: inherit;
+  font-size: calc(14 * var(--account-design-pixel));
+  color: #1e2a22;
+  transition: border-color 150ms ease;
+}
+
+/* Grey example text in empty fields (design values) */
+.profile-form-input::placeholder,
+.profile-form-select-empty {
+  color: #a6a6a6;
+}
+
+/* The choices in an open drop-down stay dark */
+.profile-form-select option {
+  color: #1e2a22;
+}
+
+.profile-form-input:focus {
+  border-color: #2f6b3f;
+  outline: none;
+}
+
+/* Drop-down arrow drawn on the right, like the design */
+.profile-form-select {
+  padding-right: calc(40 * var(--account-design-pixel));
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E7A72' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right calc(16 * var(--account-design-pixel)) center;
+  background-size: calc(18 * var(--account-design-pixel));
+  cursor: pointer;
+}
+
+.profile-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(16 * var(--account-design-pixel));
+  margin-top: calc(14 * var(--account-design-pixel));
+}
+
+.profile-form-saved-message {
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 500;
+  color: #2f6b3f;
+}
+
+/* Save changes: 150 x 42, green #2F6B3F, Ubuntu Bold 14, white */
+.profile-save-button {
+  width: calc(150 * var(--account-design-pixel));
+  height: calc(42 * var(--account-design-pixel));
+  border: 1px solid #2f6b3f;
+  border-radius: 9999px;
+  background: #2f6b3f;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.profile-save-button:hover,
+.profile-save-button:focus-visible {
+  background: #245433;
+}
+
+/* Notification rows with on / off switches */
+
+.profile-notification-list {
+  margin-top: calc(8 * var(--account-design-pixel));
+}
+
+.profile-notification-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(16 * var(--account-design-pixel));
+  padding: calc(10 * var(--account-design-pixel)) 0;
+  border-bottom: 1px solid #e8ece6;
+}
+
+.profile-notification-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Setting name: Ubuntu Bold 14 */
+.profile-notification-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+/* Setting description: Poppins Regular 12, #6E7A72 */
+.profile-notification-description {
+  margin-top: calc(3 * var(--account-design-pixel));
+  font-size: calc(12 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.profile-notification-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: calc(42 * var(--account-design-pixel));
+  height: calc(24 * var(--account-design-pixel));
+  border-radius: 9999px;
+  background: #d9e2d8;
+  cursor: pointer;
+  transition: background-color 200ms ease;
+}
+
+.profile-notification-switch-on {
+  background: #2f6b3f;
+}
+
+.profile-notification-switch-knob {
+  position: absolute;
+  top: calc(3 * var(--account-design-pixel));
+  left: calc(3 * var(--account-design-pixel));
+  width: calc(18 * var(--account-design-pixel));
+  height: calc(18 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 200ms ease;
+}
+
+.profile-notification-switch-on .profile-notification-switch-knob {
+  transform: translateX(calc(18 * var(--account-design-pixel)));
+}
+
+/* Phone layout (no phone design yet): banner numbers under the welcome text, one field per row */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .profile-welcome-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .profile-welcome-heading {
+    font-size: 18px;
+  }
+
+  .profile-welcome-number:first-child {
+    padding-left: 0;
+  }
+
+  .profile-card {
+    padding: 16px 14px;
+  }
+
+  /* Two fields per row on phones too, a little tighter */
+  .profile-form-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 10px;
+  }
+
+  .profile-form-label {
+    font-size: 12px;
+    line-height: 15px;
+  }
+
+  .profile-form-input {
+    height: 42px;
+    padding: 0 10px;
+    font-size: 14px;
+  }
+
+  .profile-form-select {
+    padding-right: 28px;
+    background-position: right 8px center;
+    background-size: 16px;
+  }
+}

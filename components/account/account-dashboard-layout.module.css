@@ -1,0 +1,283 @@
+/*
+  Account dashboard frame, from the Figma design (1440 wide frame):
+    page margins 40 | sidebar 260 x 520 | gap 24 | page content 1076
+  Numbers in calc() are Figma pixels multiplied by --account-design-pixel: window width / 1440, but
+  never more than window height / 720 (both at the zoom the page was loaded with). On wide but short
+  screens the sizes follow the height, so on opening a page its first cards fit on the screen
+  (on My Profile, everything down to "Save changes"); the page content still stretches to the
+  full width. The dashboard pages (components/account/<page>/) use the same unit.
+  Fonts (Figma): Ubuntu for headings, labels and buttons; Poppins for descriptions and typed text.
+  Colours (Figma): dark text #1E2A22, grey text #6E7A72, green #2F6B3F, input border #D9E2D8.
+*/
+
+.account-page {
+  --landing-page-horizontal-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440);
+  --landing-page-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
+  --account-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 720
+  );
+
+  min-height: 100svh;
+  padding-bottom: calc(48 * var(--account-design-pixel));
+  background: #f0f4ec;
+  font-family: var(--font-poppins), sans-serif;
+  color: #1e2a22;
+}
+
+/* Navigation bar: 27 from the top (as on the landing page), 40 from the sides like the dashboard (Figma) */
+.account-page-navigation {
+  padding: calc(27 * var(--landing-page-vertical-design-pixel)) calc(40 * var(--account-design-pixel)) 0;
+}
+
+/* Sidebar on the left, the open page on the right */
+.account-page-body {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(24 * var(--account-design-pixel));
+  margin-top: calc(24 * var(--account-design-pixel));
+  padding: 0 calc(40 * var(--account-design-pixel));
+}
+
+/* Sidebar card: 260 x 520, white */
+
+.account-sidebar {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  width: calc(260 * var(--account-design-pixel));
+  min-height: calc(520 * var(--account-design-pixel));
+  padding: calc(18 * var(--account-design-pixel)) calc(16 * var(--account-design-pixel));
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #ffffff;
+}
+
+.account-sidebar-greeting {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--account-design-pixel));
+  padding: 0 calc(2 * var(--account-design-pixel)) calc(16 * var(--account-design-pixel));
+  border-bottom: 1px solid #e8ece6;
+}
+
+.account-sidebar-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(44 * var(--account-design-pixel));
+  height: calc(44 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: #2f6b3f;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.account-sidebar-greeting-text {
+  display: block;
+  font-size: calc(11 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.account-sidebar-name {
+  display: block;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+/* Page buttons: 228 x 44 each, one under the other */
+.account-sidebar-links {
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(14 * var(--account-design-pixel));
+}
+
+.account-sidebar-link,
+.account-sidebar-logout-button {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--account-design-pixel));
+  height: calc(44 * var(--account-design-pixel));
+  padding: 0 calc(16 * var(--account-design-pixel));
+  border-radius: calc(10 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 400;
+  color: #1e2a22;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.account-sidebar-link:hover,
+.account-sidebar-link:focus-visible {
+  background: #eef4ea;
+}
+
+/* The open page: green #2F6B3F, white Ubuntu Bold 14 */
+.account-sidebar-link-current,
+.account-sidebar-link-current:hover,
+.account-sidebar-link-current:focus-visible {
+  background: #2f6b3f;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Yellow count badge on the right of "Orders" (active orders) */
+.account-sidebar-link-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(20 * var(--account-design-pixel));
+  height: calc(20 * var(--account-design-pixel));
+  margin-left: auto;
+  padding: 0 calc(5 * var(--account-design-pixel));
+  border-radius: 9999px;
+  background: #f5b82e;
+  font-size: calc(11 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.account-sidebar-link-icon {
+  flex-shrink: 0;
+  width: calc(18 * var(--account-design-pixel));
+  height: calc(18 * var(--account-design-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Logout near the bottom of the card, in red */
+.account-sidebar-logout-button {
+  margin-top: auto;
+  font-weight: 700;
+  color: #e03a3a;
+  cursor: pointer;
+}
+
+.account-sidebar-logout-button:hover,
+.account-sidebar-logout-button:focus-visible,
+.account-sidebar-logout-button-active {
+  background: #fdecea;
+}
+
+.account-page-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Page title row (shared by every dashboard page) */
+
+.account-page-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: calc(16 * var(--account-design-pixel));
+}
+
+/* Title: Ubuntu Bold 26, #1E2A22 */
+.account-page-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(26 * var(--account-design-pixel));
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1e2a22;
+}
+
+/* Description: Poppins Regular 13, #6E7A72 */
+.account-page-description {
+  margin-top: calc(6 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+/*
+  Phone layout (no phone design yet): the sidebar becomes a row of page buttons that scrolls sideways
+  above the open page, with Logout at its end.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  /*
+    Phone: the Figma sizes at 92%, so text stays readable (labels 11, descriptions 11–12,
+    card headings about 15) with the same fonts and colours as desktop.
+  */
+  .account-page {
+    --account-design-pixel: 0.92px;
+  }
+
+  .account-page-navigation {
+    padding: 12px 12px 0;
+  }
+
+  .account-page-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    margin-top: 16px;
+    padding: 0 16px;
+  }
+
+  .account-sidebar {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    min-height: 0;
+    padding: 8px;
+    border-radius: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .account-sidebar-greeting {
+    display: none;
+  }
+
+  .account-sidebar-links {
+    flex-direction: row;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .account-sidebar-link,
+  .account-sidebar-logout-button {
+    flex-shrink: 0;
+    gap: 7px;
+    height: 36px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  .account-sidebar-link-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .account-sidebar-logout-button {
+    margin-top: 0;
+  }
+
+  /* Buttons next to the title (Offers filters, Add new address) move under it when there is no room */
+  .account-page-heading-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .account-page-title {
+    font-size: 22px;
+  }
+
+  .account-page-description {
+    font-size: 13px;
+  }
+}

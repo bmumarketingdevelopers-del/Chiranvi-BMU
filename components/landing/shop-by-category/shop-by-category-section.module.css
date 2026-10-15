@@ -1,0 +1,197 @@
+/*
+  Shop By Category, measured from the design against the same 1440 x 916 frame as the hero
+  (circles enlarged from the design's 114 to 170, and the gap between them from 26 to 44, on request).
+  Numbers in calc() are design pixels multiplied by --shop-by-category-design-pixel, which uses the
+  same zoom-aware formula as the hero and the purity promises (set by the script in app/page.tsx).
+*/
+
+.shop-by-category-section {
+  --shop-by-category-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+
+  padding: calc(39 * var(--shop-by-category-design-pixel)) 16px calc(64 * var(--shop-by-category-design-pixel));
+  background: #ffffff;
+}
+
+/* Heading with a line and a short dash on each side: "—— ▬ Shop By Category ▬ ——" */
+
+.shop-by-category-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(17 * var(--shop-by-category-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(36 * var(--shop-by-category-design-pixel));
+  font-weight: 500;
+  line-height: calc(44 * var(--shop-by-category-design-pixel));
+  color: #1a1a1a;
+}
+
+/* The long line, drawn as the element itself; the short dash is its ::after. */
+.shop-by-category-heading-decoration {
+  position: relative;
+  width: calc(38 * var(--shop-by-category-design-pixel));
+  height: calc(3 * var(--shop-by-category-design-pixel));
+  margin-right: calc(20 * var(--shop-by-category-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+}
+
+.shop-by-category-heading-decoration::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 7 * var(--shop-by-category-design-pixel));
+  width: calc(13 * var(--shop-by-category-design-pixel));
+  height: calc(7 * var(--shop-by-category-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+  transform: translateY(-50%);
+}
+
+/* Right side is the mirror image: dash first (next to the text), then the line. */
+.shop-by-category-heading-decoration-right {
+  margin-right: 0;
+  margin-left: calc(20 * var(--shop-by-category-design-pixel));
+}
+
+.shop-by-category-heading-decoration-right::after {
+  left: auto;
+  right: calc(100% + 7 * var(--shop-by-category-design-pixel));
+}
+
+/* Six round categories in one centred row */
+
+.shop-by-category-list {
+  display: flex;
+  justify-content: center;
+  gap: calc(44 * var(--shop-by-category-design-pixel));
+  margin-top: calc(36 * var(--shop-by-category-design-pixel));
+}
+
+.shop-by-category-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(9 * var(--shop-by-category-design-pixel));
+}
+
+.shop-by-category-image-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(170 * var(--shop-by-category-design-pixel));
+  height: calc(170 * var(--shop-by-category-design-pixel));
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fbfbfb 0%, #eaf2e2 100%);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+/* The product fits inside the circle with a little room around it, as in the design. */
+.shop-by-category-image {
+  width: 96%;
+  height: 82%;
+  object-fit: contain;
+  transition: transform 300ms ease;
+}
+
+.shop-by-category-link:hover .shop-by-category-image-circle,
+.shop-by-category-link:focus-visible .shop-by-category-image-circle {
+  border-color: #285c3a;
+  box-shadow: 0 6px 18px rgba(40, 92, 58, 0.15);
+}
+
+.shop-by-category-link:hover .shop-by-category-image,
+.shop-by-category-link:focus-visible .shop-by-category-image {
+  transform: scale(1.06);
+}
+
+.shop-by-category-name {
+  font-size: calc(18.5 * var(--shop-by-category-design-pixel));
+  font-weight: 600;
+  line-height: calc(24 * var(--shop-by-category-design-pixel));
+  color: #000000;
+}
+
+/*
+  Scroll reveal (states set by the component): the heading and all six categories move as one piece.
+    waiting  - before it scrolls into view: hidden, slightly lower
+    revealed - fades and slides up into place together
+*/
+
+.shop-by-category-section-waiting .shop-by-category-heading,
+.shop-by-category-section-waiting .shop-by-category-list {
+  opacity: 0;
+  transform: translateY(calc(40 * var(--shop-by-category-design-pixel)));
+}
+
+.shop-by-category-section-revealed .shop-by-category-heading,
+.shop-by-category-section-revealed .shop-by-category-list {
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+  Mobile layout (chosen by the script in app/page.tsx): three categories per row, two rows.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .shop-by-category-section {
+    padding: 28px 16px 36px;
+  }
+
+  .shop-by-category-heading {
+    gap: 10px;
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .shop-by-category-heading-decoration {
+    width: 22px;
+    height: 2px;
+    margin-right: 14px;
+  }
+
+  .shop-by-category-heading-decoration::after {
+    left: calc(100% + 5px);
+    width: 9px;
+    height: 5px;
+  }
+
+  .shop-by-category-heading-decoration-right {
+    margin-right: 0;
+    margin-left: 14px;
+  }
+
+  .shop-by-category-heading-decoration-right::after {
+    left: auto;
+    right: calc(100% + 5px);
+  }
+
+  .shop-by-category-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 12px;
+    margin-top: 22px;
+  }
+
+  .shop-by-category-link {
+    gap: 6px;
+  }
+
+  .shop-by-category-image-circle {
+    width: min(110px, 28vw);
+    height: min(110px, 28vw);
+  }
+
+  .shop-by-category-name {
+    font-size: 15px;
+    line-height: 20px;
+  }
+}

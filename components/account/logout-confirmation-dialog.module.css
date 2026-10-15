@@ -1,0 +1,132 @@
+/*
+  "Log out?" box, measured from the design (scaled to the 1440 wide frame).
+  Numbers in calc() are design pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+.logout-dialog-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* The dashboard behind, dimmed with a soft grey-green */
+.logout-dialog-dimmed-page {
+  position: absolute;
+  inset: 0;
+  background: rgba(60, 72, 60, 0.32);
+  cursor: default;
+  animation: logout-dialog-fade-in 150ms ease-out;
+}
+
+.logout-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: calc(396 * var(--account-design-pixel));
+  padding: calc(26 * var(--account-design-pixel)) calc(28 * var(--account-design-pixel));
+  border-radius: calc(20 * var(--account-design-pixel));
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(22, 26, 23, 0.18);
+  text-align: center;
+  animation: logout-dialog-pop-in 180ms ease-out;
+}
+
+.logout-dialog-icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(66 * var(--account-design-pixel));
+  height: calc(66 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: #fde4e4;
+  color: #d64545;
+}
+
+.logout-dialog-icon-circle svg {
+  width: 45%;
+  height: 45%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.logout-dialog-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  margin-top: calc(14 * var(--account-design-pixel));
+  font-size: calc(19 * var(--account-design-pixel));
+  font-weight: 700;
+}
+
+.logout-dialog-description {
+  margin-top: calc(4 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.logout-dialog-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(14 * var(--account-design-pixel));
+  width: 100%;
+  margin-top: calc(22 * var(--account-design-pixel));
+}
+
+.logout-dialog-cancel-button,
+.logout-dialog-confirm-button {
+  font-family: var(--font-ubuntu), sans-serif;
+  height: calc(48 * var(--account-design-pixel));
+  border-radius: 9999px;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.logout-dialog-cancel-button {
+  border: 1px solid #d9e2d8;
+  background: #ffffff;
+  color: #1e2a22;
+}
+
+.logout-dialog-cancel-button:hover,
+.logout-dialog-cancel-button:focus-visible {
+  background: #f2f2f2;
+}
+
+.logout-dialog-confirm-button {
+  background: #d64545;
+  color: #ffffff;
+}
+
+.logout-dialog-confirm-button:hover,
+.logout-dialog-confirm-button:focus-visible {
+  background: #bf3434;
+}
+
+@keyframes logout-dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes logout-dialog-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logout-dialog,
+  .logout-dialog-dimmed-page {
+    animation: none;
+  }
+}

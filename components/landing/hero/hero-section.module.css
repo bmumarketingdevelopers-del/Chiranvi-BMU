@@ -1,0 +1,499 @@
+/*
+  The hero is built from the 1440 x 916 Figma frame ("Frame 4") and fills the screen at the zoom
+  the page was loaded with; browser zoom then makes it bigger or smaller like a normal website.
+  Numbers in calc() are Figma pixels, multiplied by one of three units:
+
+    --landing-page-horizontal-design-pixel  screen width / 1440  -> outer left / right margins
+    --landing-page-vertical-design-pixel    screen height / 916 (at least the size unit) -> top / bottom positions
+    --landing-page-design-pixel             fit at the starting zoom -> sizes (text, jar, ring, buttons)
+
+  Sizes and gaps keep the same proportions to the screen height as in Figma, and nothing runs off
+  the side. On a 1440 x 916 screen every value is exactly the Figma value.
+*/
+
+.landing-hero-section {
+  container-type: inline-size;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e5f0dc 0%, #fefefe 100%);
+}
+
+.landing-hero-canvas {
+  /*
+    Window size at the zoom the page was loaded with, set by the script in page.tsx.
+    Sizes are based on these instead of the current window, so they stay the same in CSS pixels
+    and the design grows when zooming in and shrinks when zooming out.
+    Without the script they fall back to the current window size.
+  */
+  --landing-hero-starting-width: var(--landing-viewport-width-at-starting-zoom, 100cqw);
+  --landing-hero-starting-height: var(--landing-viewport-height-at-starting-zoom, 100svh);
+
+  --landing-page-horizontal-design-pixel: calc(100cqw / 1440);
+  /* Sizes: the design fits one screen at the starting zoom. */
+  --landing-page-design-pixel: min(
+    var(--landing-hero-starting-width) / 1440,
+    var(--landing-hero-starting-height) / 916
+  );
+  /*
+    Top / bottom positions spread over the screen height, but never less than the size unit,
+    so when zoomed in the hero becomes taller than the screen (scroll) instead of overlapping.
+  */
+  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
+  /*
+    Text unit for the heading, description and button: up to 10% larger than the size unit
+    on screens wide enough for it, but exactly the Figma size on a 1440 x 916 screen.
+  */
+  --landing-hero-text-design-pixel: min(
+    var(--landing-hero-starting-width) / 1440,
+    1.1 * var(--landing-hero-starting-height) / 916
+  );
+  /*
+    On screens wider than the Figma there is extra width left over.
+    It is shared: 1/4 to the left margin, 1/4 to the gold ring (it grows wider toward the heading), the rest to the gap
+    and 1/4 to the green panel's width.
+  */
+  --landing-hero-extra-screen-width: calc(100cqw - 1440 * var(--landing-page-design-pixel));
+  /* Left edge of the green panel (1037 from the left in Figma). */
+  --landing-hero-green-panel-left-edge: calc(
+    1037 * var(--landing-page-design-pixel) + var(--landing-hero-extra-screen-width) * 3 / 4
+  );
+
+  position: relative;
+  /* Fills the screen; taller than the screen (scroll) when zoomed in. */
+  height: max(100svh, 916 * var(--landing-page-design-pixel));
+}
+
+/* Background shapes */
+
+.landing-hero-green-panel {
+  position: absolute;
+  left: var(--landing-hero-green-panel-left-edge);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: #285c3a;
+}
+
+/*
+  Ring centre in Figma: 322 to the right of the green panel's left edge, 500 from the top.
+  Outer radius 640 (box 1280 wide), ring thickness 135. On wider screens the outer edge grows toward the heading by 1/4 of the extra width; the inner edge stays fixed so it stays hidden behind the jar, as in Figma.
+*/
+.landing-hero-gold-ring {
+  position: absolute;
+  left: calc(
+    var(--landing-hero-green-panel-left-edge) - 318 * var(--landing-page-design-pixel) -
+      var(--landing-hero-extra-screen-width) / 4
+  );
+  top: calc(
+    500 * var(--landing-page-vertical-design-pixel) - 640 * var(--landing-page-design-pixel) -
+      var(--landing-hero-extra-screen-width) / 4
+  );
+  width: calc(1280 * var(--landing-page-design-pixel) + var(--landing-hero-extra-screen-width) / 2);
+  height: calc(1280 * var(--landing-page-design-pixel) + var(--landing-hero-extra-screen-width) / 2);
+  border: calc(135 * var(--landing-page-design-pixel) + var(--landing-hero-extra-screen-width) / 4) solid #d6aa55;
+  border-radius: 50%;
+}
+
+/*
+  Navigation bar placement: sticky over the whole landing page.
+  The holder sits just before the hero, is 0 tall and sticks to the top of the screen; the bar
+  hangs from it at the Figma position (47 from the sides, 27 from the top), above every section.
+  The holder is a size container, so 100cqw is the page width, as inside the hero.
+*/
+
+.landing-hero-sticky-navigation {
+  position: sticky;
+  z-index: 50;
+  top: 0;
+  height: 0;
+  container-type: inline-size;
+}
+
+.landing-hero-navigation-bar-position {
+  /* The hero's units (see .landing-hero-canvas), repeated here because the bar is outside the hero. */
+  --landing-page-horizontal-design-pixel: calc(100cqw / 1440);
+  --landing-page-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100cqw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
+
+  position: absolute;
+  z-index: 3;
+  left: calc(47 * var(--landing-page-horizontal-design-pixel));
+  right: calc(47 * var(--landing-page-horizontal-design-pixel));
+  top: calc(27 * var(--landing-page-vertical-design-pixel));
+}
+
+/* Left text column (sizes use the text unit; total height 419, centred 489.5 from the top as in Figma) */
+
+.landing-hero-text-column {
+  position: absolute;
+  z-index: 2;
+  left: calc(
+    98 * var(--landing-page-design-pixel) + var(--landing-hero-extra-screen-width) / 4
+  );
+  top: calc(
+    489.5 * var(--landing-page-vertical-design-pixel) - 209.5 * var(--landing-hero-text-design-pixel)
+  );
+}
+
+.landing-hero-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(51 * var(--landing-hero-text-design-pixel));
+  font-weight: 700;
+  line-height: calc(67 * var(--landing-hero-text-design-pixel));
+  color: #3a3b3c;
+}
+
+.landing-hero-heading-highlighted-word {
+  /* Green while the ghee jar is shown (also when animations are turned off) */
+  color: #00571e;
+  /* Changes colour in step with the product swap (keyframes below the product showcase). */
+  animation: landing-hero-highlighted-word-colour-swap 6s linear infinite;
+  /* Same starting point as the ghee jar's animation. */
+  animation-delay: -1.5s;
+}
+
+.landing-hero-description {
+  margin-top: calc(17 * var(--landing-hero-text-design-pixel));
+  margin-left: calc(4 * var(--landing-hero-text-design-pixel));
+  font-size: calc(18 * var(--landing-hero-text-design-pixel));
+  font-weight: 500;
+  line-height: calc(31 * var(--landing-hero-text-design-pixel));
+  color: #484646;
+}
+
+.landing-hero-order-now-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(221 * var(--landing-hero-text-design-pixel));
+  height: calc(72 * var(--landing-hero-text-design-pixel));
+  margin-top: calc(36 * var(--landing-hero-text-design-pixel));
+  margin-left: calc(1 * var(--landing-hero-text-design-pixel));
+  border-radius: calc(36 * var(--landing-hero-text-design-pixel));
+  background: #285c3a;
+  color: #ffffff;
+  font-size: calc(22 * var(--landing-hero-text-design-pixel));
+  font-weight: 600;
+  transition: background-color 150ms ease;
+}
+
+.landing-hero-order-now-button:hover,
+.landing-hero-order-now-button:focus-visible {
+  background: #1f4a2e;
+}
+
+/*
+  Product showcase: 460 x 665 box (the ghee jar's size, enlarged from Figma 381 x 551),
+  centre 9 left of the green panel edge and 478.5 from the top.
+  The ghee jar and the milk bottle take turns in this box (see the product swap animation below).
+*/
+
+.landing-hero-product-showcase {
+  position: absolute;
+  /* Below the text column (z-index 2), so a falling product never covers the text. */
+  z-index: 1;
+  left: calc(var(--landing-hero-green-panel-left-edge) - 239 * var(--landing-page-design-pixel));
+  top: calc(
+    478.5 * var(--landing-page-vertical-design-pixel) - 332.5 * var(--landing-page-design-pixel)
+  );
+  width: calc(460 * var(--landing-page-design-pixel));
+  height: calc(665 * var(--landing-page-design-pixel));
+}
+
+.landing-hero-product-image {
+  position: absolute;
+  /* Pivot on the bottom-left corner, so the product tips over like a real bottle losing balance. */
+  transform-origin: 15% 92%;
+  animation: landing-hero-product-swap 6s infinite;
+  will-change: transform;
+}
+
+.landing-hero-ghee-jar-image {
+  inset: 0;
+  width: 100%;
+  height: auto;
+  /* Starts at 25% of the cycle, so the page opens with the ghee jar standing. */
+  animation-delay: -1.5s;
+}
+
+/*
+  680 tall (as large as fits below the navigation bar), standing on the same line as the jar.
+  Moved 60 left of the jar's centre so the bottle covers the ring's inner edge, like the jar does.
+*/
+.landing-hero-milk-bottle-image {
+  top: calc(-29 * var(--landing-page-design-pixel));
+  left: calc(50% - 234.5 * var(--landing-page-design-pixel));
+  width: auto;
+  height: calc(680 * var(--landing-page-design-pixel));
+  /* Half a cycle after the ghee jar: it starts rising when the jar is halfway through its fall. */
+  animation-delay: -4.5s;
+}
+
+/*
+  Tip-over swap, close to where the product stands. No fading.
+  One 6 second cycle (a product swap every 3 seconds):
+    0-25%   rises from just below, tilted, and gently straightens as it settles (1.5s)
+    25-42%  standing (1s)
+    42-58%  tips over to the left on its bottom corner and falls out of view in one smooth,
+            speeding-up movement (1s); 50% is the middle of the fall
+    58-100% waits out of view below the hero
+  The other product runs half a cycle later, so it starts rising at the middle of this fall.
+*/
+@keyframes landing-hero-product-swap {
+  0% {
+    transform: translate(10%, 130%) rotate(22deg);
+    animation-timing-function: cubic-bezier(0.3, 0.3, 0.3, 1);
+  }
+  25%,
+  42% {
+    transform: translate(0, 0) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.5);
+  }
+  58% {
+    transform: translate(-12%, 175%) rotate(-70deg);
+    animation-timing-function: step-end;
+  }
+  100% {
+    transform: translate(10%, 130%) rotate(22deg);
+  }
+}
+
+/*
+  "PURITY." is green while the ghee jar stands and the logo's cow yellow while the milk bottle
+  stands, changing gradually during the swaps. Percentages match the ghee jar's cycle.
+*/
+@keyframes landing-hero-highlighted-word-colour-swap {
+  0%,
+  100% {
+    /* About a quarter of the way from cow yellow back to green (keeps the fade smooth). */
+    color: #b8a628;
+  }
+  25%,
+  42% {
+    /* Green, while the ghee jar is shown */
+    color: #00571e;
+  }
+  75%,
+  92% {
+    /* Cow yellow from the Chiranvi Farms logo, while the milk bottle is shown */
+    color: #f2bf2b;
+  }
+}
+
+/* Visitors who turn off motion in their system settings see only the ghee jar, without animation. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-product-image,
+  .landing-hero-heading-highlighted-word {
+    animation: none;
+  }
+
+  .landing-hero-milk-bottle-image {
+    display: none;
+  }
+}
+
+/* "5K+ Orders" summary: 258 x 44, 75 right of the panel edge, 48 above the bottom */
+
+.satisfied-customers-summary {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--landing-hero-green-panel-left-edge) + 75 * var(--landing-page-design-pixel));
+  bottom: calc(48 * var(--landing-page-vertical-design-pixel));
+  display: flex;
+  align-items: center;
+  gap: calc(13 * var(--landing-page-design-pixel));
+}
+
+.satisfied-customers-photo-stack {
+  display: flex;
+}
+
+.satisfied-customer-photo {
+  width: calc(42 * var(--landing-page-design-pixel));
+  height: calc(42 * var(--landing-page-design-pixel));
+  border: calc(2.5 * var(--landing-page-design-pixel)) solid #ffffff;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.satisfied-customer-photo + .satisfied-customer-photo {
+  margin-left: calc(-20 * var(--landing-page-design-pixel));
+}
+
+.satisfied-customers-order-count {
+  font-size: calc(19 * var(--landing-page-design-pixel));
+  font-weight: 600;
+  line-height: calc(24 * var(--landing-page-design-pixel));
+  color: #ffffff;
+}
+
+.satisfied-customers-caption {
+  font-size: calc(14 * var(--landing-page-design-pixel));
+  font-weight: 500;
+  line-height: calc(20 * var(--landing-page-design-pixel));
+  color: #a4a4a4;
+}
+
+/* Mobile-only logo and the product group wrapper (no box of its own on desktop) */
+
+.landing-hero-mobile-logo-link {
+  display: none;
+}
+
+.landing-hero-product-stage {
+  display: contents;
+}
+
+/*
+  Mobile layout, chosen by the script in page.tsx (its <style data-landing-layout="mobile"> tag): phones and
+  upright tablets (screens taller than wide), and desktops zoomed in so far that the desktop design no longer fits the width.
+  Layout from top to bottom: logo, product animation block, heading, description, button.
+  The navigation bar is fixed to the bottom of the screen (see components/navigation/site-navigation-bar.module.css).
+
+  Mobile sizes use --landing-hero-mobile-design-pixel: window width at the starting zoom / 430 (a 430px wide
+  phone design), limited by window height so upright tablets don't get oversized, but never below 0.8px.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .landing-hero-section {
+    /* Normal flow here, so the fixed bottom bar is fixed to the screen, not to this section. */
+    container-type: normal;
+  }
+
+  .landing-hero-canvas {
+    /*
+      The max() keeps text at least as big as in the desktop layout (heading 51 desktop vs 31 here),
+      so zooming a desktop into the mobile layout never makes the text jump smaller.
+      On real phones and tablets the first value is the larger one.
+    */
+    --landing-hero-mobile-design-pixel: max(
+      min(
+        var(--landing-viewport-width-at-starting-zoom, 100vw) / 430,
+        max(var(--landing-viewport-height-at-starting-zoom, 100svh) / 932, 0.8px)
+      ),
+      51 / 31 * var(--landing-hero-text-design-pixel)
+    );
+
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+
+  /* The phone navigation bar at the top already shows the logo, so this separate logo stays hidden. */
+  .landing-hero-mobile-logo-link {
+    display: none;
+  }
+
+  .landing-hero-mobile-logo-image {
+    width: auto;
+    height: calc(40 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  /*
+    Product block, 530 tall. The desktop rules for the ring, green panel and products are reused:
+    only their units change here. Products are drawn at 0.54 of the mobile unit, and the block's
+    vertical centre takes the place of the desktop hero's.
+  */
+  .landing-hero-product-stage {
+    --landing-page-design-pixel: calc(0.54 * var(--landing-hero-mobile-design-pixel));
+    --landing-page-vertical-design-pixel: calc(530 * var(--landing-hero-mobile-design-pixel) / 978);
+    --landing-hero-extra-screen-width: 0px;
+    --landing-hero-green-panel-left-edge: calc(50% + 9 * var(--landing-page-design-pixel));
+
+    display: block;
+    position: relative;
+    flex-shrink: 0;
+    height: calc(530 * var(--landing-hero-mobile-design-pixel));
+    /* Hides the products while they are below the block, and the ring outside it. */
+    overflow: hidden;
+  }
+
+  /*
+    Milk bottle on mobile: centred (only 15 left of centre instead of 60) and 700 tall (same bottom
+    line), so it looks centred, covers the ring's inner edge, and its cap stays below the navigation bar.
+  */
+  /* Products 30 lower than the block's centre, so the bottle cap clears the navigation bar. */
+  .landing-hero-product-showcase {
+    top: calc(
+      478.5 * var(--landing-page-vertical-design-pixel) - 332.5 * var(--landing-page-design-pixel) +
+        30 * var(--landing-hero-mobile-design-pixel)
+    );
+  }
+
+  .landing-hero-milk-bottle-image {
+    top: calc(-49 * var(--landing-page-design-pixel));
+    left: calc(50% - 195 * var(--landing-page-design-pixel));
+    height: calc(700 * var(--landing-page-design-pixel));
+  }
+
+  /* Phone navigation bar: across the top of the hero, over the product block (as on desktop). */
+  .landing-hero-navigation-bar-position {
+    position: absolute;
+    z-index: 5;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .satisfied-customers-summary {
+    left: auto;
+    right: calc(14 * var(--landing-hero-mobile-design-pixel));
+    bottom: calc(16 * var(--landing-hero-mobile-design-pixel));
+    gap: calc(8 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  .satisfied-customer-photo {
+    width: calc(32 * var(--landing-hero-mobile-design-pixel));
+    height: calc(32 * var(--landing-hero-mobile-design-pixel));
+    border-width: calc(2 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  .satisfied-customer-photo + .satisfied-customer-photo {
+    margin-left: calc(-14 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  .satisfied-customers-order-count {
+    font-size: calc(14 * var(--landing-hero-mobile-design-pixel));
+    line-height: calc(17 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  .satisfied-customers-caption {
+    font-size: calc(11 * var(--landing-hero-mobile-design-pixel));
+    line-height: calc(14 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  /* Text block below the products */
+
+  .landing-hero-text-column {
+    position: static;
+    padding: calc(14 * var(--landing-hero-mobile-design-pixel)) calc(22 * var(--landing-hero-mobile-design-pixel))
+      calc(22 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  .landing-hero-heading {
+    font-size: calc(31 * var(--landing-hero-mobile-design-pixel));
+    line-height: calc(41 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  .landing-hero-description {
+    margin-top: calc(12 * var(--landing-hero-mobile-design-pixel));
+    margin-left: 0;
+    font-size: calc(14.5 * var(--landing-hero-mobile-design-pixel));
+    line-height: calc(24 * var(--landing-hero-mobile-design-pixel));
+  }
+
+  /* The desktop line breaks don't fit narrow screens; let the description wrap naturally. */
+  .landing-hero-description br {
+    display: none;
+  }
+
+  .landing-hero-order-now-button {
+    width: calc(190 * var(--landing-hero-mobile-design-pixel));
+    height: calc(56 * var(--landing-hero-mobile-design-pixel));
+    margin-top: calc(24 * var(--landing-hero-mobile-design-pixel));
+    margin-left: 0;
+    border-radius: calc(28 * var(--landing-hero-mobile-design-pixel));
+    font-size: calc(18 * var(--landing-hero-mobile-design-pixel));
+  }
+}

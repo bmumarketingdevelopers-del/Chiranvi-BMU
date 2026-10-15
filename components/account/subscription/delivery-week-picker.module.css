@@ -1,0 +1,144 @@
+/*
+  Week picker under the delivery calendar's week button, in the dashboard style
+  (Ubuntu headings, Poppins numbers, #1E2A22 / #6E7A72 / #2F6B3F).
+  Numbers in calc() are design pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+.week-picker {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8 * var(--account-design-pixel));
+  left: 50%;
+  width: calc(300 * var(--account-design-pixel));
+  padding: calc(14 * var(--account-design-pixel));
+  border: 1px solid #e8ece6;
+  border-radius: calc(14 * var(--account-design-pixel));
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(22, 26, 23, 0.16);
+  transform: translateX(-50%);
+  animation: week-picker-open 150ms ease-out;
+}
+
+.week-picker-month-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.week-picker-month-name {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.week-picker-month-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(30 * var(--account-design-pixel));
+  height: calc(30 * var(--account-design-pixel));
+  border-radius: 50%;
+  color: #1e2a22;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.week-picker-month-arrow:hover,
+.week-picker-month-arrow:focus-visible {
+  background: #eef4ea;
+}
+
+.week-picker-month-arrow svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* M T W T F S S, and each week row: seven equal columns */
+.week-picker-weekday-row,
+.week-picker-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.week-picker-weekday-row {
+  margin-top: calc(10 * var(--account-design-pixel));
+  padding: 0 calc(4 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(11 * var(--account-design-pixel));
+  font-weight: 700;
+  text-align: center;
+  color: #6e7a72;
+}
+
+.week-picker-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--account-design-pixel));
+  margin-top: calc(6 * var(--account-design-pixel));
+}
+
+/* A whole week is one button: it highlights as a row */
+.week-picker-week {
+  width: 100%;
+  padding: calc(3 * var(--account-design-pixel)) calc(4 * var(--account-design-pixel));
+  border-radius: calc(8 * var(--account-design-pixel));
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.week-picker-week:hover,
+.week-picker-week:focus-visible {
+  background: #eef4ea;
+}
+
+.week-picker-week-selected,
+.week-picker-week-selected:hover,
+.week-picker-week-selected:focus-visible {
+  background: #2f6b3f;
+}
+
+.week-picker-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(28 * var(--account-design-pixel));
+  border-radius: 50%;
+  font-size: calc(12.5 * var(--account-design-pixel));
+  color: #1e2a22;
+}
+
+.week-picker-day-other-month {
+  color: #b3bcb4;
+}
+
+.week-picker-day-today {
+  box-shadow: inset 0 0 0 1.5px #f5b82e;
+  font-weight: 700;
+}
+
+.week-picker-week-selected .week-picker-day {
+  color: #ffffff;
+}
+
+.week-picker-week-selected .week-picker-day-other-month {
+  color: #cfe3d2;
+}
+
+@keyframes week-picker-open {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .week-picker {
+    animation: none;
+  }
+}
