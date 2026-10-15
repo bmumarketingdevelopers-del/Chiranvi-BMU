@@ -4,6 +4,7 @@ import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-la
 import HeroSection from "@/components/landing/hero/hero-section";
 import PurityPromisesSection from "@/components/landing/purity-promises/purity-promises-section";
 import ShopByCategorySection from "@/components/landing/shop-by-category/shop-by-category-section";
+import FreeDeliveryOfferSection from "@/components/landing/free-delivery-offer/free-delivery-offer-section";
 import BestSellersSection from "@/components/landing/best-sellers/best-sellers-section";
 import CustomerReviewsSection from "@/components/landing/customer-reviews/customer-reviews-section";
 import DeliveryAndOffersSection from "@/components/landing/delivery-and-offers/delivery-and-offers-section";
@@ -31,6 +32,7 @@ export default function HomePage() {
       <HeroSection />
       <PurityPromisesSection />
       <ShopByCategorySection />
+      <FreeDeliveryOfferSection />
       <BestSellersSection />
       <CustomerReviewsSection />
       <DeliveryAndOffersSection />

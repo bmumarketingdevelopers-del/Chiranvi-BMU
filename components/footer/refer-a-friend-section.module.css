@@ -179,14 +179,14 @@
 }
 
 /*
-  Both screens end 16 design pixels above the bottom of the banner (341), so their rounded bottoms
-  show with a gap under them:
-    purity screen  170 wide x 239 tall, top 96  -> bottom 335 (lower, as in the design)
-    rewards screen 176 wide x 310 tall, top 15  -> bottom 325
+  Both screens end on the same line, 10 design pixels above the bottom of the banner (341), as in the
+  design:
+    purity screen  170 wide x 239.1 tall, top 91.9 -> bottom 331
+    rewards screen 176 wide x 310.4 tall, top 20.6 -> bottom 331
 */
 .refer-a-friend-purity-screen {
   left: calc(495 * var(--refer-a-friend-design-pixel));
-  top: calc(96 * var(--refer-a-friend-design-pixel));
+  top: calc(91.9 * var(--refer-a-friend-design-pixel));
   width: calc(170 * var(--refer-a-friend-design-pixel));
 }
 
@@ -194,7 +194,7 @@
   /* Lets the name below be sized as a share of the screen picture's width. */
   container-type: inline-size;
   left: calc(682 * var(--refer-a-friend-design-pixel));
-  top: calc(15 * var(--refer-a-friend-design-pixel));
+  top: calc(20.6 * var(--refer-a-friend-design-pixel));
   width: calc(176 * var(--refer-a-friend-design-pixel));
 }
 
@@ -231,8 +231,9 @@
   animation: refer-a-friend-purity-carousel var(--purity-carousel-time) ease-in-out infinite;
 }
 
+/* The paneer box from the Best Sellers section */
 .refer-a-friend-purity-screen-paneer {
-  --product-centre-width: 50%;
+  --product-centre-width: 48%;
 
   animation-delay: 0s;
 }

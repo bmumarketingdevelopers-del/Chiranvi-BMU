@@ -166,10 +166,10 @@ export default function ReferAFriendSection() {
             className={styles["refer-a-friend-purity-screen-ghee-jar"]}
           />
           <Image
-            src="/images/categories/paneer-category.webp"
+            src="/images/products/fresh-paneer-200g-box.webp"
             alt=""
-            width={428}
-            height={288}
+            width={604}
+            height={444}
             sizes="(max-width: 600px) 45vw, 220px"
             className={styles["refer-a-friend-purity-screen-paneer"]}
           />

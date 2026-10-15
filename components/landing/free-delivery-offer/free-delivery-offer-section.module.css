@@ -1,0 +1,382 @@
+/*
+  Free delivery offer, measured from the design against the same 1440 x 916 frame as the hero.
+  Numbers in calc() are design pixels multiplied by --free-delivery-offer-design-pixel (the same
+  zoom-aware formula as the other landing sections, set by the script in app/page.tsx).
+  Layout (Figma): text from 148, scooter picture 403 x 361 from 732.5, 38 from the top; the text starts
+  42 lower than the scooter. The whole row (988 wide) is centred on the page.
+  Pictures exported from Figma at 4x:
+    heading      1623 x 351 -> 405.75 x 87.75
+    description  2217 x 195 -> 554.25 x 48.75
+    scooter      1612 x 1444 -> 403 x 361
+  Pill: 214 x 45, light grey-green, "Limited time offer" in Ubuntu Bold 16, dark green.
+*/
+
+.free-delivery-offer-section {
+  --free-delivery-offer-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+
+  /* 102 on top: with Shop By Category's 64 below its labels, the scooter starts 166 below them (Figma) */
+  padding: calc(102 * var(--free-delivery-offer-design-pixel)) 16px calc(80 * var(--free-delivery-offer-design-pixel));
+  /* The scooter starts outside the screen on the right; this stops it from making the page scroll sideways. */
+  overflow-x: clip;
+  background: #ffffff;
+}
+
+.free-delivery-offer-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  max-width: calc(988 * var(--free-delivery-offer-design-pixel));
+  margin: 0 auto;
+}
+
+.free-delivery-offer-text-block {
+  margin-top: calc(42 * var(--free-delivery-offer-design-pixel));
+}
+
+.free-delivery-offer-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(214 * var(--free-delivery-offer-design-pixel));
+  height: calc(45 * var(--free-delivery-offer-design-pixel));
+  border-radius: 9999px;
+  background: #e4ebe4;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--free-delivery-offer-design-pixel));
+  font-weight: 700;
+  color: #2b5e3c;
+}
+
+.free-delivery-offer-heading {
+  margin-top: calc(20 * var(--free-delivery-offer-design-pixel));
+}
+
+.free-delivery-offer-heading-highlight {
+  color: #1f6b30;
+}
+
+.free-delivery-offer-description {
+  margin-top: calc(25 * var(--free-delivery-offer-design-pixel));
+}
+
+.free-delivery-offer-heading-image,
+.free-delivery-offer-description-image {
+  display: block;
+  height: auto;
+}
+
+.free-delivery-offer-heading-image {
+  width: calc(405.75 * var(--free-delivery-offer-design-pixel));
+}
+
+.free-delivery-offer-description-image {
+  width: calc(554.25 * var(--free-delivery-offer-design-pixel));
+}
+
+/* Live text: hidden from view on laptop / desktop (screen readers still read it) */
+.free-delivery-offer-text-for-phones {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+  The scooter: a box with the picture's proportions (1612 x 1444); its layers are placed with
+  percentages measured on that picture, so they line up at every size.
+*/
+.free-delivery-offer-scooter-parking-spot {
+  flex-shrink: 0;
+  width: calc(403 * var(--free-delivery-offer-design-pixel));
+}
+
+.free-delivery-offer-scooter {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1612 / 1444;
+}
+
+.free-delivery-offer-scooter-moving-parts {
+  position: absolute;
+  inset: 0;
+}
+
+.free-delivery-offer-scooter-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Front wheel: 280 x 280 cut from the picture at 97, 1052 (wheel centre 237, 1192) */
+.free-delivery-offer-scooter-front-wheel {
+  position: absolute;
+  left: 6.017%;
+  top: 72.853%;
+  width: 17.37%;
+  aspect-ratio: 1;
+}
+
+.free-delivery-offer-scooter-front-wheel-rim,
+.free-delivery-offer-scooter-front-wheel-fork {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+  The turning part: only the ring of spokes between the hub (radius 62) and the rim lip (radius 114) of
+  the 280 crop, with the fork leg and cable filled in with spokes from elsewhere on the ring and the
+  gaps between the spokes made white, so the still spokes of the picture never show through.
+  The hub, rim lip and tyre stay still (they come from the main picture underneath).
+*/
+.free-delivery-offer-scooter-front-wheel-rim {
+  clip-path: circle(40.7% at 50% 50%);
+}
+
+/* Fork leg, hub, brake arm and cable: kept still on top of the turning rim */
+.free-delivery-offer-scooter-front-wheel-fork {
+  clip-path: polygon(
+    69.64% 0%,
+    86.31% 0%,
+    67.26% 39.29%,
+    72.02% 44.05%,
+    73.21% 51.19%,
+    72.02% 59.52%,
+    66.67% 64.88%,
+    83.33% 64.29%,
+    100% 58.1%,
+    100% 62.5%,
+    83.33% 69.05%,
+    64.29% 71.43%,
+    47.62% 71.43%,
+    35.71% 72.02%,
+    23.21% 70.24%,
+    22.62% 64.88%,
+    30.36% 62.5%,
+    31.19% 54.76%,
+    30.36% 46.43%,
+    33.93% 35.71%,
+    40.48% 29.76%,
+    52.38% 28.57%,
+    60.12% 16.67%
+  );
+}
+
+/*
+  Rear wheel: 360 x 360 cut from the picture at 1092, 992 (wheel centre 1272, 1172, tyre radius 171).
+  The tyre and rim edge (radius 92 to 171) are rebuilt as a full ring that turns (the parts hidden in
+  the picture filled with tyre from the visible part); a still copy of the green cover, silver panel,
+  body and stand sits on top. The middle of the wheel stays still (it comes from the main picture).
+*/
+.free-delivery-offer-scooter-rear-wheel {
+  position: absolute;
+  left: 67.742%;
+  top: 68.698%;
+  width: 22.333%;
+  aspect-ratio: 1;
+}
+
+.free-delivery-offer-scooter-rear-wheel-tyre,
+.free-delivery-offer-scooter-rear-wheel-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Air rushing past: three thin green streaks behind the scooter (on its right, as it rides left) */
+.free-delivery-offer-scooter-air-streak {
+  position: absolute;
+  height: 0.9%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(76, 140, 74, 0.55), rgba(76, 140, 74, 0));
+  opacity: 0;
+  transform-origin: 0% 50%;
+}
+
+.free-delivery-offer-scooter-air-streak:nth-child(1) {
+  left: 92%;
+  top: 38%;
+  width: 18%;
+}
+
+.free-delivery-offer-scooter-air-streak:nth-child(2) {
+  left: 88%;
+  top: 52%;
+  width: 16%;
+}
+
+.free-delivery-offer-scooter-air-streak:nth-child(3) {
+  left: 94%;
+  top: 66%;
+  width: 12%;
+}
+
+/*
+  Scooter animation timeline (only while .free-delivery-offer-scooter-animation-running is on the
+  parking spot, which the component adds the first time the section comes into view, then keeps on):
+    0 - 3.6s  (once) rides in from the right edge of the screen and stops in its place
+    always    gentle bob, both wheels turning, air streaks rushing past behind it
+*/
+
+/* Before its ride-in starts, the scooter waits off-screen on the right (where the ride-in begins). */
+.free-delivery-offer-scooter-waiting-to-ride-in .free-delivery-offer-scooter {
+  transform: translateX(110vw);
+}
+
+.free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter {
+  /* Starts at a good speed and slows down smoothly as it stops. */
+  animation: free-delivery-offer-scooter-ride-in 3.6s cubic-bezier(0.2, 0.5, 0.3, 1) both;
+}
+
+.free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-moving-parts {
+  animation: free-delivery-offer-scooter-bob 0.45s ease-in-out infinite alternate;
+}
+
+/* Both wheels turn anticlockwise at the same speed: the scooter rides to the left */
+.free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-front-wheel-rim,
+.free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-rear-wheel-tyre {
+  animation: free-delivery-offer-scooter-wheel-turn 0.5s linear infinite;
+}
+
+.free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-air-streak {
+  animation: free-delivery-offer-scooter-air-rush 0.9s ease-in infinite;
+}
+
+.free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-air-streak:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-air-streak:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes free-delivery-offer-scooter-ride-in {
+  from {
+    transform: translateX(110vw);
+  }
+}
+
+@keyframes free-delivery-offer-scooter-bob {
+  to {
+    transform: translateY(calc(-1.5 * var(--free-delivery-offer-design-pixel)));
+  }
+}
+
+@keyframes free-delivery-offer-scooter-wheel-turn {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes free-delivery-offer-scooter-air-rush {
+  0% {
+    opacity: 0;
+    transform: translateX(0) scaleX(0.4);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(calc(70 * var(--free-delivery-offer-design-pixel))) scaleX(1);
+  }
+}
+
+/* Visitors who turn off motion in their system settings see the scooter standing still. */
+@media (prefers-reduced-motion: reduce) {
+  .free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter,
+  .free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-moving-parts,
+  .free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-front-wheel-rim,
+  .free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-rear-wheel-tyre,
+  .free-delivery-offer-scooter-animation-running .free-delivery-offer-scooter-air-streak {
+    animation: none;
+  }
+}
+
+/* Scroll reveal (the text; the scooter has its own ride-in above) */
+
+.free-delivery-offer-section-waiting .free-delivery-offer-text-block {
+  opacity: 0;
+  transform: translateY(calc(40 * var(--free-delivery-offer-design-pixel)));
+}
+
+.free-delivery-offer-section-revealed .free-delivery-offer-text-block {
+  transition:
+    opacity 700ms ease-out,
+    transform 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+  Phone layout (chosen by the script in app/page.tsx): the text on top (live text instead of the
+  pictures, so it stays readable), the scooter centred below it.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .free-delivery-offer-section {
+    padding: 28px 16px 40px;
+  }
+
+  .free-delivery-offer-content {
+    flex-direction: column;
+    align-items: center;
+    max-width: none;
+  }
+
+  .free-delivery-offer-text-block {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .free-delivery-offer-pill {
+    width: auto;
+    height: 34px;
+    padding: 0 18px;
+    font-size: 13px;
+  }
+
+  .free-delivery-offer-heading-image,
+  .free-delivery-offer-description-image {
+    display: none;
+  }
+
+  .free-delivery-offer-text-for-phones {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  .free-delivery-offer-heading {
+    margin-top: 14px;
+    font-family: var(--font-ubuntu), sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 36px;
+    color: #333333;
+  }
+
+  .free-delivery-offer-description {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 23px;
+    color: #555555;
+  }
+
+  .free-delivery-offer-description strong {
+    font-weight: 700;
+    color: #333333;
+  }
+
+  .free-delivery-offer-scooter-parking-spot {
+    width: min(80%, 320px);
+    margin-top: 20px;
+  }
+}
