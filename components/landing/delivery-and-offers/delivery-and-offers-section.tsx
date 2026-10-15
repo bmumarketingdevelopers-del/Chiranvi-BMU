@@ -161,12 +161,21 @@ export default function DeliveryAndOffersSection() {
 
             <span className={styles["delivery-van-moving-parts"]} aria-hidden="true">
               <Image
-                src="/images/delivery/delivery-van-body.webp"
+                src="/images/delivery/delivery-van-body-plain-side.webp"
                 alt=""
                 width={1840}
                 height={1064}
                 sizes="500px"
                 className={styles["delivery-van-body"]}
+              />
+              {/* Chiranvi Farms logo on the van side (in place of the leaf in the original picture) */}
+              <Image
+                src="/images/brand/chiranvi-farms-logo.webp"
+                alt=""
+                width={499}
+                height={220}
+                sizes="150px"
+                className={styles["delivery-van-logo"]}
               />
               <Image
                 src="/images/delivery/delivery-van-cargo.webp"

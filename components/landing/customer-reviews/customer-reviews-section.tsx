@@ -1,42 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { customerReviews } from "@/components/reviews/customer-reviews-data";
+import ReviewerAvatar from "@/components/reviews/reviewer-avatar";
 import styles from "./customer-reviews-section.module.css";
 
 /*
   Landing page section "Where Goodness Gets a Voice": customer review cards with dots below.
   Built as a swipeable slider: desktop shows three cards side by side, phones show one.
-  With three reviews nothing moves (exactly like the design); add more reviews to
-  customerReviews below and visitors can swipe / scroll through them, and the dots follow.
+  Shows all 12 reviews (shared with the /reviews page, components/reviews/customer-reviews-data.ts):
+  visitors swipe / scroll through them and the dots follow. Each reviewer has an illustrated avatar.
   The card in the middle of the visible ones is highlighted with a darker border.
   Scroll reveal: when the section scrolls into view, the heading, cards and dots fade and
   slide up together.
 */
-
-// Placeholder reviews from the design until real reviews are available.
-const customerReviews = [
-  {
-    reviewerName: "John",
-    reviewerRole: "Software Engineer",
-    rating: 4.9,
-    reviewText:
-      "Fresh, wholesome, and full of authentic taste. Quality of every product really stands out. Loved the traditional touch and natural flavours. Definitely coming back for more!",
-  },
-  {
-    reviewerName: "Ethan Miller",
-    reviewerRole: "Product Designer",
-    rating: 4.9,
-    reviewText:
-      "Fresh, wholesome, and full of authentic taste. The quality of every product really stands out. Loved the traditional touch and natural flavours.",
-  },
-  {
-    reviewerName: "Roshan",
-    reviewerRole: "Developer",
-    rating: 4.9,
-    reviewText:
-      "Every product feels fresh, pure, and authentic. The traditional flavours are simply wonderful. You can truly taste the quality and care. A brand our family can trust.",
-  },
-];
 
 export default function CustomerReviewsSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -93,6 +70,26 @@ export default function CustomerReviewsSection() {
     };
   }, []);
 
+  /*
+    Automatic slide: every 3 seconds the row moves on by one card; after the last cards it goes back
+    to the first. It pauses while the visitor's pointer is over the row or they are touching it,
+    and does not run for visitors who prefer less motion.
+  */
+  const isAutoSlidePausedRef = useRef(false);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const autoSlideTimer = window.setInterval(() => {
+      const reviewTrack = reviewTrackRef.current;
+      const firstReviewCard = reviewTrack?.firstElementChild as HTMLElement | null;
+      if (!reviewTrack || !firstReviewCard || isAutoSlidePausedRef.current) return;
+      const cardGap = parseFloat(getComputedStyle(reviewTrack).columnGap) || 0;
+      const cardStep = firstReviewCard.offsetWidth + cardGap;
+      const isAtEnd = reviewTrack.scrollLeft + reviewTrack.clientWidth >= reviewTrack.scrollWidth - 2;
+      reviewTrack.scrollTo({ left: isAtEnd ? 0 : reviewTrack.scrollLeft + cardStep, behavior: "smooth" });
+    }, 3000);
+    return () => window.clearInterval(autoSlideTimer);
+  }, []);
+
   function scrollToReview(reviewIndex: number) {
     const reviewCard = reviewTrackRef.current?.children[reviewIndex] as HTMLElement | undefined;
     reviewTrackRef.current?.scrollTo({ left: reviewCard?.offsetLeft ?? 0, behavior: "smooth" });
@@ -114,14 +111,20 @@ export default function CustomerReviewsSection() {
       <h2 id="customer-reviews-heading" className={styles["customer-reviews-heading"]}>
         Where Goodness Gets a Voice
       </h2>
-      <p className={styles["customer-reviews-subheading"]}>
-        Real experiences from families who choose Chiranvi Farm.
-      </p>
+      <p className={styles["customer-reviews-subheading"]}>Real experiences from families who choose Chiranvi Farm.</p>
 
-      <ul ref={reviewTrackRef} className={styles["customer-reviews-track"]} aria-label="Customer reviews">
+      <ul
+        ref={reviewTrackRef}
+        className={styles["customer-reviews-track"]}
+        aria-label="Customer reviews"
+        onPointerEnter={() => (isAutoSlidePausedRef.current = true)}
+        onPointerLeave={() => (isAutoSlidePausedRef.current = false)}
+        onTouchStart={() => (isAutoSlidePausedRef.current = true)}
+        onTouchEnd={() => (isAutoSlidePausedRef.current = false)}
+      >
         {customerReviews.map((customerReview, reviewIndex) => (
           <li
-            key={customerReview.reviewerName}
+            key={customerReview.id}
             className={`${styles["customer-review-card"]} ${
               reviewIndex === highlightedReviewIndex ? styles["customer-review-card-highlighted"] : ""
             }`}
@@ -132,18 +135,19 @@ export default function CustomerReviewsSection() {
               </svg>
               <span>
                 <span className={styles["customer-review-visually-hidden"]}>Rated </span>
-                {customerReview.rating}
+                {customerReview.rating.toFixed(1)}
               </span>
             </p>
 
             <p className={styles["customer-review-text"]}>{customerReview.reviewText}</p>
 
             <div className={styles["customer-review-author"]}>
-              {/* Grey circle until reviewer photos are available */}
-              <span className={styles["customer-review-author-photo"]} aria-hidden="true" />
+              <span className={styles["customer-review-author-photo"]} aria-hidden="true">
+                <ReviewerAvatar look={customerReview.avatar} />
+              </span>
               <span>
                 <span className={styles["customer-review-author-name"]}>{customerReview.reviewerName}</span>
-                <span className={styles["customer-review-author-role"]}>{customerReview.reviewerRole}</span>
+                <span className={styles["customer-review-author-role"]}>{customerReview.reviewerPlace}</span>
               </span>
             </div>
           </li>
@@ -153,7 +157,7 @@ export default function CustomerReviewsSection() {
       <div className={styles["customer-reviews-dots"]}>
         {customerReviews.map((customerReview, reviewIndex) => (
           <button
-            key={customerReview.reviewerName}
+            key={customerReview.id}
             type="button"
             aria-label={`Show review ${reviewIndex + 1}`}
             aria-current={reviewIndex === firstVisibleReviewIndex}

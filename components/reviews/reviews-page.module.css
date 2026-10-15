@@ -1,0 +1,196 @@
+/*
+  /reviews page, from the design (1440-wide frame). Numbers in calc() are design pixels multiplied by
+  --reviews-design-pixel, the same zoom-aware unit as the landing page (window size at the starting
+  zoom, from the layout script). Content lines up with the navigation bar (45.5 from the sides).
+  Fonts and colours: Ubuntu heading, Poppins text; light green fading to white behind the top,
+  cards white with a thin grey-lilac border, gold star.
+*/
+
+.reviews-page {
+  /* Medium size: the design sizes at 1.15 (cards, text and avatars a little larger) */
+  --reviews-design-pixel: calc(
+    1.15 *
+      min(
+        var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+        var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+      )
+  );
+  --reviews-side-margin: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * 45.5 / 1440);
+
+  display: flow-root;
+  min-height: 100svh;
+  background: linear-gradient(
+    180deg,
+    #e8f1df 0,
+    #f6faf3 calc(420 * var(--reviews-design-pixel)),
+    #ffffff calc(900 * var(--reviews-design-pixel))
+  );
+  font-family: var(--font-poppins), sans-serif;
+  color: #1e2a22;
+}
+
+.reviews-page-content {
+  padding: calc(40 * var(--reviews-design-pixel)) var(--reviews-side-margin) calc(64 * var(--reviews-design-pixel));
+  text-align: center;
+}
+
+.reviews-page-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(36 * var(--reviews-design-pixel));
+  font-weight: 500;
+  line-height: 1.25;
+  color: #1a1a1a;
+}
+
+.reviews-page-subheading {
+  margin-top: calc(8 * var(--reviews-design-pixel));
+  font-size: calc(16 * var(--reviews-design-pixel));
+  color: #4a4a4a;
+}
+
+/* Twelve cards, three per row */
+.reviews-page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* More space between the cards: 40 between rows, 36 between columns */
+  gap: calc(40 * var(--reviews-design-pixel)) calc(36 * var(--reviews-design-pixel));
+  max-width: calc(1240 * var(--reviews-design-pixel));
+  margin: calc(40 * var(--reviews-design-pixel)) auto 0;
+  text-align: left;
+}
+
+.reviews-page-card {
+  display: flex;
+  flex-direction: column;
+  padding: calc(22 * var(--reviews-design-pixel)) calc(24 * var(--reviews-design-pixel));
+  border: 1px solid #c9c7d6;
+  border-radius: calc(12 * var(--reviews-design-pixel));
+  background: #ffffff;
+}
+
+.reviews-page-card-rating {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--reviews-design-pixel));
+  font-size: calc(16 * var(--reviews-design-pixel));
+  font-weight: 600;
+  color: #4a4a4a;
+}
+
+.reviews-page-card-star {
+  width: calc(16 * var(--reviews-design-pixel));
+  height: calc(16 * var(--reviews-design-pixel));
+  fill: #c8961e;
+}
+
+.reviews-page-card-text {
+  flex: 1;
+  margin-top: calc(14 * var(--reviews-design-pixel));
+  font-size: calc(15 * var(--reviews-design-pixel));
+  line-height: 1.55;
+  color: #333333;
+}
+
+.reviews-page-card-author {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--reviews-design-pixel));
+  margin-top: calc(20 * var(--reviews-design-pixel));
+  padding-left: calc(10 * var(--reviews-design-pixel));
+}
+
+.reviews-page-card-avatar {
+  flex-shrink: 0;
+  width: calc(46 * var(--reviews-design-pixel));
+  height: calc(46 * var(--reviews-design-pixel));
+  overflow: hidden;
+  border-radius: 50%;
+  background: #e7e7e7;
+}
+
+.reviews-page-card-name {
+  display: block;
+  font-size: calc(15 * var(--reviews-design-pixel));
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.reviews-page-card-place {
+  display: block;
+  font-size: calc(13 * var(--reviews-design-pixel));
+  color: #8a8a8a;
+}
+
+.reviews-page-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Phone layout: one card per row, phone text sizes */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .reviews-page {
+    --reviews-side-margin: 15px;
+  }
+
+  .reviews-page-content {
+    padding: 24px 15px 40px;
+  }
+
+  .reviews-page-heading {
+    font-size: 26px;
+  }
+
+  .reviews-page-subheading {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+
+  .reviews-page-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 24px;
+  }
+
+  .reviews-page-card {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .reviews-page-card-rating {
+    gap: 6px;
+    font-size: 15px;
+  }
+
+  .reviews-page-card-star {
+    width: 15px;
+    height: 15px;
+  }
+
+  .reviews-page-card-text {
+    margin-top: 10px;
+    font-size: 14px;
+  }
+
+  .reviews-page-card-author {
+    gap: 12px;
+    margin-top: 16px;
+    padding-left: 0;
+  }
+
+  .reviews-page-card-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .reviews-page-card-name {
+    font-size: 14.5px;
+  }
+
+  .reviews-page-card-place {
+    font-size: 12.5px;
+  }
+}

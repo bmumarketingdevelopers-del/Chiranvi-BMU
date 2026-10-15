@@ -1,5 +1,7 @@
 /*
-  Sizes are written in Figma pixels from the landing page frame (1440 x 916).
+  Sizes are written in Figma pixels from the landing page frame (1440 x 916), from the navigation
+  bar design: bar 1349 x 88, logo 124.66 x 55, links Poppins 20 about 36 apart, icons 18.74 x 20
+  (drawn in 25 boxes) with centres about 47 apart, 51 from the right end.
   --landing-page-design-pixel is set by the landing page so the bar scales with the screen.
   Outside the landing page it falls back to 1px (the Figma size).
 */
@@ -10,9 +12,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: calc(86 * var(--navigation-design-pixel));
+  height: calc(88 * var(--navigation-design-pixel));
   padding-left: calc(24 * var(--navigation-design-pixel));
-  padding-right: calc(47.5 * var(--navigation-design-pixel));
+  padding-right: calc(51 * var(--navigation-design-pixel));
   border-radius: calc(20 * var(--navigation-design-pixel));
   background: #ffffff;
 }
@@ -26,7 +28,7 @@
 
 .site-navigation-bar-logo-image {
   width: auto;
-  height: calc(56 * var(--navigation-design-pixel));
+  height: calc(55 * var(--navigation-design-pixel));
 }
 
 /* Page links */
@@ -34,7 +36,7 @@
 .site-navigation-bar-links-list {
   display: flex;
   align-items: center;
-  gap: calc(39 * var(--navigation-design-pixel));
+  gap: calc(36 * var(--navigation-design-pixel));
   /*
     In Figma the link group's centre sits 41 to the right of the bar's centre.
     Positioning from the centre keeps that placement on every screen width.
@@ -46,7 +48,7 @@
 }
 
 .site-navigation-bar-link {
-  font-size: calc(18 * var(--navigation-design-pixel));
+  font-size: calc(20 * var(--navigation-design-pixel));
   font-weight: 400;
   color: #161a17;
   white-space: nowrap;
@@ -58,14 +60,10 @@
   color: #285c3a;
 }
 
-/* The page you are on (e.g. Join Community on /community): green text with a green underline */
+/* The page you are on (e.g. Join Community on /community): green text, no underline */
 .site-navigation-bar-link-current {
   font-weight: 500;
   color: #2f6b3f;
-  text-decoration: underline;
-  text-decoration-color: #2f6b3f;
-  text-decoration-thickness: calc(2 * var(--navigation-design-pixel));
-  text-underline-offset: calc(8 * var(--navigation-design-pixel));
 }
 
 /* Search, account and cart icons */
@@ -80,7 +78,7 @@
 .site-navigation-bar-icon-group {
   display: flex;
   align-items: center;
-  gap: calc(23.5 * var(--navigation-design-pixel));
+  gap: calc(22 * var(--navigation-design-pixel));
   margin-left: auto;
 }
 
@@ -89,8 +87,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(24 * var(--navigation-design-pixel));
-  height: calc(24 * var(--navigation-design-pixel));
+  /* 25 box: the icon drawing inside comes out about 19 x 20, as in the design */
+  width: calc(25 * var(--navigation-design-pixel));
+  height: calc(25 * var(--navigation-design-pixel));
   color: #161a17;
   cursor: pointer;
   transition: color 150ms ease;
@@ -261,13 +260,13 @@
   position: absolute;
   z-index: 2;
   top: 50%;
-  /* 142.5 = bar padding 47.5 + cart 24 + gap 23.5 + account 24 + gap 23.5 (to the search icon's right edge). */
-  right: calc(142.5 * var(--navigation-design-pixel));
+  /* 145 = bar padding 51 + cart 25 + gap 22 + account 25 + gap 22 (to the search icon's right edge). */
+  right: calc(145 * var(--navigation-design-pixel));
   /*
-    The page links end 265 right of the bar's centre (centre offset 41 + half their 448 width);
+    The page links end 268 right of the bar's centre (centre offset 41 + half their 454 width);
     the box starts 24 after that.
   */
-  left: calc(50% + 289 * var(--navigation-design-pixel));
+  left: calc(50% + 292 * var(--navigation-design-pixel));
   display: flex;
   align-items: center;
   gap: calc(10 * var(--navigation-design-pixel));

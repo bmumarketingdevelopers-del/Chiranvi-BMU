@@ -1,7 +1,7 @@
 import SiteFooter from "@/components/footer/site-footer";
 import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-layout-runner";
 import LoginBottomSheet from "@/components/login/login-bottom-sheet";
-import SiteNavigationBar from "@/components/navigation/site-navigation-bar";
+import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import JoinCommunitySection from "./join-community-section";
 import styles from "./community-page.module.css";
 
@@ -18,9 +18,8 @@ export default function CommunityPage() {
     <div className={styles["community-page"]}>
       <LandingZoomAndLayoutRunner />
 
-      <div className={styles["community-page-navigation"]}>
-        <SiteNavigationBar />
-      </div>
+      {/* Navigation bar, placed exactly like on the landing page */}
+      <SiteNavigationPlacement />
 
       <JoinCommunitySection />
 

@@ -2,13 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import styles from "./refer-a-friend-section.module.css";
 
 /*
   Top part of the shared site footer (site-footer.tsx shows it on every page above the footer links):
-  green "Refer a Friend & Get 7 Days of Milk Free!" banner
-  with a "Claim Now" button and two app screens on the right (the purity screen with products,
+  green "Good Milk. Good Health. Goodness Worth Sharing." banner
+  with a short invite line and two app screens on the right (the purity screen with products,
   and the referral rewards screen).
   The app screens are pictures from the design; the products on the purity screen are the site's
   product images placed on top. "Claim Now" links to the products page until referrals exist.
@@ -95,18 +94,14 @@ export default function ReferAFriendSection() {
 
         <div className={styles["refer-a-friend-text-block"]}>
           <h2 id="refer-a-friend-heading" className={styles["refer-a-friend-heading"]}>
-            Refer a Friend &amp;
+            Good Milk. Good Health.
             <br />
-            <span className={styles["refer-a-friend-heading-highlight"]}>Get 7 Days</span> of Milk Free!
+            <span className={styles["refer-a-friend-heading-highlight"]}>Goodness</span> Worth Sharing.
           </h2>
           <p className={styles["refer-a-friend-description"]}>
-            Invite your friends to Chiranvi Farms. When they make <br />a purchase, enjoy 7 days of fresh milk{" "}
-            <strong>absolutely free!</strong>
+            Invite your friends to Chiranvi Farms! When they make their <br />
+            first purchase, they&rsquo;ll remember you for a lifetime.
           </p>
-          <Link href="/products" className={styles["refer-a-friend-claim-button"]}>
-            <span className={styles["refer-a-friend-claim-button-title"]}>Claim Now</span>
-            <span className={styles["refer-a-friend-claim-button-subtitle"]}>Refer &amp; Get Rewarded</span>
-          </Link>
         </div>
 
         {/* Purity app screen, with the products drawn on top of its empty middle */}
@@ -160,6 +155,11 @@ export default function ReferAFriendSection() {
           {/* Text written over the picture (the picture has these areas left blank, so they can be edited) */}
           <span className={styles["refer-a-friend-rewards-screen-user-name"]}>Harish</span>
           <span className={styles["refer-a-friend-rewards-screen-jersey-milk-label"]}>Jersey Milk</span>
+          {/* "Refer Table / TOP-17" over the picture's "Worth rupees / 12,800/-" (white patch hides the old text) */}
+          <span className={styles["refer-a-friend-rewards-screen-refer-table"]}>
+            <span className={styles["refer-a-friend-rewards-screen-refer-table-label"]}>Refer Table</span>
+            <span className={styles["refer-a-friend-rewards-screen-refer-table-value"]}>TOP-17</span>
+          </span>
           <svg viewBox="0 0 24 24" className={styles["refer-a-friend-rewards-screen-menu-icon"]}>
             <path d="M4 7h16M4 12h16M4 17h16" />
           </svg>

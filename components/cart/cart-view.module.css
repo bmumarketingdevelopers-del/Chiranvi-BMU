@@ -25,18 +25,9 @@
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  background: #ffffff;
+  /* Light green at the top (behind the navigation bar), fading to white */
+  background: linear-gradient(180deg, #e5f0dc 0, #ffffff calc(320 * var(--cart-design-pixel)));
   font-family: var(--font-poppins), sans-serif;
-}
-
-/*
-  Navigation bar: placed as on the landing page (47 from the sides, 27 from the top),
-  on the landing page hero's top colour, so the white bar looks the same as there.
-*/
-.cart-page-navigation {
-  padding: calc(27 * var(--landing-page-vertical-design-pixel)) calc(47 * var(--landing-page-horizontal-design-pixel))
-    calc(20 * var(--cart-design-pixel));
-  background: linear-gradient(180deg, #e5f0dc 0%, #f3f8ef 100%);
 }
 
 /* Fills the height below the navigation bar, so the empty-cart box can sit in its middle. */
@@ -509,13 +500,7 @@
     height: 18px;
   }
 
-  /* Phone navigation bar: 12px from the top and sides, as on the landing page. */
-  .cart-page-navigation {
-    padding: 12px 12px 0;
-    background: none;
-  }
-
-  .cart-page-content {
+    .cart-page-content {
     padding: 22px 16px 48px;
   }
 

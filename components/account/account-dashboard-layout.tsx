@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-layout-runner";
-import SiteNavigationBar from "@/components/navigation/site-navigation-bar";
+import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { logOut, rememberPageAfterLogin, useIsLoggedIn } from "@/components/login/login-status";
 import { emptyTheCart } from "@/store/cart-store";
 import { countActiveOrders, forgetAllOrders, useOrders } from "@/store/orders-store";
@@ -93,9 +93,8 @@ export default function AccountDashboardLayout({ children }: { children: ReactNo
     <div className={styles["account-page"]}>
       <LandingZoomAndLayoutRunner />
 
-      <div className={styles["account-page-navigation"]}>
-        <SiteNavigationBar />
-      </div>
+      {/* Navigation bar, placed exactly like on the landing page */}
+      <SiteNavigationPlacement />
 
       {isLoggedIn && (
         <div className={styles["account-page-body"]}>

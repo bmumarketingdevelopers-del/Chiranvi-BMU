@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import SiteNavigationBar from "@/components/navigation/site-navigation-bar";
+import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import styles from "./hero-section.module.css";
 
 /*
@@ -18,16 +18,8 @@ const satisfiedCustomerPhotos = [
 export default function HeroSection() {
   return (
     <>
-      {/*
-        Sticky navigation bar: kept outside the hero section (whose hidden overflow would stop it
-        sticking), so it stays at the top of the screen over the whole landing page while scrolling.
-        The holder is 0 tall, so the hero still starts at the very top, under the bar, as before.
-      */}
-      <div className={styles["landing-hero-sticky-navigation"]}>
-        <div className={styles["landing-hero-navigation-bar-position"]}>
-          <SiteNavigationBar />
-        </div>
-      </div>
+      {/* Navigation bar, placed the same way on every page (stays at the top; the hero runs up under it) */}
+      <SiteNavigationPlacement reserveSpace={false} />
 
       <section className={styles["landing-hero-section"]}>
         <div className={styles["landing-hero-canvas"]}>

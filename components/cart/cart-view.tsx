@@ -3,7 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import SiteNavigationBar, { CART_ICON_CLICKED_ON_CART_PAGE_EVENT } from "@/components/navigation/site-navigation-bar";
+import { CART_ICON_CLICKED_ON_CART_PAGE_EVENT } from "@/components/navigation/site-navigation-bar";
+import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { changeCartItemQuantity, countCartPacks, useCartItems } from "@/store/cart-store";
 import CartCheckout from "./cart-checkout";
 import styles from "./cart-view.module.css";
@@ -47,9 +48,8 @@ export default function CartView() {
 
   return (
     <div className={styles["cart-page"]}>
-      <div className={styles["cart-page-navigation"]}>
-        <SiteNavigationBar />
-      </div>
+      {/* Navigation bar, placed exactly like on the landing page */}
+      <SiteNavigationPlacement />
 
       <main className={styles["cart-page-content"]}>
         {isCheckoutOpen ? (

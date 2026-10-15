@@ -137,42 +137,6 @@
   font-weight: 700;
 }
 
-.refer-a-friend-claim-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: calc(118 * var(--refer-a-friend-design-pixel));
-  height: calc(38 * var(--refer-a-friend-design-pixel));
-  margin-top: calc(20 * var(--refer-a-friend-design-pixel));
-  border-radius: calc(8 * var(--refer-a-friend-design-pixel));
-  background: #e5ffee;
-  font-family: var(--font-poppins), sans-serif;
-  transition:
-    transform 200ms ease,
-    box-shadow 200ms ease;
-}
-
-.refer-a-friend-claim-button:hover,
-.refer-a-friend-claim-button:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-}
-
-.refer-a-friend-claim-button-title {
-  font-size: calc(13 * var(--refer-a-friend-design-pixel));
-  font-weight: 700;
-  line-height: calc(16 * var(--refer-a-friend-design-pixel));
-  color: #333333;
-}
-
-.refer-a-friend-claim-button-subtitle {
-  font-size: calc(7 * var(--refer-a-friend-design-pixel));
-  font-weight: 500;
-  line-height: calc(9 * var(--refer-a-friend-design-pixel));
-  color: #a6aca8;
-}
-
 /* App screens on the right; they run off the bottom edge of the banner, as in the design */
 
 .refer-a-friend-purity-screen,
@@ -341,6 +305,37 @@
   white-space: nowrap;
 }
 
+/* "Refer Table" / "TOP-17": a white patch over the old "Worth rupees / 12,800/-", same fonts as the picture */
+.refer-a-friend-rewards-screen-refer-table {
+  position: absolute;
+  left: 42%;
+  top: 21%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.2cqw;
+  width: 50%;
+  height: 13%;
+  padding-top: 4.5cqw;
+  background: #ffffff;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Same look as "Total Refer" in the picture */
+.refer-a-friend-rewards-screen-refer-table-label {
+  font-size: 4.6cqw;
+  font-weight: 600;
+  color: #5b6a5e;
+}
+
+/* Same look as the old "12,800/-" in the picture */
+.refer-a-friend-rewards-screen-refer-table-value {
+  font-size: 9.6cqw;
+  font-weight: 400;
+  color: #8c8c8c;
+}
+
 .refer-a-friend-rewards-screen-menu-icon {
   position: absolute;
   right: 9%;
@@ -368,8 +363,8 @@
 }
 
 /*
-  Mobile layout (chosen by the landing layout script): text on top, the two app screens below it,
-  side by side, their bottoms in line and ending inside the banner with a gap under them.
+  Mobile layout (chosen by the landing layout script): the two app screens on top, side by side with
+  their bottoms in line, and the heading and text below them.
 */
 :global(html:has(style[data-landing-layout="mobile"])) {
   .refer-a-friend-section {
@@ -380,15 +375,22 @@
     border-radius: 0;
   }
 
+  /* Phones: the two app screens on top, the heading and text below them */
   .refer-a-friend-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
     width: 100%;
     height: auto;
-    padding: 28px 20px 18px;
+    padding: 22px 20px 26px;
     border-radius: 22px;
   }
 
   .refer-a-friend-text-block {
     position: static;
+    order: 2;
+    width: 100%;
+    margin-top: 22px;
   }
 
   .refer-a-friend-heading {
@@ -407,31 +409,13 @@
     display: none;
   }
 
-  .refer-a-friend-claim-button {
-    width: 124px;
-    height: 42px;
-    margin-top: 20px;
-    border-radius: 10px;
-  }
-
-  .refer-a-friend-claim-button-title {
-    font-size: 14px;
-    line-height: 18px;
-  }
-
-  .refer-a-friend-claim-button-subtitle {
-    font-size: 8.5px;
-    line-height: 10px;
-  }
-
-  /* Both screens side by side under the text; the banner is cut off below them. */
+  /* Both screens side by side above the text, bottoms in line */
   .refer-a-friend-purity-screen,
   .refer-a-friend-rewards-screen {
     position: relative;
-    display: inline-block;
+    order: 1;
     top: auto;
     left: auto;
-    vertical-align: bottom;
   }
 
   .refer-a-friend-purity-screen {
@@ -440,7 +424,6 @@
 
   .refer-a-friend-rewards-screen {
     width: 50%;
-    margin-top: 28px;
     margin-left: 4%;
   }
 

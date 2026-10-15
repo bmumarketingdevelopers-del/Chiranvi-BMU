@@ -108,6 +108,15 @@
   height: 100%;
 }
 
+/* Logo on the side of the van, where the leaf was in the original picture (centre 41% across, 48% down) */
+.delivery-van-logo {
+  position: absolute;
+  left: 31.6%;
+  top: 41.3%;
+  width: 19%;
+  height: auto;
+}
+
 .delivery-van-cargo {
   position: absolute;
   left: 21.467%;
@@ -122,6 +131,8 @@
   top: 65.414%;
   width: 11.957%;
   height: auto;
+  /* Round crop just inside the tyre edge, so no light specks from the picture background show */
+  clip-path: circle(46.5% at 50% 50%);
 }
 
 .delivery-van-rear-wheel {

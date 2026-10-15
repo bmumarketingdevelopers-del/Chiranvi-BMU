@@ -127,6 +127,7 @@
   flex-shrink: 0;
   width: calc(52 * var(--customer-reviews-card-pixel));
   height: calc(52 * var(--customer-reviews-card-pixel));
+  overflow: hidden;
   border-radius: 50%;
   background: #e7e7e7;
 }

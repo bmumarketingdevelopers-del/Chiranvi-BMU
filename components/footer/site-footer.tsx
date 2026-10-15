@@ -29,7 +29,7 @@ const footerLinkColumns = [
       { label: "Contact", href: "#" },
       { label: "Refund", href: "/refund" },
       { label: "Referral", href: "#" },
-      { label: "Privacy policy", href: "#" },
+      { label: "Privacy policy", href: "/privacy-policy" },
     ],
   },
   {
@@ -38,7 +38,7 @@ const footerLinkColumns = [
       { label: "Monthly plan", href: "#" },
       { label: "Daily plan", href: "#" },
       { label: "Cancellation", href: "#" },
-      { label: "Review", href: "#" },
+      { label: "Review", href: "/reviews" },
       { label: "Terms", href: "#" },
     ],
   },
@@ -61,8 +61,11 @@ export default function SiteFooter() {
               />
             </Link>
             <p className={styles["site-footer-description"]}>
-              Chiranvi Farms helps you plan balanced meals and workouts in one place. Build healthier habits with
-              personalized nutrition and fitness guidance.
+              {/* Line breaks as in the design (desktop only) */}
+              Chiranvi Farms brings you fresh, natural dairy <br className={styles["site-footer-description-break"]} />
+              products straight from the farm. Enjoy wholesome{" "}
+              <br className={styles["site-footer-description-break"]} />
+              goodness and quality you can trust every day.
             </p>
             <p className={styles["site-footer-copyright"]}>© 2026 Chiranvi Farms. All rights reserved.</p>
           </div>

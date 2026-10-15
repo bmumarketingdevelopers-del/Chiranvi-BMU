@@ -1,0 +1,64 @@
+/*
+  Navigation bar placement, shared by every page (copied from the landing page so it is identical).
+  The holder is 0 tall and sticks to the top of the screen; the bar hangs from it 27 from the top and
+  45.5 from the sides of the 1440-wide frame (1349 wide), using the landing page units (zoom-aware: window size at
+  the starting zoom, from the landing layout script). The holder is a size container, so 100cqw is
+  the page width.
+*/
+
+.site-navigation-placement {
+  --landing-page-horizontal-design-pixel: calc(100cqw / 1440);
+  --landing-page-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100cqw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
+
+  position: sticky;
+  z-index: 50;
+  top: 0;
+  height: 0;
+  container-type: inline-size;
+}
+
+.site-navigation-placement-bar {
+  position: absolute;
+  z-index: 3;
+  top: calc(27 * var(--landing-page-vertical-design-pixel));
+  left: calc(45.5 * var(--landing-page-horizontal-design-pixel));
+  right: calc(45.5 * var(--landing-page-horizontal-design-pixel));
+}
+
+/* Room for the bar on pages that start below it: 27 above the bar + the bar (88 tall) */
+.site-navigation-placement-space {
+  height: calc(
+    27 *
+      max(
+        100svh / 916,
+        min(
+          var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+          var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+        )
+      ) +
+      88 *
+      min(
+        var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+        var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+      )
+  );
+}
+
+/* Phone layout (chosen by the landing layout script): the bar 12px from the top and sides */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .site-navigation-placement-bar {
+    z-index: 5;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+
+  /* 12px above the bar + the phone bar (52 tall) */
+  .site-navigation-placement-space {
+    height: 64px;
+  }
+}

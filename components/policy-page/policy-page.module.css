@@ -1,0 +1,605 @@
+/*
+  Policy pages (Refund, Privacy), from the Refund page design (1440-wide frame). Numbers in calc() are design pixels multiplied by
+  --policy-design-pixel, the same zoom-aware unit as the landing page (window size at the starting
+  zoom, from the layout script). The hero banner lines up with the navigation bar (47 from the sides).
+  Fonts and colours: Ubuntu headings, Poppins text; green #2B5E3C / #2F6B3F, gold #E3A93A / #F5C242,
+  dark #1E2A22, text grey #4A544D, page background #F3F8F0.
+*/
+
+.policy-page {
+  --landing-page-horizontal-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440);
+  --landing-page-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
+  /* Medium size: the design size at 0.98, following the screen width and height like the landing page */
+  --policy-design-pixel: calc(0.98 * var(--landing-page-design-pixel));
+  /* Side margins of the design: the navigation bar, banner and cards sit 142 in from each side */
+  --policy-side-margin: calc(142 * var(--landing-page-horizontal-design-pixel));
+
+  display: flow-root;
+  min-height: 100svh;
+  background: #f3f8f0;
+  font-family: var(--font-poppins), sans-serif;
+  color: #1e2a22;
+}
+
+/* Hero banner */
+
+/*
+  The banner keeps the design proportions (1346 x 415): everything in it is sized from the banner
+  width, so it never stretches into a long flat strip on wide screens.
+*/
+.policy-hero {
+  --policy-design-pixel: calc(
+    (var(--landing-viewport-width-at-starting-zoom, 100vw) - 2 * var(--policy-side-margin)) / 1346
+  );
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: calc(415 * var(--policy-design-pixel));
+  margin: calc(32 * var(--policy-design-pixel)) var(--policy-side-margin) 0;
+  overflow: hidden;
+  border-radius: calc(28 * var(--policy-design-pixel));
+  background: #2b5e3c;
+}
+
+/* Olive ring around the products, as in the design (centre 200 from the right, 140 from the top; 273 outer radius, 36 thick) */
+.policy-hero-arc {
+  position: absolute;
+  top: calc(-133 * var(--policy-design-pixel));
+  right: calc(-73 * var(--policy-design-pixel));
+  width: calc(546 * var(--policy-design-pixel));
+  height: calc(546 * var(--policy-design-pixel));
+  border: calc(36 * var(--policy-design-pixel)) solid #677a3d;
+  border-radius: 50%;
+}
+
+/* Faint dashed circle edge at the bottom left */
+.policy-hero-dashed-circle {
+  position: absolute;
+  bottom: calc(-170 * var(--policy-design-pixel));
+  left: calc(-120 * var(--policy-design-pixel));
+  width: calc(290 * var(--policy-design-pixel));
+  height: calc(290 * var(--policy-design-pixel));
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+}
+
+.policy-hero-text {
+  position: relative;
+  z-index: 1;
+  max-width: calc(760 * var(--policy-design-pixel));
+  padding-left: calc(65 * var(--policy-design-pixel));
+}
+
+.policy-hero-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(56 * var(--policy-design-pixel));
+  font-weight: 500;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+/* Gold bar under the title: shown only in the phone layout (phone design) */
+.policy-hero-title-bar {
+  display: none;
+}
+
+.policy-hero-description {
+  margin-top: calc(34 * var(--policy-design-pixel));
+  font-size: calc(18 * var(--policy-design-pixel));
+  font-weight: 400;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Products in white circles with a soft ring */
+.policy-hero-products {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(420 * var(--policy-design-pixel));
+}
+
+.policy-hero-product-circle {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 0 calc(10 * var(--policy-design-pixel)) rgba(255, 255, 255, 0.14);
+}
+
+.policy-hero-product-circle img {
+  width: auto;
+  height: 74%;
+  object-fit: contain;
+}
+
+/*
+  The three circles take turns in the three places of the design (measured from it):
+    big place     170 across, centre 282 from the right / 124 from the top  (highlighted: in front, thin gold ring and
+                  faint glow; the other two are a little dimmed)
+    right place   128 across, centre 113 / 125
+    bottom place  141 across, centre 179 / 266
+  Every 3 seconds each circle glides to the next place, big -> right -> bottom -> big, growing or
+  shrinking to its size (same timing as the Refer a Friend product carousel): milk starts in the big
+  place, paneer on the right, ghee at the bottom.
+*/
+.policy-hero-product-milk,
+.policy-hero-product-paneer,
+.policy-hero-product-ghee {
+  --policy-carousel-time: 9s;
+
+  animation: policy-hero-product-carousel var(--policy-carousel-time) ease-in-out infinite;
+}
+
+/* Paneer starts on the right (a third of the way round), ghee at the bottom (two thirds) */
+.policy-hero-product-paneer {
+  animation-delay: calc(var(--policy-carousel-time) / -3);
+}
+
+.policy-hero-product-ghee {
+  animation-delay: calc(var(--policy-carousel-time) * -2 / 3);
+}
+
+.policy-hero-product-paneer img {
+  width: 80%;
+  height: auto;
+}
+
+@keyframes policy-hero-product-carousel {
+  /* Big place, highlighted */
+  0%,
+  27%,
+  100% {
+    top: calc(39 * var(--policy-design-pixel));
+    left: calc(53 * var(--policy-design-pixel));
+    width: calc(170 * var(--policy-design-pixel));
+    height: calc(170 * var(--policy-design-pixel));
+    z-index: 3;
+    opacity: 1;
+    /* Minimal highlight: thin gold ring, the soft white ring outside it, a faint warm glow */
+    box-shadow:
+      0 0 0 calc(3 * var(--policy-design-pixel)) rgba(245, 194, 66, 0.85),
+      0 0 0 calc(11 * var(--policy-design-pixel)) rgba(255, 255, 255, 0.16),
+      0 0 calc(18 * var(--policy-design-pixel)) 0 rgba(255, 214, 120, 0.25);
+  }
+  /* Right place */
+  33.33%,
+  60% {
+    top: calc(61 * var(--policy-design-pixel));
+    left: calc(243 * var(--policy-design-pixel));
+    width: calc(128 * var(--policy-design-pixel));
+    height: calc(128 * var(--policy-design-pixel));
+    z-index: 1;
+    opacity: 0.88;
+    box-shadow:
+      0 0 0 0 rgba(245, 194, 66, 0),
+      0 0 0 calc(10 * var(--policy-design-pixel)) rgba(255, 255, 255, 0.14),
+      0 0 0 0 rgba(255, 214, 120, 0);
+  }
+  /* Bottom place */
+  66.67%,
+  93% {
+    top: calc(196 * var(--policy-design-pixel));
+    left: calc(170 * var(--policy-design-pixel));
+    width: calc(141 * var(--policy-design-pixel));
+    height: calc(141 * var(--policy-design-pixel));
+    z-index: 2;
+    opacity: 0.88;
+    box-shadow:
+      0 0 0 0 rgba(245, 194, 66, 0),
+      0 0 0 calc(10 * var(--policy-design-pixel)) rgba(255, 255, 255, 0.14),
+      0 0 0 0 rgba(255, 214, 120, 0);
+  }
+}
+
+/* Visitors who prefer less motion: the circles stay in their starting places */
+@media (prefers-reduced-motion: reduce) {
+  .policy-hero-product-milk,
+  .policy-hero-product-paneer,
+  .policy-hero-product-ghee {
+    animation: none;
+  }
+
+  .policy-hero-product-milk {
+    top: calc(39 * var(--policy-design-pixel));
+    left: calc(53 * var(--policy-design-pixel));
+    width: calc(170 * var(--policy-design-pixel));
+    height: calc(170 * var(--policy-design-pixel));
+  }
+
+  .policy-hero-product-paneer {
+    top: calc(61 * var(--policy-design-pixel));
+    left: calc(243 * var(--policy-design-pixel));
+    width: calc(128 * var(--policy-design-pixel));
+    height: calc(128 * var(--policy-design-pixel));
+  }
+
+  .policy-hero-product-ghee {
+    top: calc(196 * var(--policy-design-pixel));
+    left: calc(170 * var(--policy-design-pixel));
+    width: calc(141 * var(--policy-design-pixel));
+    height: calc(141 * var(--policy-design-pixel));
+  }
+}
+
+.policy-hero-product-ghee img {
+  height: 66%;
+}
+
+/* "On this page" menu and the policy cards */
+
+.policy-body {
+  display: grid;
+  grid-template-columns: calc(294 * var(--policy-design-pixel)) 1fr;
+  gap: calc(48 * var(--policy-design-pixel));
+  align-items: start;
+  margin: calc(56 * var(--policy-design-pixel)) var(--policy-side-margin) calc(64 * var(--policy-design-pixel));
+}
+
+/* Menu stays in view while the cards scroll */
+.policy-contents {
+  position: sticky;
+  top: calc(24 * var(--policy-design-pixel));
+  padding: calc(26 * var(--policy-design-pixel)) calc(18 * var(--policy-design-pixel));
+  border: 1px solid #e3eadf;
+  border-radius: calc(20 * var(--policy-design-pixel));
+  background: #ffffff;
+}
+
+.policy-contents-title {
+  padding: 0 calc(12 * var(--policy-design-pixel));
+  font-size: calc(14 * var(--policy-design-pixel));
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4a544d;
+}
+
+.policy-contents-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--policy-design-pixel));
+  margin-top: calc(14 * var(--policy-design-pixel));
+}
+
+.policy-contents-link {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(16 * var(--policy-design-pixel));
+  padding: calc(11 * var(--policy-design-pixel)) calc(12 * var(--policy-design-pixel));
+  border-radius: calc(10 * var(--policy-design-pixel));
+  font-size: calc(16 * var(--policy-design-pixel));
+  line-height: 1.35;
+  color: #1e2a22;
+  transition: background-color 150ms ease;
+}
+
+.policy-contents-link:hover,
+.policy-contents-link:focus-visible {
+  background: #f1f6ee;
+}
+
+.policy-contents-link-active,
+.policy-contents-link-active:hover,
+.policy-contents-link-active:focus-visible {
+  background: #e3eedc;
+  font-weight: 500;
+  color: #2f6b3f;
+}
+
+.policy-contents-number {
+  flex-shrink: 0;
+  padding-top: calc(1 * var(--policy-design-pixel));
+  font-size: calc(14 * var(--policy-design-pixel));
+  color: #e3a93a;
+}
+
+.policy-sections {
+  display: flex;
+  flex-direction: column;
+  gap: calc(28 * var(--policy-design-pixel));
+}
+
+.policy-card {
+  /* Leaves room above the card when the menu scrolls to it */
+  scroll-margin-top: calc(24 * var(--policy-design-pixel));
+  padding: calc(38 * var(--policy-design-pixel)) calc(44 * var(--policy-design-pixel));
+  border: 1px solid #e3eadf;
+  border-radius: calc(22 * var(--policy-design-pixel));
+  background: #ffffff;
+  box-shadow: 0 calc(4 * var(--policy-design-pixel)) calc(18 * var(--policy-design-pixel)) rgba(30, 42, 34, 0.04);
+}
+
+.policy-card-heading-row {
+  display: flex;
+  align-items: center;
+  gap: calc(18 * var(--policy-design-pixel));
+}
+
+.policy-card-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(56 * var(--policy-design-pixel));
+  height: calc(56 * var(--policy-design-pixel));
+  border-radius: calc(12 * var(--policy-design-pixel));
+  background: #e3eedc;
+  color: #2f6b3f;
+}
+
+.policy-card-icon svg {
+  width: 46%;
+  height: 46%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.policy-card-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(32 * var(--policy-design-pixel));
+  font-weight: 500;
+  color: #1e2a22;
+}
+
+.policy-card-text {
+  margin-top: calc(22 * var(--policy-design-pixel));
+  font-size: calc(17.5 * var(--policy-design-pixel));
+  line-height: 1.72;
+  color: #333b35;
+}
+
+.policy-card-text p + p {
+  margin-top: calc(16 * var(--policy-design-pixel));
+}
+
+.policy-card-text strong {
+  font-weight: 600;
+  color: #1e2a22;
+}
+
+/* Bold opening words in the banner text (e.g. "Your privacy matters to us.") */
+.policy-hero-description strong {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Light green point boxes, two per row: gold dot, title, one line (e.g. "How We Use Your Information") */
+.policy-point-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(14 * var(--policy-design-pixel));
+  margin-top: calc(18 * var(--policy-design-pixel));
+}
+
+.policy-card-text .policy-point-cards + p {
+  margin-top: calc(18 * var(--policy-design-pixel));
+}
+
+.policy-point-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--policy-design-pixel));
+  padding: calc(18 * var(--policy-design-pixel)) calc(22 * var(--policy-design-pixel)) calc(18 * var(--policy-design-pixel))
+    calc(40 * var(--policy-design-pixel));
+  border: 1px solid #e3eadf;
+  border-radius: calc(12 * var(--policy-design-pixel));
+  background: #eef4ea;
+}
+
+.policy-point-card-title {
+  position: relative;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(17.5 * var(--policy-design-pixel));
+  font-weight: 500;
+  color: #2f6b3f;
+}
+
+/* Gold dot in front of the title */
+.policy-point-card-title::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(-22 * var(--policy-design-pixel));
+  width: calc(7 * var(--policy-design-pixel));
+  height: calc(7 * var(--policy-design-pixel));
+  border-radius: 50%;
+  background: #d9a63a;
+  transform: translateY(-50%);
+}
+
+.policy-point-card-text {
+  font-size: calc(16 * var(--policy-design-pixel));
+  line-height: 1.6;
+  color: #333b35;
+}
+
+/* Cream note with a gold bar on the left */
+.policy-callout {
+  padding: calc(16 * var(--policy-design-pixel)) calc(26 * var(--policy-design-pixel));
+  border: 1px solid #f2dfae;
+  border-left: calc(4 * var(--policy-design-pixel)) solid #d9a63a;
+  border-radius: calc(12 * var(--policy-design-pixel));
+  background: #fff6e2;
+}
+
+/*
+  Phone layout (no phone design yet): the hero text on top with the products below it, the
+  "On this page" menu as a short card above the policy cards, everything one column.
+*/
+/*
+  Phone layout, from the phone design (390 wide): the banner holds only the title, a gold bar and the
+  text, with the olive ring at the top right (no product circles); then the "On this page" card and
+  the policy cards, one column, 15 from the screen sides.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .policy-page {
+    --policy-side-margin: 15px;
+  }
+
+  .policy-hero {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    margin-top: 20px;
+    padding: 36px 24px 40px;
+    border-radius: 22px;
+  }
+
+  .policy-hero-text {
+    max-width: none;
+    padding-left: 0;
+  }
+
+  .policy-hero-title {
+    font-size: 34px;
+    line-height: 1.2;
+  }
+
+  .policy-hero-title-bar {
+    display: block;
+    width: 72px;
+    height: 4px;
+    margin-top: 14px;
+    border-radius: 9999px;
+    background: #f5c242;
+  }
+
+  .policy-hero-description {
+    margin-top: 18px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 26px;
+  }
+
+  /* No product circles on phones */
+  .policy-hero-products {
+    display: none;
+  }
+
+  /* Olive ring at the top right, mostly outside the banner */
+  .policy-hero-arc {
+    top: -101px;
+    right: -100px;
+    width: 282px;
+    height: 282px;
+    border-width: 28px;
+  }
+
+  .policy-hero-dashed-circle {
+    display: none;
+  }
+
+  .policy-body {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 28px 15px 40px;
+  }
+
+  .policy-contents {
+    position: static;
+    padding: 22px 12px 14px;
+    border-radius: 18px;
+  }
+
+  .policy-contents-title {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .policy-contents-list {
+    gap: 4px;
+    margin-top: 12px;
+  }
+
+  .policy-contents-link {
+    gap: 16px;
+    padding: 9px 10px;
+    font-size: 15px;
+  }
+
+  .policy-contents-number {
+    font-size: 13px;
+  }
+
+  .policy-sections {
+    gap: 16px;
+  }
+
+  .policy-card {
+    scroll-margin-top: 80px;
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+
+  .policy-card-heading-row {
+    gap: 14px;
+  }
+
+  .policy-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .policy-card-heading {
+    font-size: 21px;
+    line-height: 1.2;
+  }
+
+  .policy-card-text {
+    margin-top: 14px;
+    font-size: 14.5px;
+    line-height: 1.72;
+  }
+
+  .policy-card-text p + p {
+    margin-top: 12px;
+  }
+
+  .policy-point-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .policy-card-text .policy-point-cards + p {
+    margin-top: 14px;
+  }
+
+  .policy-point-card {
+    gap: 4px;
+    padding: 14px 16px 14px 34px;
+    border-radius: 12px;
+  }
+
+  .policy-point-card-title {
+    font-size: 15px;
+  }
+
+  .policy-point-card-title::before {
+    left: -18px;
+    width: 6px;
+    height: 6px;
+  }
+
+  .policy-point-card-text {
+    font-size: 13.5px;
+  }
+
+  .policy-callout {
+    padding: 14px 18px;
+    border-left-width: 4px;
+  }
+}

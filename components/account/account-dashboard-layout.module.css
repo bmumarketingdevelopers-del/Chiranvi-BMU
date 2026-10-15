@@ -29,11 +29,6 @@
   color: #1e2a22;
 }
 
-/* Navigation bar: 27 from the top (as on the landing page), 40 from the sides like the dashboard (Figma) */
-.account-page-navigation {
-  padding: calc(27 * var(--landing-page-vertical-design-pixel)) calc(40 * var(--account-design-pixel)) 0;
-}
-
 /* Sidebar on the left, the open page on the right */
 .account-page-body {
   display: flex;
@@ -213,10 +208,6 @@
   */
   .account-page {
     --account-design-pixel: 0.92px;
-  }
-
-  .account-page-navigation {
-    padding: 12px 12px 0;
   }
 
   .account-page-body {

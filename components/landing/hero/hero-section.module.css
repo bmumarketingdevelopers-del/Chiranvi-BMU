@@ -93,36 +93,7 @@
   border-radius: 50%;
 }
 
-/*
-  Navigation bar placement: sticky over the whole landing page.
-  The holder sits just before the hero, is 0 tall and sticks to the top of the screen; the bar
-  hangs from it at the Figma position (47 from the sides, 27 from the top), above every section.
-  The holder is a size container, so 100cqw is the page width, as inside the hero.
-*/
-
-.landing-hero-sticky-navigation {
-  position: sticky;
-  z-index: 50;
-  top: 0;
-  height: 0;
-  container-type: inline-size;
-}
-
-.landing-hero-navigation-bar-position {
-  /* The hero's units (see .landing-hero-canvas), repeated here because the bar is outside the hero. */
-  --landing-page-horizontal-design-pixel: calc(100cqw / 1440);
-  --landing-page-design-pixel: min(
-    var(--landing-viewport-width-at-starting-zoom, 100cqw) / 1440,
-    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
-  );
-  --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
-
-  position: absolute;
-  z-index: 3;
-  left: calc(47 * var(--landing-page-horizontal-design-pixel));
-  right: calc(47 * var(--landing-page-horizontal-design-pixel));
-  top: calc(27 * var(--landing-page-vertical-design-pixel));
-}
+/* Navigation bar placement: components/navigation/site-navigation-placement (shared by every page) */
 
 /* Left text column (sizes use the text unit; total height 419, centred 489.5 from the top as in Figma) */
 
@@ -427,16 +398,7 @@
     height: calc(700 * var(--landing-page-design-pixel));
   }
 
-  /* Phone navigation bar: across the top of the hero, over the product block (as on desktop). */
-  .landing-hero-navigation-bar-position {
-    position: absolute;
-    z-index: 5;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-  }
-
-  .satisfied-customers-summary {
+    .satisfied-customers-summary {
     left: auto;
     right: calc(14 * var(--landing-hero-mobile-design-pixel));
     bottom: calc(16 * var(--landing-hero-mobile-design-pixel));

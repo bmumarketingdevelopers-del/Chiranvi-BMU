@@ -47,16 +47,18 @@
   height: calc(62 * var(--site-footer-design-pixel));
 }
 
+/* Figma: Poppins Medium 14, line height auto (21), #5B6B60, box 395 wide */
 .site-footer-description {
-  max-width: calc(290 * var(--site-footer-design-pixel));
+  max-width: calc(306 * var(--site-footer-design-pixel));
   margin-top: calc(14 * var(--site-footer-design-pixel));
-  font-size: calc(12 * var(--site-footer-design-pixel));
+  font-size: calc(10.85 * var(--site-footer-design-pixel));
+  font-weight: 500;
   line-height: calc(16.3 * var(--site-footer-design-pixel));
-  color: #576c5e;
+  color: #5b6b60;
 }
 
 .site-footer-copyright {
-  margin-top: calc(26 * var(--site-footer-design-pixel));
+  margin-top: calc(35 * var(--site-footer-design-pixel));
   font-size: calc(10.5 * var(--site-footer-design-pixel));
   line-height: calc(14 * var(--site-footer-design-pixel));
   color: #59695f;
@@ -71,7 +73,8 @@
 
 /* Column titles: Poppins Bold, very dark green (measured from the design close-ups) */
 .site-footer-column-title {
-  font-size: calc(13 * var(--site-footer-design-pixel));
+  /* Figma: Poppins Bold 16 (in a 1440 frame) */
+  font-size: calc(12.4 * var(--site-footer-design-pixel));
   font-weight: 700;
   line-height: calc(18 * var(--site-footer-design-pixel));
   color: #162416;
@@ -80,19 +83,20 @@
 .site-footer-link-list {
   display: flex;
   flex-direction: column;
-  /* One link every 20 design pixels, starting 26.5 below the column title's top, as in the design */
+  /* Figma: one link every 26 (20 here), the first 35 below the title's top (27 here) */
   gap: calc(6 * var(--site-footer-design-pixel));
-  margin-top: calc(8.5 * var(--site-footer-design-pixel));
+  margin-top: calc(9 * var(--site-footer-design-pixel));
 }
 
 /* Block, so each row is exactly the link's own height (not the page's default text height). */
 .site-footer-link {
   display: block;
   width: fit-content;
-  font-size: calc(11.5 * var(--site-footer-design-pixel));
-  font-weight: 400;
+  /* Figma: Poppins Medium 14, #7A877E */
+  font-size: calc(10.85 * var(--site-footer-design-pixel));
+  font-weight: 500;
   line-height: calc(14 * var(--site-footer-design-pixel));
-  color: #79867b;
+  color: #7a877e;
   transition: color 150ms ease;
 }
 
@@ -106,16 +110,17 @@
   margin-top: calc(3 * var(--site-footer-design-pixel));
   /* Each line stays on one line, as in the design (it may run slightly past the column). */
   white-space: nowrap;
-  font-size: calc(11.5 * var(--site-footer-design-pixel));
-  font-weight: 400;
+  font-size: calc(10.85 * var(--site-footer-design-pixel));
+  font-weight: 500;
   line-height: calc(16.7 * var(--site-footer-design-pixel));
-  color: #79867b;
+  color: #7a877e;
 }
 
 .site-footer-social-links {
   display: flex;
-  gap: calc(11 * var(--site-footer-design-pixel));
-  margin-top: calc(26 * var(--site-footer-design-pixel));
+  /* Figma: icons 22 across, 9.5 apart, 18 under the text */
+  gap: calc(7.4 * var(--site-footer-design-pixel));
+  margin-top: calc(14 * var(--site-footer-design-pixel));
 }
 
 .site-footer-social-link {
@@ -130,8 +135,8 @@
 
 .site-footer-social-icon {
   display: block;
-  width: calc(21 * var(--site-footer-design-pixel));
-  height: calc(21 * var(--site-footer-design-pixel));
+  width: calc(17 * var(--site-footer-design-pixel));
+  height: calc(17 * var(--site-footer-design-pixel));
 }
 
 /*
@@ -139,6 +144,11 @@
   two per row, then Get in touch.
 */
 :global(html:has(style[data-landing-layout="mobile"])) {
+  /* Phones: the description wraps by itself */
+  .site-footer-description-break {
+    display: none;
+  }
+
   .site-footer {
     width: auto;
     max-width: none;

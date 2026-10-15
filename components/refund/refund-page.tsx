@@ -1,24 +1,9 @@
-"use client";
-
-import { useEffect, useState, type ReactNode } from "react";
-import Image from "next/image";
-import SiteFooter from "@/components/footer/site-footer";
-import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-layout-runner";
-import LoginBottomSheet from "@/components/login/login-bottom-sheet";
-import SiteNavigationBar from "@/components/navigation/site-navigation-bar";
-import styles from "./refund-page.module.css";
+import PolicyPage, { PolicyCallout, type PolicySection } from "@/components/policy-page/policy-page";
 
 /*
-  The /refund page ("Refund" in the site footer opens it), from the design:
-  - green hero banner: the title and a short line on the left; on the right a wide olive arc with
-    the milk and paneer side by side in white circles and the ghee below them;
-  - "On this page" menu on the left (stays in view while scrolling, and stops with the last card,
-    Contact Us; the section being read is highlighted, clicking an item scrolls to it), and the four
-    policy cards on the right;
-  - then the shared site footer.
+  The /refund page ("Refund" in the site footer opens it): the shared policy page layout
+  (components/policy-page) with the Refund Policy title, short line and four cards.
 */
-
-type PolicySection = { id: string; title: string; iconPaths: string[]; content: ReactNode };
 
 const policySections: PolicySection[] = [
   {
@@ -32,7 +17,7 @@ const policySections: PolicySection[] = [
           customers. Since our products include perishable items such as milk, paneer, butter and other dairy products,
           maintaining freshness, hygiene and food safety is our highest priority.
         </p>
-        <p className={styles["refund-callout"]}>
+        <PolicyCallout>
           Due to the perishable nature of these products,{" "}
           <strong>
             all purchases are final, and we do not offer refunds once an order has been placed and confirmed.
@@ -41,7 +26,7 @@ const policySections: PolicySection[] = [
           the preparation or delivery process, we cannot guarantee the conditions under which the products may be stored
           or handled if returned. Reselling returned perishable products could compromise food safety and product
           quality.
-        </p>
+        </PolicyCallout>
         <p>
           For these reasons, we do not accept product returns or provide refunds for changes of mind, incorrect product
           selection, unwanted purchases or other personal preferences.
@@ -103,134 +88,12 @@ const policySections: PolicySection[] = [
   },
 ];
 
-function PolicyIcon({ iconPaths }: { iconPaths: string[] }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      {iconPaths.map((iconPath) => (
-        <path key={iconPath} d={iconPath} />
-      ))}
-    </svg>
-  );
-}
-
 export default function RefundPage() {
-  const [activeSectionId, setActiveSectionId] = useState(policySections[0].id);
-
-  // Highlight the section being read in the "On this page" menu.
-  useEffect(() => {
-    const sectionObserver = new IntersectionObserver(
-      (entries) => {
-        const visibleEntry = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (visibleEntry) setActiveSectionId(visibleEntry.target.id);
-      },
-      { rootMargin: "-25% 0px -55% 0px" },
-    );
-    for (const policySection of policySections) {
-      const sectionElement = document.getElementById(policySection.id);
-      if (sectionElement) sectionObserver.observe(sectionElement);
-    }
-    return () => sectionObserver.disconnect();
-  }, []);
-
-  function scrollToSection(sectionId: string) {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setActiveSectionId(sectionId);
-  }
-
   return (
-    <div className={styles["refund-page"]}>
-      <LandingZoomAndLayoutRunner />
-
-      <div className={styles["refund-page-navigation"]}>
-        <SiteNavigationBar />
-      </div>
-
-      {/* Hero banner */}
-      <section className={styles["refund-hero"]} aria-labelledby="refund-page-title">
-        <span className={styles["refund-hero-arc"]} aria-hidden="true" />
-        <span className={styles["refund-hero-dashed-circle"]} aria-hidden="true" />
-
-        <div className={styles["refund-hero-text"]}>
-          <h1 id="refund-page-title" className={styles["refund-hero-title"]}>
-            Refund Policy
-          </h1>
-          <p className={styles["refund-hero-description"]}>
-            At Chiranvi Farms, freshness matters. Every product is handled with care to bring quality and goodness to
-            your home.
-          </p>
-        </div>
-
-        <div className={styles["refund-hero-products"]} aria-hidden="true">
-          <span className={`${styles["refund-hero-product-circle"]} ${styles["refund-hero-product-milk"]}`}>
-            <Image
-              src="/images/products/a2-cow-milk-1-litre-bottle.webp"
-              alt=""
-              width={232}
-              height={500}
-              sizes="80px"
-            />
-          </span>
-          <span className={`${styles["refund-hero-product-circle"]} ${styles["refund-hero-product-paneer"]}`}>
-            <Image src="/images/products/fresh-paneer-200g-box.webp" alt="" width={604} height={444} sizes="140px" />
-          </span>
-          <span className={`${styles["refund-hero-product-circle"]} ${styles["refund-hero-product-ghee"]}`}>
-            <Image src="/images/products/desi-ghee-jar.webp" alt="" width={1524} height={2204} sizes="100px" />
-          </span>
-        </div>
-      </section>
-
-      {/* "On this page" menu and the policy cards */}
-      <div className={styles["refund-body"]}>
-        <nav aria-label="On this page" className={styles["refund-contents"]}>
-          <p className={styles["refund-contents-title"]}>On this page</p>
-          <ol className={styles["refund-contents-list"]}>
-            {policySections.map((policySection, sectionIndex) => (
-              <li key={policySection.id}>
-                <a
-                  href={`#${policySection.id}`}
-                  aria-current={activeSectionId === policySection.id ? "location" : undefined}
-                  className={`${styles["refund-contents-link"]} ${
-                    activeSectionId === policySection.id ? styles["refund-contents-link-active"] : ""
-                  }`}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    scrollToSection(policySection.id);
-                  }}
-                >
-                  <span className={styles["refund-contents-number"]}>{String(sectionIndex + 1).padStart(2, "0")}</span>
-                  {policySection.title}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-
-        <div className={styles["refund-sections"]}>
-          {policySections.map((policySection) => (
-            <section
-              key={policySection.id}
-              id={policySection.id}
-              aria-labelledby={`${policySection.id}-heading`}
-              className={styles["refund-card"]}
-            >
-              <div className={styles["refund-card-heading-row"]}>
-                <span className={styles["refund-card-icon"]}>
-                  <PolicyIcon iconPaths={policySection.iconPaths} />
-                </span>
-                <h2 id={`${policySection.id}-heading`} className={styles["refund-card-heading"]}>
-                  {policySection.title}
-                </h2>
-              </div>
-              <div className={styles["refund-card-text"]}>{policySection.content}</div>
-            </section>
-          ))}
-        </div>
-      </div>
-
-      <SiteFooter />
-      <LoginBottomSheet />
-    </div>
+    <PolicyPage
+      title="Refund Policy"
+      description="At Chiranvi Farms, freshness matters. Every product is handled with care to bring quality and goodness to your home."
+      sections={policySections}
+    />
   );
 }
