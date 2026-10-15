@@ -15,7 +15,8 @@
   --landing-page-vertical-design-pixel: max(100svh / 916, var(--landing-page-design-pixel));
   /* Medium size: the design size at 0.98, following the screen width and height like the landing page */
   --refund-design-pixel: calc(0.98 * var(--landing-page-design-pixel));
-  --refund-side-margin: calc(47 * var(--landing-page-horizontal-design-pixel));
+  /* Side margins of the design: the navigation bar, banner and cards sit 142 in from each side */
+  --refund-side-margin: calc(142 * var(--landing-page-horizontal-design-pixel));
 
   display: flow-root;
   min-height: 100svh;
@@ -32,25 +33,33 @@
 
 /* Hero banner */
 
+/*
+  The banner keeps the design proportions (1346 x 415): everything in it is sized from the banner
+  width, so it never stretches into a long flat strip on wide screens.
+*/
 .refund-hero {
+  --refund-design-pixel: calc(
+    (var(--landing-viewport-width-at-starting-zoom, 100vw) - 2 * var(--refund-side-margin)) / 1346
+  );
+
   position: relative;
   display: flex;
   align-items: center;
-  height: calc(426 * var(--refund-design-pixel));
+  height: calc(415 * var(--refund-design-pixel));
   margin: calc(32 * var(--refund-design-pixel)) var(--refund-side-margin) 0;
   overflow: hidden;
   border-radius: calc(28 * var(--refund-design-pixel));
   background: #2b5e3c;
 }
 
-/* Wide olive ring on the right, behind the products */
+/* Olive ring around the products, as in the design (centre 200 from the right, 140 from the top; 273 outer radius, 36 thick) */
 .refund-hero-arc {
   position: absolute;
-  top: calc(-90 * var(--refund-design-pixel));
-  right: calc(-250 * var(--refund-design-pixel));
-  width: calc(720 * var(--refund-design-pixel));
-  height: calc(720 * var(--refund-design-pixel));
-  border: calc(62 * var(--refund-design-pixel)) solid #677a3d;
+  top: calc(-133 * var(--refund-design-pixel));
+  right: calc(-73 * var(--refund-design-pixel));
+  width: calc(546 * var(--refund-design-pixel));
+  height: calc(546 * var(--refund-design-pixel));
+  border: calc(36 * var(--refund-design-pixel)) solid #677a3d;
   border-radius: 50%;
 }
 
@@ -69,44 +78,22 @@
   position: relative;
   z-index: 1;
   max-width: calc(760 * var(--refund-design-pixel));
-  padding-left: calc(66 * var(--refund-design-pixel));
-}
-
-.refund-breadcrumb {
-  display: flex;
-  gap: calc(10 * var(--refund-design-pixel));
-  font-size: calc(16 * var(--refund-design-pixel));
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.refund-breadcrumb a:hover,
-.refund-breadcrumb a:focus-visible {
-  text-decoration: underline;
+  padding-left: calc(65 * var(--refund-design-pixel));
 }
 
 .refund-hero-title {
-  margin-top: calc(16 * var(--refund-design-pixel));
   font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(64 * var(--refund-design-pixel));
+  font-size: calc(56 * var(--refund-design-pixel));
   font-weight: 500;
   line-height: 1.15;
   color: #ffffff;
 }
 
-.refund-hero-title-bar {
-  display: block;
-  width: calc(84 * var(--refund-design-pixel));
-  height: calc(5 * var(--refund-design-pixel));
-  margin-top: calc(18 * var(--refund-design-pixel));
-  border-radius: 9999px;
-  background: #f5c242;
-}
-
 .refund-hero-description {
-  margin-top: calc(26 * var(--refund-design-pixel));
-  font-size: calc(19 * var(--refund-design-pixel));
-  font-weight: 500;
-  line-height: 1.7;
+  margin-top: calc(34 * var(--refund-design-pixel));
+  font-size: calc(18 * var(--refund-design-pixel));
+  font-weight: 400;
+  line-height: 1.75;
   color: rgba(255, 255, 255, 0.92);
 }
 
@@ -135,18 +122,31 @@
   object-fit: contain;
 }
 
-.refund-hero-product-milk {
-  top: calc(64 * var(--refund-design-pixel));
-  left: calc(14 * var(--refund-design-pixel));
-  width: calc(176 * var(--refund-design-pixel));
-  height: calc(176 * var(--refund-design-pixel));
+/*
+  The three circles take turns in the three places of the design (measured from it):
+    big place     170 across, centre 282 from the right / 124 from the top  (highlighted: in front, thin gold ring and
+                  faint glow; the other two are a little dimmed)
+    right place   128 across, centre 113 / 125
+    bottom place  141 across, centre 179 / 266
+  Every 3 seconds each circle glides to the next place, big -> right -> bottom -> big, growing or
+  shrinking to its size (same timing as the Refer a Friend product carousel): milk starts in the big
+  place, paneer on the right, ghee at the bottom.
+*/
+.refund-hero-product-milk,
+.refund-hero-product-paneer,
+.refund-hero-product-ghee {
+  --refund-carousel-time: 9s;
+
+  animation: refund-hero-product-carousel var(--refund-carousel-time) ease-in-out infinite;
 }
 
+/* Paneer starts on the right (a third of the way round), ghee at the bottom (two thirds) */
 .refund-hero-product-paneer {
-  top: calc(100 * var(--refund-design-pixel));
-  left: calc(226 * var(--refund-design-pixel));
-  width: calc(136 * var(--refund-design-pixel));
-  height: calc(136 * var(--refund-design-pixel));
+  animation-delay: calc(var(--refund-carousel-time) / -3);
+}
+
+.refund-hero-product-ghee {
+  animation-delay: calc(var(--refund-carousel-time) * -2 / 3);
 }
 
 .refund-hero-product-paneer img {
@@ -154,43 +154,85 @@
   height: auto;
 }
 
-.refund-hero-product-ghee {
-  top: calc(216 * var(--refund-design-pixel));
-  left: calc(110 * var(--refund-design-pixel));
-  width: calc(148 * var(--refund-design-pixel));
-  height: calc(148 * var(--refund-design-pixel));
+@keyframes refund-hero-product-carousel {
+  /* Big place, highlighted */
+  0%,
+  27%,
+  100% {
+    top: calc(39 * var(--refund-design-pixel));
+    left: calc(53 * var(--refund-design-pixel));
+    width: calc(170 * var(--refund-design-pixel));
+    height: calc(170 * var(--refund-design-pixel));
+    z-index: 3;
+    opacity: 1;
+    /* Minimal highlight: thin gold ring, the soft white ring outside it, a faint warm glow */
+    box-shadow:
+      0 0 0 calc(3 * var(--refund-design-pixel)) rgba(245, 194, 66, 0.85),
+      0 0 0 calc(11 * var(--refund-design-pixel)) rgba(255, 255, 255, 0.16),
+      0 0 calc(18 * var(--refund-design-pixel)) 0 rgba(255, 214, 120, 0.25);
+  }
+  /* Right place */
+  33.33%,
+  60% {
+    top: calc(61 * var(--refund-design-pixel));
+    left: calc(243 * var(--refund-design-pixel));
+    width: calc(128 * var(--refund-design-pixel));
+    height: calc(128 * var(--refund-design-pixel));
+    z-index: 1;
+    opacity: 0.88;
+    box-shadow:
+      0 0 0 0 rgba(245, 194, 66, 0),
+      0 0 0 calc(10 * var(--refund-design-pixel)) rgba(255, 255, 255, 0.14),
+      0 0 0 0 rgba(255, 214, 120, 0);
+  }
+  /* Bottom place */
+  66.67%,
+  93% {
+    top: calc(196 * var(--refund-design-pixel));
+    left: calc(170 * var(--refund-design-pixel));
+    width: calc(141 * var(--refund-design-pixel));
+    height: calc(141 * var(--refund-design-pixel));
+    z-index: 2;
+    opacity: 0.88;
+    box-shadow:
+      0 0 0 0 rgba(245, 194, 66, 0),
+      0 0 0 calc(10 * var(--refund-design-pixel)) rgba(255, 255, 255, 0.14),
+      0 0 0 0 rgba(255, 214, 120, 0);
+  }
+}
+
+/* Visitors who prefer less motion: the circles stay in their starting places */
+@media (prefers-reduced-motion: reduce) {
+  .refund-hero-product-milk,
+  .refund-hero-product-paneer,
+  .refund-hero-product-ghee {
+    animation: none;
+  }
+
+  .refund-hero-product-milk {
+    top: calc(39 * var(--refund-design-pixel));
+    left: calc(53 * var(--refund-design-pixel));
+    width: calc(170 * var(--refund-design-pixel));
+    height: calc(170 * var(--refund-design-pixel));
+  }
+
+  .refund-hero-product-paneer {
+    top: calc(61 * var(--refund-design-pixel));
+    left: calc(243 * var(--refund-design-pixel));
+    width: calc(128 * var(--refund-design-pixel));
+    height: calc(128 * var(--refund-design-pixel));
+  }
+
+  .refund-hero-product-ghee {
+    top: calc(196 * var(--refund-design-pixel));
+    left: calc(170 * var(--refund-design-pixel));
+    width: calc(141 * var(--refund-design-pixel));
+    height: calc(141 * var(--refund-design-pixel));
+  }
 }
 
 .refund-hero-product-ghee img {
   height: 66%;
-}
-
-.refund-hero-farm-fresh-tag {
-  position: absolute;
-  top: calc(292 * var(--refund-design-pixel));
-  left: calc(225 * var(--refund-design-pixel));
-  display: flex;
-  align-items: center;
-  gap: calc(8 * var(--refund-design-pixel));
-  height: calc(40 * var(--refund-design-pixel));
-  padding: 0 calc(18 * var(--refund-design-pixel));
-  border-radius: 9999px;
-  background: #f5c242;
-  box-shadow: 0 calc(4 * var(--refund-design-pixel)) calc(12 * var(--refund-design-pixel)) rgba(0, 0, 0, 0.18);
-  font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(15 * var(--refund-design-pixel));
-  font-weight: 500;
-  color: #1e2a22;
-}
-
-.refund-hero-farm-fresh-tag svg {
-  width: calc(16 * var(--refund-design-pixel));
-  height: calc(16 * var(--refund-design-pixel));
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 /* "On this page" menu and the policy cards */
@@ -337,41 +379,6 @@
   background: #fff6e2;
 }
 
-/* Thank-you banner across both columns */
-.refund-thank-you {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: calc(22 * var(--refund-design-pixel));
-  margin-top: calc(28 * var(--refund-design-pixel));
-  padding: calc(30 * var(--refund-design-pixel)) calc(36 * var(--refund-design-pixel));
-  border-radius: calc(22 * var(--refund-design-pixel));
-  background: #f5ead3;
-  font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(21 * var(--refund-design-pixel));
-  font-weight: 500;
-  line-height: 1.45;
-  color: #1e2a22;
-}
-
-.refund-thank-you-heart {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: calc(60 * var(--refund-design-pixel));
-  height: calc(60 * var(--refund-design-pixel));
-  border-radius: 50%;
-  background: #2b5e3c;
-  box-shadow: 0 0 0 calc(7 * var(--refund-design-pixel)) #e4dcc2;
-}
-
-.refund-thank-you-heart svg {
-  width: 40%;
-  height: 40%;
-  fill: #ffffff;
-}
-
 /*
   Phone layout (no phone design yet): the hero text on top with the products below it, the
   "On this page" menu as a short card above the policy cards, everything one column.
@@ -399,20 +406,8 @@
     padding-left: 0;
   }
 
-  .refund-breadcrumb {
-    gap: 8px;
-    font-size: 13px;
-  }
-
   .refund-hero-title {
-    margin-top: 10px;
     font-size: 34px;
-  }
-
-  .refund-hero-title-bar {
-    width: 56px;
-    height: 4px;
-    margin-top: 12px;
   }
 
   .refund-hero-description {
@@ -424,9 +419,9 @@
     --refund-design-pixel: 0.62px;
 
     position: relative;
-    /* Width of the product group itself (milk to paneer), so it sits in the middle */
+    /* The product group's area, so the circles sit in the middle */
     align-self: center;
-    width: 236px;
+    width: 263px;
     height: 250px;
     margin: 4px 0 -20px;
   }
@@ -503,19 +498,5 @@
   .refund-callout {
     padding: 12px 14px;
     border-left-width: 3px;
-  }
-
-  .refund-thank-you {
-    gap: 14px;
-    margin-top: 0;
-    padding: 20px 18px;
-    border-radius: 18px;
-    font-size: 15.5px;
-  }
-
-  .refund-thank-you-heart {
-    width: 44px;
-    height: 44px;
-    box-shadow: 0 0 0 5px #e4dcc2;
   }
 }

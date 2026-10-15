@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import SiteFooter from "@/components/footer/site-footer";
 import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-layout-runner";
 import LoginBottomSheet from "@/components/login/login-bottom-sheet";
@@ -11,11 +10,12 @@ import styles from "./refund-page.module.css";
 
 /*
   The /refund page ("Refund" in the site footer opens it), from the design:
-  - green hero banner: "Home / Refund Policy", the title with a gold bar under it, a short line,
-    and on the right the milk, paneer and ghee in white circles with a "Farm fresh" tag;
-  - "On this page" menu on the left (stays in view while scrolling; the section being read is
-    highlighted, clicking an item scrolls to it), and the four policy cards on the right;
-  - the "Thank you for choosing Chiranvi Farms" banner, then the shared site footer.
+  - green hero banner: the title and a short line on the left; on the right a wide olive arc with
+    the milk and paneer side by side in white circles and the ghee below them;
+  - "On this page" menu on the left (stays in view while scrolling, and stops with the last card,
+    Contact Us; the section being read is highlighted, clicking an item scrolls to it), and the four
+    policy cards on the right;
+  - then the shared site footer.
 */
 
 type PolicySection = { id: string; title: string; iconPaths: string[]; content: ReactNode };
@@ -153,15 +153,9 @@ export default function RefundPage() {
         <span className={styles["refund-hero-dashed-circle"]} aria-hidden="true" />
 
         <div className={styles["refund-hero-text"]}>
-          <nav aria-label="Breadcrumb" className={styles["refund-breadcrumb"]}>
-            <Link href="/">Home</Link>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">Refund Policy</span>
-          </nav>
           <h1 id="refund-page-title" className={styles["refund-hero-title"]}>
             Refund Policy
           </h1>
-          <span className={styles["refund-hero-title-bar"]} aria-hidden="true" />
           <p className={styles["refund-hero-description"]}>
             At Chiranvi Farms, freshness matters. Every product is handled with care to bring quality and goodness to
             your home.
@@ -183,13 +177,6 @@ export default function RefundPage() {
           </span>
           <span className={`${styles["refund-hero-product-circle"]} ${styles["refund-hero-product-ghee"]}`}>
             <Image src="/images/products/desi-ghee-jar.webp" alt="" width={1524} height={2204} sizes="100px" />
-          </span>
-          <span className={styles["refund-hero-farm-fresh-tag"]}>
-            <svg viewBox="0 0 24 24">
-              <path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14Z" />
-              <path d="M5 19l7-7" />
-            </svg>
-            Farm fresh
           </span>
         </div>
       </section>
@@ -240,17 +227,6 @@ export default function RefundPage() {
             </section>
           ))}
         </div>
-
-        {/* Thank-you banner, across both columns */}
-        <p className={styles["refund-thank-you"]}>
-          <span className={styles["refund-thank-you-heart"]} aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />
-            </svg>
-          </span>
-          Thank you for choosing Chiranvi Farms. Your trust inspires us to deliver quality, freshness and goodness to
-          your home.
-        </p>
       </div>
 
       <SiteFooter />
