@@ -33,7 +33,7 @@ export default function LogoutConfirmationDialog({
   }, []);
 
   return (
-    <div className={styles["logout-dialog-overlay"]}>
+    <div className={styles["logout-dialog-overlay"]} data-lenis-prevent>
       <button type="button" aria-label="Stay logged in" className={styles["logout-dialog-dimmed-page"]} onClick={onCancel} />
       <div
         role="alertdialog"

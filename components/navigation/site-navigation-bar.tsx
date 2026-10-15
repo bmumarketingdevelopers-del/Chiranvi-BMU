@@ -274,7 +274,7 @@ export default function SiteNavigationBar() {
 
               {/* Results list under the box, shown once something is typed */}
               {searchText.trim() !== "" && (
-                <div className={styles["site-navigation-bar-search-results"]}>
+                <div className={styles["site-navigation-bar-search-results"]} data-lenis-prevent>
                   {searchResults.length === 0 ? (
                     <p className={styles["site-navigation-bar-search-no-results"]}>
                       No products found for “{searchText.trim()}”

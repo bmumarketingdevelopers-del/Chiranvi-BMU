@@ -47,7 +47,7 @@ export default function LoginBottomSheet() {
   if (!isLoginSheetOpen) return null;
 
   return (
-    <div className={styles["login-bottom-sheet-overlay"]}>
+    <div className={styles["login-bottom-sheet-overlay"]} data-lenis-prevent>
       <button
         type="button"
         aria-label="Close login"

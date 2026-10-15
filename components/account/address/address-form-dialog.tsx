@@ -130,7 +130,7 @@ export default function AddressFormDialog({
   }
 
   return (
-    <div className={styles["address-dialog-overlay"]}>
+    <div className={styles["address-dialog-overlay"]} data-lenis-prevent>
       <button
         type="button"
         aria-label="Close without saving"
