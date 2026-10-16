@@ -53,21 +53,21 @@ export default function SiteFooter() {
           <div className={styles["site-footer-brand"]}>
             <Link href="/" className={styles["site-footer-logo-link"]}>
               <Image
-                src="/images/brand/chiranvi-farms-logo.webp"
-                alt="Chiranvi Farms"
-                width={499}
-                height={220}
+                src="/images/brand/chiranvi-farm-logo.webp"
+                alt="Chiranvi Farm"
+                width={516}
+                height={240}
                 className={styles["site-footer-logo-image"]}
               />
             </Link>
             <p className={styles["site-footer-description"]}>
               {/* Line breaks as in the design (desktop only) */}
-              Chiranvi Farms brings you fresh, natural dairy <br className={styles["site-footer-description-break"]} />
+              Chiranvi Farm brings you fresh, natural dairy <br className={styles["site-footer-description-break"]} />
               products straight from the farm. Enjoy wholesome{" "}
               <br className={styles["site-footer-description-break"]} />
               goodness and quality you can trust every day.
             </p>
-            <p className={styles["site-footer-copyright"]}>© 2026 Chiranvi Farms. All rights reserved.</p>
+            <p className={styles["site-footer-copyright"]}>© 2026 Chiranvi Farm. All rights reserved.</p>
           </div>
 
           {footerLinkColumns.map((footerLinkColumn) => (

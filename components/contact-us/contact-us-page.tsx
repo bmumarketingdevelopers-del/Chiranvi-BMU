@@ -104,7 +104,7 @@ export default function ContactUsPage() {
                   </svg>
                 </span>
                 <span className={styles["contact-us-card-address"]}>
-                  Chiranvi Farms, Ramanagara,
+                  Chiranvi Farm, Ramanagara,
                   <br />
                   Thagachakere, Karnataka 562160
                 </span>

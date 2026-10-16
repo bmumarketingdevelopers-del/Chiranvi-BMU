@@ -16,12 +16,12 @@ import styles from "./shop-by-category-section.module.css";
 // Transparent product cut-outs; the circle's light gradient shows behind them.
 // Milk and ghee reuse the hero's product images.
 const productCategories = [
-  { name: "Milk", imageSource: "/images/products/desi-cow-milk-bottle.webp", imageWidth: 1188, imageHeight: 2312 },
+  { name: "Milk", imageSource: "/images/products/desi-cow-milk-bottle-chiranvi-farm.webp", imageWidth: 1188, imageHeight: 2312 },
   { name: "Paneer", imageSource: "/images/categories/paneer-category.webp", imageWidth: 428, imageHeight: 288 },
-  { name: "Ghee", imageSource: "/images/products/desi-ghee-jar.webp", imageWidth: 1524, imageHeight: 2204 },
+  { name: "Ghee", imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204 },
   { name: "Butter", imageSource: "/images/categories/butter-category.webp", imageWidth: 412, imageHeight: 272 },
-  { name: "Flours", imageSource: "/images/categories/flours-category.webp", imageWidth: 412, imageHeight: 276 },
-  { name: "Batter", imageSource: "/images/categories/batter-category.webp", imageWidth: 372, imageHeight: 248 },
+  { name: "Flours", imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276 },
+  { name: "Batter", imageSource: "/images/categories/batter-category-chiranvi-farm.webp", imageWidth: 372, imageHeight: 248 },
 ];
 
 export default function ShopByCategorySection() {

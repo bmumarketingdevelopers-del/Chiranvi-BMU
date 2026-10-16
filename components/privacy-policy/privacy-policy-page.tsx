@@ -57,7 +57,7 @@ const privacySections: PolicySection[] = [
       <>
         <p>
           We use your personal information only for legitimate business purposes related to your experience with
-          Chiranvi Farms, including:
+          Chiranvi Farm, including:
         </p>
         <PolicyPointCards points={informationUses} />
         <p>We aim to collect and use only the information necessary to provide these services.</p>
@@ -74,7 +74,7 @@ const privacySections: PolicySection[] = [
     content: (
       <>
         <p>
-          Chiranvi Farms may use WhatsApp to send OTP verification codes, order confirmations, payment-related
+          Chiranvi Farm may use WhatsApp to send OTP verification codes, order confirmations, payment-related
           notifications, delivery updates and other essential service communications.
         </p>
         <p>
@@ -100,7 +100,7 @@ const privacySections: PolicySection[] = [
           may process the information necessary to securely complete transactions and verify payment status.
         </p>
         <p>
-          Chiranvi Farms does not intentionally store complete payment card details or other sensitive payment
+          Chiranvi Farm does not intentionally store complete payment card details or other sensitive payment
           credentials unless specifically required and handled in accordance with applicable security requirements.
         </p>
         <p>
@@ -221,7 +221,7 @@ const privacySections: PolicySection[] = [
     content: (
       <>
         <p>
-          Chiranvi Farms may update this Privacy Policy from time to time to reflect changes in our services, business
+          Chiranvi Farm may update this Privacy Policy from time to time to reflect changes in our services, business
           practices or applicable legal requirements.
         </p>
         <p>
@@ -238,7 +238,7 @@ const privacySections: PolicySection[] = [
     content: (
       <p>
         If you have questions, concerns or requests regarding your personal information or this Privacy Policy, please
-        contact Chiranvi Farms through the customer support details listed on our website.
+        contact Chiranvi Farm through the customer support details listed on our website.
       </p>
     ),
   },
@@ -250,7 +250,7 @@ export default function PrivacyPolicyPage() {
       title="Privacy Policy"
       description={
         <>
-          <strong>Your privacy matters to us.</strong> At Chiranvi Farms, we are committed to protecting your personal
+          <strong>Your privacy matters to us.</strong> At Chiranvi Farm, we are committed to protecting your personal
           information and using it responsibly to provide you with a smooth, secure and reliable shopping experience.
         </>
       }

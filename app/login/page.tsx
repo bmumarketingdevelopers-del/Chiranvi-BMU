@@ -3,7 +3,7 @@ import { Poppins } from "next/font/google";
 import LoginPanel from "@/components/login/login-panel";
 
 export const metadata: Metadata = {
-  title: "Log in | Chiranvi Farms",
+  title: "Log in | Chiranvi Farm",
 };
 
 // The login page loads Poppins itself (the landing page's fonts are only loaded on that page).

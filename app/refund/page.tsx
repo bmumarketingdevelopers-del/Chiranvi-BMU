@@ -3,7 +3,7 @@ import { Poppins, Ubuntu } from "next/font/google";
 import RefundPage from "@/components/refund/refund-page";
 
 export const metadata: Metadata = {
-  title: "Refund Policy | Chiranvi Farms",
+  title: "Refund Policy | Chiranvi Farm",
 };
 
 const poppinsFont = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" });

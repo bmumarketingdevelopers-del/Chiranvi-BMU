@@ -133,10 +133,10 @@ export default function SiteNavigationBar() {
     >
       <Link href="/" className={styles["site-navigation-bar-logo-link"]}>
         <Image
-          src="/images/brand/chiranvi-farms-logo.webp"
-          alt="Chiranvi Farms"
-          width={499}
-          height={220}
+          src="/images/brand/chiranvi-farm-logo.webp"
+          alt="Chiranvi Farm"
+          width={516}
+          height={240}
           className={styles["site-navigation-bar-logo-image"]}
           preload
         />

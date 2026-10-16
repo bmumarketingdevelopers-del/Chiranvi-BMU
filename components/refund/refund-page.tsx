@@ -13,7 +13,7 @@ const policySections: PolicySection[] = [
     content: (
       <>
         <p>
-          At Chiranvi Farms, we are committed to delivering fresh, quality dairy products and food essentials to our
+          At Chiranvi Farm, we are committed to delivering fresh, quality dairy products and food essentials to our
           customers. Since our products include perishable items such as milk, paneer, butter and other dairy products,
           maintaining freshness, hygiene and food safety is our highest priority.
         </p>
@@ -60,7 +60,7 @@ const policySections: PolicySection[] = [
       <>
         <p>
           Although refunds are not offered under our standard policy, we want every customer to have a positive
-          experience with Chiranvi Farms.
+          experience with Chiranvi Farm.
         </p>
         <p>
           If you receive a product that appears damaged, spoiled, contaminated or incorrect, please contact our customer
@@ -81,7 +81,7 @@ const policySections: PolicySection[] = [
     iconPaths: ["M4 5h16v11H9l-5 4V5Z", "M8 9h8M8 12.5h5"],
     content: (
       <p>
-        For questions or concerns regarding your order, please contact Chiranvi Farms through the customer support
+        For questions or concerns regarding your order, please contact Chiranvi Farm through the customer support
         details provided on our website. Our team will assist you with your concern and help clarify the next steps.
       </p>
     ),
@@ -92,7 +92,7 @@ export default function RefundPage() {
   return (
     <PolicyPage
       title="Refund Policy"
-      description="At Chiranvi Farms, freshness matters. Every product is handled with care to bring quality and goodness to your home."
+      description="At Chiranvi Farm, freshness matters. Every product is handled with care to bring quality and goodness to your home."
       sections={policySections}
     />
   );

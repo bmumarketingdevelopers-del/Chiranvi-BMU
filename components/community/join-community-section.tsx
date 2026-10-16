@@ -191,7 +191,7 @@ export default function JoinCommunitySection() {
           </span>
         </h2>
         <p className={styles["join-community-description"]}>
-          Become a member and join the community, we&apos;ll send you an entry pass to Chiranvi Farms.
+          Become a member and join the community, we&apos;ll send you an entry pass to Chiranvi Farm.
           <br />
           Walk the pastures, meet our desi cows and see where your milk comes from.
         </p>

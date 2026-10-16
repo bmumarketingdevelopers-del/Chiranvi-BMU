@@ -153,7 +153,7 @@ export default function DeliveryAndOffersSection() {
             ref={vanRef}
             className={styles["delivery-van"]}
             role="img"
-            aria-label="Chiranvi Farms delivery van carrying fresh milk, ghee and vegetables"
+            aria-label="Chiranvi Farm delivery van carrying fresh milk, ghee and vegetables"
           >
             <span className={styles["delivery-van-air-streak"]} aria-hidden="true" />
             <span className={styles["delivery-van-air-streak"]} aria-hidden="true" />
@@ -168,17 +168,17 @@ export default function DeliveryAndOffersSection() {
                 sizes="500px"
                 className={styles["delivery-van-body"]}
               />
-              {/* Chiranvi Farms logo on the van side (in place of the leaf in the original picture) */}
+              {/* Chiranvi Farm logo on the van side (in place of the leaf in the original picture) */}
               <Image
-                src="/images/brand/chiranvi-farms-logo.webp"
+                src="/images/brand/chiranvi-farm-logo.webp"
                 alt=""
-                width={499}
-                height={220}
+                width={516}
+                height={240}
                 sizes="150px"
                 className={styles["delivery-van-logo"]}
               />
               <Image
-                src="/images/delivery/delivery-van-cargo.webp"
+                src="/images/delivery/delivery-van-cargo-chiranvi-farm-logo.webp"
                 alt=""
                 width={680}
                 height={218}
@@ -232,7 +232,7 @@ export default function DeliveryAndOffersSection() {
       <div className={styles["offer-cards-grid"]}>
         <Link href="/login" className={`${styles["offer-card"]} ${styles["offer-card-farm-fresh-combo"]}`}>
           <Image
-            src="/images/promotions/farm-fresh-combo-card.webp"
+            src="/images/promotions/farm-fresh-combo-card-chiranvi-farm-logos.webp"
             alt=""
             width={960}
             height={920}
@@ -249,7 +249,7 @@ export default function DeliveryAndOffersSection() {
 
         <Link href="/login" className={`${styles["offer-card"]} ${styles["offer-card-homemade-powders"]}`}>
           <Image
-            src="/images/promotions/homemade-powders-card.webp"
+            src="/images/promotions/homemade-powders-card-chiranvi-farm-logos.webp"
             alt=""
             width={960}
             height={920}
@@ -266,7 +266,7 @@ export default function DeliveryAndOffersSection() {
 
         <div className={`${styles["offer-card"]} ${styles["offer-card-pure-cow-ghee"]}`}>
           <Image
-            src="/images/promotions/pure-cow-ghee-banner.webp"
+            src="/images/promotions/pure-cow-ghee-banner-chiranvi-farm-logos.webp"
             alt="Pure Cow Ghee"
             width={2088}
             height={1928}
@@ -283,7 +283,7 @@ export default function DeliveryAndOffersSection() {
 
         <Link href="/login" className={`${styles["offer-card"]} ${styles["offer-card-fresh-dairy"]}`}>
           <Image
-            src="/images/promotions/fresh-dairy-banner.webp"
+            src="/images/promotions/fresh-dairy-banner-chiranvi-farm-logo.webp"
             alt=""
             width={1132}
             height={1928}

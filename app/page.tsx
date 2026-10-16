@@ -13,9 +13,9 @@ import SiteFooter from "@/components/footer/site-footer";
 import LoginBottomSheet from "@/components/login/login-bottom-sheet";
 import styles from "./page.module.css";
 
-// Browser tab title for the home page (the tab icon is app/favicon.ico, the Chiranvi Farms cow emblem).
+// Browser tab title for the home page (the tab icon is app/favicon.ico, the Chiranvi Farm cow emblem).
 export const metadata: Metadata = {
-  title: "Chiranvi Farms",
+  title: "Chiranvi Farm",
 };
 
 const ubuntuFont = Ubuntu({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-ubuntu" });

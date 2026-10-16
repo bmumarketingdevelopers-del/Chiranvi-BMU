@@ -26,7 +26,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   {
     name: "A2 Desi Ghee",
     label: "Ghee",
-    imageSource: "/images/products/desi-ghee-jar.webp",
+    imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp",
     imageWidth: 1524,
     imageHeight: 2204,
     extraSearchWords: "ghee cow a2 desi jar pure",
@@ -50,7 +50,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   {
     name: "Flours",
     label: "Flours",
-    imageSource: "/images/categories/flours-category.webp",
+    imageSource: "/images/categories/flours-category-chiranvi-farm.webp",
     imageWidth: 412,
     imageHeight: 276,
     extraSearchWords: "flour flours atta ragi jowar millet",
@@ -58,7 +58,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   {
     name: "Batter",
     label: "Batter",
-    imageSource: "/images/categories/batter-category.webp",
+    imageSource: "/images/categories/batter-category-chiranvi-farm.webp",
     imageWidth: 372,
     imageHeight: 248,
     extraSearchWords: "batter green gram moong dosa idli",

@@ -37,7 +37,7 @@ const bestSellingProducts = [
   },
   {
     name: "A2 Desi Ghee",
-    imageSource: "/images/products/desi-ghee-jar.webp",
+    imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp",
     imageWidth: 1524,
     imageHeight: 2204,
   },

@@ -92,7 +92,7 @@ export default function OffersPage() {
 
   // Share: the phone's share menu where there is one; otherwise the invite text is copied.
   async function shareReferralCode(code: string) {
-    const inviteText = `Get fresh A2 milk from Chiranvi Farms. Use my code ${code} when you subscribe.`;
+    const inviteText = `Get fresh A2 milk from Chiranvi Farm. Use my code ${code} when you subscribe.`;
     if (navigator.share) {
       try {
         await navigator.share({ text: inviteText });

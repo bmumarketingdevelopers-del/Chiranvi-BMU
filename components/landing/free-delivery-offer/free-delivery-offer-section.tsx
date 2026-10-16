@@ -133,7 +133,7 @@ export default function FreeDeliveryOfferSection() {
           <div
             className={styles["free-delivery-offer-scooter"]}
             role="img"
-            aria-label="Chiranvi Farms delivery rider on a green electric scooter with a delivery box"
+            aria-label="Chiranvi Farm delivery rider on a green electric scooter with a delivery box"
           >
             <span className={styles["free-delivery-offer-scooter-air-streak"]} aria-hidden="true" />
             <span className={styles["free-delivery-offer-scooter-air-streak"]} aria-hidden="true" />
@@ -141,7 +141,7 @@ export default function FreeDeliveryOfferSection() {
 
             <span className={styles["free-delivery-offer-scooter-moving-parts"]} aria-hidden="true">
               <Image
-                src="/images/free-delivery-offer/delivery-rider-electric-scooter.webp"
+                src="/images/free-delivery-offer/delivery-rider-electric-scooter-chiranvi-farm-logo.webp"
                 alt=""
                 width={1612}
                 height={1444}

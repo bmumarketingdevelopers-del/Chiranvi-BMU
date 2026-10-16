@@ -6,7 +6,7 @@ import styles from "./location-request-section.module.css";
 
 /*
   Landing page section below delivery and offers: city illustration with a map pin on the left,
-  "Welcome to Chiranvi Farms", a short note that delivery is limited to selected locations,
+  "Welcome to Chiranvi Farm", a short note that delivery is limited to selected locations,
   and a "Request" button on the right.
   The button does nothing yet; it will be connected once delivery locations are decided.
   Scroll reveal: when the section scrolls into view, everything fades and slides up together.
@@ -18,7 +18,7 @@ import styles from "./location-request-section.module.css";
 // Products that slide through the pin (the Best Sellers products), a new one every 2 seconds.
 const pinProducts = [
   { imageSource: "/images/products/a2-cow-milk-1-litre-bottle.webp", imageWidth: 232, imageHeight: 500 },
-  { imageSource: "/images/products/desi-ghee-jar.webp", imageWidth: 1524, imageHeight: 2204 },
+  { imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204 },
   { imageSource: "/images/products/fresh-paneer-200g-box.webp", imageWidth: 604, imageHeight: 444 },
   { imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516 },
   { imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548 },
@@ -96,7 +96,7 @@ export default function LocationRequestSection() {
           <div className={styles["location-request-vehicle-lane"]} aria-hidden="true">
             <span className={`${styles["location-request-vehicle"]} ${styles["location-request-van"]}`}>
               <Image
-                src="/images/location/location-van-facing-right.webp"
+                src="/images/location/location-delivery-van-facing-right.webp"
                 alt=""
                 width={720}
                 height={416}
@@ -106,7 +106,7 @@ export default function LocationRequestSection() {
             </span>
             <span className={`${styles["location-request-vehicle"]} ${styles["location-request-scooter"]}`}>
               <Image
-                src="/images/free-delivery-offer/delivery-rider-electric-scooter.webp"
+                src="/images/free-delivery-offer/delivery-rider-electric-scooter-chiranvi-farm-logo.webp"
                 alt=""
                 width={1612}
                 height={1444}
@@ -144,7 +144,7 @@ export default function LocationRequestSection() {
 
         <div className={styles["location-request-text-block"]}>
           <h2 id="location-request-heading" className={styles["location-request-heading"]}>
-            Welcome to Chiranvi Farms
+            Welcome to Chiranvi Farm
           </h2>
           <p className={styles["location-request-description"]}>
             Tell us where you are. We currently deliver{" "}

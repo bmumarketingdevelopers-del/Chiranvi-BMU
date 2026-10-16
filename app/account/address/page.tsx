@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AddressPage from "@/components/account/address/address-page";
 
 export const metadata: Metadata = {
-  title: "My Addresses | Chiranvi Farms",
+  title: "My Addresses | Chiranvi Farm",
 };
 
 export default function AccountAddressPage() {

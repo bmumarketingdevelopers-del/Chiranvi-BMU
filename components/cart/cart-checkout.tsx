@@ -110,7 +110,7 @@ export default function CartCheckout({ cartItems, onBackToCart }: { cartItems: C
         <h2 id="order-placed-heading" className={styles["order-placed-heading"]}>
           Your order has been placed
         </h2>
-        <p className={styles["order-placed-description"]}>Thank you for shopping with Chiranvi Farms</p>
+        <p className={styles["order-placed-description"]}>Thank you for shopping with Chiranvi Farm</p>
         <Link href="/account/orders" className={styles["order-placed-track-button"]}>
           Track your order
         </Link>

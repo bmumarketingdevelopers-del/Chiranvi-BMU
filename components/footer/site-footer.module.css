@@ -10,11 +10,14 @@
 .site-footer {
   --site-footer-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * 0.834 / 930);
 
-  /* Panel: same width as the banner's panel, rounded bottom corners, white space below */
+  /*
+    Panel: same width as the banner's panel, rounded bottom corners. It is the last thing on the page,
+    so only a little empty panel under the copyright line and a small white gap below the panel.
+  */
   width: calc(1020 * var(--site-footer-design-pixel));
   max-width: calc(100% - 32px);
-  margin: 0 auto calc(49 * var(--site-footer-design-pixel));
-  padding: 0 0 calc(36 * var(--site-footer-design-pixel));
+  margin: 0 auto calc(12 * var(--site-footer-design-pixel));
+  padding: 0 0 calc(28 * var(--site-footer-design-pixel));
   border-radius: 0 0 calc(21 * var(--site-footer-design-pixel)) calc(21 * var(--site-footer-design-pixel));
   background: #fafafa;
   font-family: var(--font-poppins), sans-serif;
@@ -51,7 +54,8 @@
 /* Figma: Poppins Medium 14, line height auto (21), #5B6B60, box 395 wide */
 .site-footer-description {
   max-width: calc(306 * var(--site-footer-design-pixel));
-  margin-top: calc(14 * var(--site-footer-design-pixel));
+  /* Figma: first line 19 below the logo */
+  margin-top: calc(12.3 * var(--site-footer-design-pixel));
   font-size: calc(10.85 * var(--site-footer-design-pixel));
   font-weight: 500;
   line-height: calc(16.3 * var(--site-footer-design-pixel));
@@ -59,7 +63,8 @@
 }
 
 .site-footer-copyright {
-  margin-top: calc(35 * var(--site-footer-design-pixel));
+  /* Figma: 18 below the last line of the description */
+  margin-top: calc(10.3 * var(--site-footer-design-pixel));
   font-size: calc(10.5 * var(--site-footer-design-pixel));
   line-height: calc(14 * var(--site-footer-design-pixel));
   color: #59695f;
@@ -84,9 +89,9 @@
 .site-footer-link-list {
   display: flex;
   flex-direction: column;
-  /* Figma: one link every 26 (20 here), the first 35 below the title's top (27 here) */
-  gap: calc(6 * var(--site-footer-design-pixel));
-  margin-top: calc(9 * var(--site-footer-design-pixel));
+  /* Figma: one link every 23.75 (20.25 here), the first 31 below the title's top (26.5 here) */
+  gap: calc(6.25 * var(--site-footer-design-pixel));
+  margin-top: calc(9.8 * var(--site-footer-design-pixel));
 }
 
 /* Block, so each row is exactly the link's own height (not the page's default text height). */

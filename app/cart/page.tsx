@@ -4,7 +4,7 @@ import CartView from "@/components/cart/cart-view";
 import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-layout-runner";
 
 export const metadata: Metadata = {
-  title: "My Cart | Chiranvi Farms",
+  title: "My Cart | Chiranvi Farm",
 };
 
 const poppinsFont = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" });

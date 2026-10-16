@@ -3,7 +3,7 @@ import { Poppins, Ubuntu } from "next/font/google";
 import CommunityPage from "@/components/community/community-page";
 
 export const metadata: Metadata = {
-  title: "Join Community | Chiranvi Farms",
+  title: "Join Community | Chiranvi Farm",
 };
 
 const poppinsFont = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" });

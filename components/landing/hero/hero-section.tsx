@@ -26,10 +26,10 @@ export default function HeroSection() {
           {/* Shown only on phones and upright tablets, where the navigation bar moves to the bottom. */}
           <Link href="/" className={styles["landing-hero-mobile-logo-link"]}>
             <Image
-              src="/images/brand/chiranvi-farms-logo.webp"
-              alt="Chiranvi Farms"
-              width={499}
-              height={220}
+              src="/images/brand/chiranvi-farm-logo.webp"
+              alt="Chiranvi Farm"
+              width={516}
+              height={240}
               className={styles["landing-hero-mobile-logo-image"]}
             />
           </Link>
@@ -50,16 +50,16 @@ export default function HeroSection() {
 
             <div className={styles["landing-hero-product-showcase"]}>
               <Image
-                src="/images/products/desi-ghee-jar.webp"
-                alt="Chiranvi Farms Desi Ghee jar, made from A2 milk"
+                src="/images/products/desi-ghee-jar-chiranvi-farm.webp"
+                alt="Chiranvi Farm Desi Ghee jar, made from A2 milk"
                 width={1524}
                 height={2204}
                 className={`${styles["landing-hero-product-image"]} ${styles["landing-hero-ghee-jar-image"]}`}
                 preload
               />
               <Image
-                src="/images/products/desi-cow-milk-bottle.webp"
-                alt="Chiranvi Farms Desi Cow Milk bottle, no added preservatives"
+                src="/images/products/desi-cow-milk-bottle-chiranvi-farm.webp"
+                alt="Chiranvi Farm Desi Cow Milk bottle, no added preservatives"
                 width={1188}
                 height={2312}
                 className={`${styles["landing-hero-product-image"]} ${styles["landing-hero-milk-bottle-image"]}`}

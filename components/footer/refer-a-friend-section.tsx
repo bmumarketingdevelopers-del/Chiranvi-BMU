@@ -124,7 +124,7 @@ export default function ReferAFriendSection() {
           </h2>
           <p className={styles["refer-a-friend-description"]}>
             <Image
-              src="/images/refer-a-friend/refer-a-friend-description-text.webp"
+              src="/images/refer-a-friend/refer-a-friend-description-text-chiranvi-farm.webp"
               alt=""
               width={2144}
               height={191}
@@ -132,7 +132,7 @@ export default function ReferAFriendSection() {
               className={styles["refer-a-friend-description-image"]}
             />
             <span className={styles["refer-a-friend-text-for-phones"]}>
-              Invite your friends to Chiranvi Farms! When they make their <br />
+              Invite your friends to Chiranvi Farm! When they make their <br />
               first purchase, they&rsquo;ll remember you for a lifetime.
             </span>
           </p>
@@ -150,7 +150,7 @@ export default function ReferAFriendSection() {
             className={styles["refer-a-friend-screen-image"]}
           />
           <Image
-            src="/images/products/desi-cow-milk-bottle.webp"
+            src="/images/products/desi-cow-milk-bottle-chiranvi-farm.webp"
             alt=""
             width={1188}
             height={2312}
@@ -158,7 +158,7 @@ export default function ReferAFriendSection() {
             className={styles["refer-a-friend-purity-screen-milk-bottle"]}
           />
           <Image
-            src="/images/products/desi-ghee-jar.webp"
+            src="/images/products/desi-ghee-jar-chiranvi-farm.webp"
             alt=""
             width={1524}
             height={2204}
