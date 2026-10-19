@@ -47,6 +47,12 @@
   top: 50%;
   left: 50%;
   transform: translate(calc(-50% + 41 * var(--navigation-design-pixel)), -50%);
+  transition: transform 200ms ease-out;
+}
+
+/* Laptop / desktop: while the search box is open, the links slide 150 to the left to make room for it */
+:global(html:not(:has(style[data-landing-layout="mobile"]))) .site-navigation-bar-search-open .site-navigation-bar-links-list {
+  transform: translate(calc(-50% - 109 * var(--navigation-design-pixel)), -50%);
 }
 
 .site-navigation-bar-link {
@@ -265,10 +271,10 @@
   /* 145 = bar padding 51 + cart 25 + gap 22 + account 25 + gap 22 (to the search icon's right edge). */
   right: calc(145 * var(--navigation-design-pixel));
   /*
-    The page links end 268 right of the bar's centre (centre offset 41 + half their 454 width);
-    the box starts 24 after that.
+    The page links end 375 right of the bar's centre (centre offset 41 + half their 668 width, with
+    About us added); while the box is open they slide 150 left, and the box starts 24 after them.
   */
-  left: calc(50% + 292 * var(--navigation-design-pixel));
+  left: calc(50% + 249 * var(--navigation-design-pixel));
   display: flex;
   align-items: center;
   gap: calc(10 * var(--navigation-design-pixel));

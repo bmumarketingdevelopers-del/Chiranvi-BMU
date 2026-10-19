@@ -1,0 +1,1070 @@
+/*
+  /about-us page, from the design (1440-wide frame, content 1200 wide from 120). Numbers in calc() are
+  design pixels multiplied by --about-us-design-pixel, the same zoom-aware unit as the landing page
+  (window size at the starting zoom, from the layout script). On phones the unit is 1px.
+  Fonts and colours: Ubuntu headings, Poppins text; green #285C3A, gold #C99A1E, yellow #F5BF2C,
+  cream #FBF5E6, dark text #1F1F1F, body text #4F4F4F.
+*/
+
+.about-us-page {
+  /*
+    Same unit as the Refund page (policy-page.module.css): it follows the screen width, measured
+    between the Refund page's side margins (142 of 1440 on each side) and its 1346-wide frame, so text
+    sizes, spacing and the content width match the Refund page.
+  */
+  --about-us-base-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * (1 - 2 * 142 / 1440) / 1346);
+  --about-us-design-pixel: var(--about-us-base-design-pixel);
+  /* Room the navigation bar keeps at the top (same formula as site-navigation-placement.module.css) */
+  --about-us-landing-page-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --about-us-navigation-space: calc(
+    27 * max(100svh / 916, var(--about-us-landing-page-design-pixel)) + 100 *
+      var(--about-us-landing-page-design-pixel)
+  );
+
+  display: flow-root;
+  min-height: 100svh;
+  background: #ffffff;
+  font-family: var(--font-poppins), sans-serif;
+  color: #1f1f1f;
+}
+
+/* Content column: 1200 wide, centred */
+.about-us-container {
+  width: calc(1200 * var(--about-us-design-pixel));
+  max-width: calc(100% - 32px);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* Small gold label above a heading ("WHO WE ARE", "OUR STORY", ...) */
+.about-us-eyebrow {
+  font-size: calc(12 * var(--about-us-design-pixel));
+  font-weight: 700;
+  line-height: calc(18 * var(--about-us-design-pixel));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #c99a1e;
+}
+
+/* "—— OUR PROMISE": a short gold line before the label */
+.about-us-eyebrow-with-line {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--about-us-design-pixel));
+}
+
+.about-us-eyebrow-with-line::before {
+  content: "";
+  width: calc(26 * var(--about-us-design-pixel));
+  height: 1.5px;
+  background: #c99a1e;
+}
+
+/* Icons (see about-us-icon.tsx): the design's pictures used as masks, and the drawn ones */
+.about-us-icon,
+.about-us-icon-drawn {
+  display: block;
+  flex-shrink: 0;
+  width: calc(var(--about-us-icon-width) * var(--about-us-design-pixel));
+  height: calc(var(--about-us-icon-height) * var(--about-us-design-pixel));
+}
+
+.about-us-icon {
+  background: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+.about-us-icon-drawn {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 1. About us (light green, running up behind the navigation bar) */
+
+.about-us-hero {
+  margin-top: calc(var(--about-us-navigation-space) * -1);
+  padding: calc(var(--about-us-navigation-space) + 41 * var(--about-us-design-pixel)) 0
+    calc(90 * var(--about-us-design-pixel));
+  background: linear-gradient(180deg, #e7eedd 0%, #edf0e8 60%, #efefec 100%);
+}
+
+.about-us-hero-heading {
+  margin-top: calc(2 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(48 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(55 * var(--about-us-design-pixel));
+  color: #285c3a;
+}
+
+/* Intro text with the thin gold line to its right */
+.about-us-hero-intro {
+  display: flex;
+  align-items: flex-start;
+  margin-top: calc(24 * var(--about-us-design-pixel));
+}
+
+.about-us-hero-text {
+  width: calc(429 * var(--about-us-design-pixel));
+  font-size: calc(16.5 * var(--about-us-design-pixel));
+  line-height: calc(30 * var(--about-us-design-pixel));
+  color: #4a4a4a;
+}
+
+.about-us-hero-line {
+  width: 1.5px;
+  height: calc(131 * var(--about-us-design-pixel));
+  margin-left: calc(209 * var(--about-us-design-pixel));
+  background: #dcc078;
+}
+
+/* Farm numbers card: 1200 x 170, four equal columns with thin lines between them */
+.about-us-farm-numbers {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  height: calc(170 * var(--about-us-design-pixel));
+  margin-top: calc(92 * var(--about-us-design-pixel));
+  border: 1px solid #e6e8df;
+  border-radius: calc(24 * var(--about-us-design-pixel));
+  background: #ffffff;
+}
+
+.about-us-farm-number {
+  display: flex;
+  align-items: center;
+  gap: calc(22 * var(--about-us-design-pixel));
+  height: calc(77 * var(--about-us-design-pixel));
+  padding-left: calc(35 * var(--about-us-design-pixel));
+}
+
+.about-us-farm-number + .about-us-farm-number {
+  border-left: 1px solid #e8e3d2;
+}
+
+.about-us-farm-number-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(60 * var(--about-us-design-pixel));
+  height: calc(60 * var(--about-us-design-pixel));
+  border-radius: calc(14 * var(--about-us-design-pixel));
+  background: #eef3e6;
+  color: #285c3a;
+}
+
+.about-us-farm-number-value {
+  display: block;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(40 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(46 * var(--about-us-design-pixel));
+  color: #285c3a;
+}
+
+.about-us-farm-number-label {
+  display: block;
+  margin-top: calc(4 * var(--about-us-design-pixel));
+  font-size: calc(13 * var(--about-us-design-pixel));
+  color: #555555;
+}
+
+/* 2. Our story (480 wide) and the morning timeline (640 x 690) */
+
+.about-us-story {
+  display: grid;
+  grid-template-columns: calc(480 * var(--about-us-design-pixel)) calc(640 * var(--about-us-design-pixel));
+  justify-content: space-between;
+  align-items: start;
+  margin-top: calc(50 * var(--about-us-design-pixel));
+}
+
+/* The text starts 46 lower than the timeline card */
+.about-us-story-text {
+  margin-top: calc(46 * var(--about-us-design-pixel));
+}
+
+.about-us-story-heading {
+  margin-top: calc(4 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(42 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(48 * var(--about-us-design-pixel));
+  color: #1f1f1f;
+}
+
+.about-us-story-heading-highlight {
+  font-style: italic;
+  color: #285c3a;
+}
+
+.about-us-story-paragraph {
+  width: calc(410 * var(--about-us-design-pixel));
+  margin-top: calc(33 * var(--about-us-design-pixel));
+  font-size: calc(15 * var(--about-us-design-pixel));
+  line-height: calc(27 * var(--about-us-design-pixel));
+  color: #4f4f4f;
+}
+
+/* Founder's quote: 480 x 154, cream */
+.about-us-founder-note {
+  position: relative;
+  min-height: calc(154 * var(--about-us-design-pixel));
+  margin-top: calc(41 * var(--about-us-design-pixel));
+  padding: calc(34 * var(--about-us-design-pixel)) calc(30 * var(--about-us-design-pixel))
+    calc(28 * var(--about-us-design-pixel)) calc(70 * var(--about-us-design-pixel));
+  border-radius: calc(20 * var(--about-us-design-pixel));
+  background: #fbf5e6;
+}
+
+.about-us-founder-note-mark {
+  position: absolute;
+  top: calc(4 * var(--about-us-design-pixel));
+  left: calc(30 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(54 * var(--about-us-design-pixel));
+  font-weight: 700;
+  line-height: 1;
+  color: #c99a1e;
+}
+
+.about-us-founder-note-quote {
+  max-width: calc(300 * var(--about-us-design-pixel));
+  font-size: calc(16 * var(--about-us-design-pixel));
+  line-height: calc(28 * var(--about-us-design-pixel));
+  color: #1f1f1f;
+}
+
+.about-us-founder-note-author {
+  margin-top: calc(16 * var(--about-us-design-pixel));
+  font-size: calc(13 * var(--about-us-design-pixel));
+  color: #666666;
+}
+
+/* Three small cards: 152 x 118 */
+.about-us-story-highlights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(12 * var(--about-us-design-pixel));
+  margin-top: calc(25 * var(--about-us-design-pixel));
+}
+
+.about-us-story-highlight {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(118 * var(--about-us-design-pixel));
+  padding: calc(15 * var(--about-us-design-pixel)) calc(16 * var(--about-us-design-pixel));
+  border: 1px solid #e5e5e5;
+  border-radius: calc(16 * var(--about-us-design-pixel));
+  background: #ffffff;
+}
+
+.about-us-story-highlight-icon {
+  display: grid;
+  place-items: center;
+  width: calc(36 * var(--about-us-design-pixel));
+  height: calc(36 * var(--about-us-design-pixel));
+  border-radius: 50%;
+  background: #eaf2e2;
+  color: #285c3a;
+}
+
+.about-us-story-highlight-title {
+  margin-top: calc(18 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--about-us-design-pixel));
+  font-weight: 700;
+  color: #1f1f1f;
+}
+
+.about-us-story-highlight-note {
+  margin-top: calc(4 * var(--about-us-design-pixel));
+  font-size: calc(12 * var(--about-us-design-pixel));
+  color: #666666;
+}
+
+/* Morning timeline card: dark green with two soft circles in the top-right corner */
+.about-us-timeline {
+  position: relative;
+  min-height: calc(690 * var(--about-us-design-pixel));
+  overflow: hidden;
+  padding: calc(52 * var(--about-us-design-pixel)) calc(44 * var(--about-us-design-pixel));
+  border-radius: calc(24 * var(--about-us-design-pixel));
+  background: #285c3b;
+}
+
+.about-us-timeline-circle-outer,
+.about-us-timeline-circle-inner {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.about-us-timeline-circle-outer {
+  top: calc(-101 * var(--about-us-design-pixel));
+  right: calc(-99 * var(--about-us-design-pixel));
+  width: calc(260 * var(--about-us-design-pixel));
+  height: calc(260 * var(--about-us-design-pixel));
+  background: #2c6340;
+}
+
+.about-us-timeline-circle-inner {
+  top: calc(-51 * var(--about-us-design-pixel));
+  right: calc(-49 * var(--about-us-design-pixel));
+  width: calc(160 * var(--about-us-design-pixel));
+  height: calc(160 * var(--about-us-design-pixel));
+  background: #2f7148;
+}
+
+.about-us-timeline-eyebrow {
+  position: relative;
+  font-size: calc(12 * var(--about-us-design-pixel));
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #f5bf2c;
+}
+
+.about-us-timeline-heading {
+  position: relative;
+  margin-top: calc(14 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(32 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(38 * var(--about-us-design-pixel));
+  color: #fcebb6;
+}
+
+.about-us-timeline-subheading {
+  position: relative;
+  margin-top: calc(10 * var(--about-us-design-pixel));
+  font-size: calc(15 * var(--about-us-design-pixel));
+  color: #cfdfd2;
+}
+
+/* Six steps, one every 80: time pill, round icon (joined by a dashed line), title and text */
+.about-us-timeline-steps {
+  position: relative;
+  margin-top: calc(33 * var(--about-us-design-pixel));
+}
+
+.about-us-timeline-step {
+  display: grid;
+  grid-template-columns: calc(92 * var(--about-us-design-pixel)) calc(44 * var(--about-us-design-pixel)) 1fr;
+  align-items: center;
+  column-gap: calc(18 * var(--about-us-design-pixel));
+  height: calc(80 * var(--about-us-design-pixel));
+}
+
+.about-us-timeline-time {
+  display: grid;
+  place-items: center;
+  height: calc(32 * var(--about-us-design-pixel));
+  border-radius: 9999px;
+  background: #f5bf2c;
+  font-size: calc(13 * var(--about-us-design-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.about-us-timeline-step-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(44 * var(--about-us-design-pixel));
+  height: calc(44 * var(--about-us-design-pixel));
+  border-radius: 50%;
+  background: #fcebc0;
+  color: #285c3a;
+}
+
+/* Dashed line down to the next step's icon */
+.about-us-timeline-step:not(:last-child) .about-us-timeline-step-icon::after {
+  content: "";
+  position: absolute;
+  top: calc(100% + 6 * var(--about-us-design-pixel));
+  left: 50%;
+  height: calc(24 * var(--about-us-design-pixel));
+  border-left: 2px dashed #b89b3c;
+  translate: -50% 0;
+}
+
+.about-us-timeline-step-title {
+  display: block;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(17 * var(--about-us-design-pixel));
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.about-us-timeline-step-description {
+  display: block;
+  margin-top: calc(5 * var(--about-us-design-pixel));
+  font-size: calc(13.5 * var(--about-us-design-pixel));
+  color: #c9d9cc;
+}
+
+/* 3. Our promise: 1150 x 148 */
+
+.about-us-promise {
+  display: grid;
+  grid-template-columns: calc(326 * var(--about-us-design-pixel)) repeat(3, calc(289 * var(--about-us-design-pixel)));
+  margin-top: calc(196 * var(--about-us-design-pixel));
+}
+
+.about-us-promise-heading {
+  margin-top: calc(14 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(40 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(47 * var(--about-us-design-pixel));
+  color: #1f1f1f;
+}
+
+.about-us-promise-item {
+  padding: calc(7 * var(--about-us-design-pixel)) calc(20 * var(--about-us-design-pixel)) 0
+    calc(23 * var(--about-us-design-pixel));
+  border-left: 1px solid #e3e3e3;
+}
+
+/* Gold icon in a cream rounded square (promise and traditional cards) */
+.about-us-gold-icon-box {
+  display: grid;
+  place-items: center;
+  width: calc(52 * var(--about-us-design-pixel));
+  height: calc(52 * var(--about-us-design-pixel));
+  border-radius: calc(12 * var(--about-us-design-pixel));
+  background: #fbf3e1;
+  color: #c99a1e;
+}
+
+.about-us-card-title {
+  margin-top: calc(16 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(17 * var(--about-us-design-pixel));
+  font-weight: 700;
+  color: #1f1f1f;
+}
+
+.about-us-card-text {
+  margin-top: calc(10 * var(--about-us-design-pixel));
+  font-size: calc(14 * var(--about-us-design-pixel));
+  line-height: calc(22 * var(--about-us-design-pixel));
+  color: #6b6b6b;
+}
+
+/* 4. Truly traditional: light green panel (1220 x 560), big round top-right and bottom-left corners */
+
+.about-us-traditional {
+  /* Medium size: this panel and everything in it at 0.85 of the design */
+  --about-us-design-pixel: calc(0.85 * var(--about-us-base-design-pixel));
+
+  width: calc(1220 * var(--about-us-design-pixel));
+  max-width: calc(100% - 32px);
+  min-height: calc(560 * var(--about-us-design-pixel));
+  margin: calc(89 * var(--about-us-design-pixel)) auto 0;
+  padding: calc(48 * var(--about-us-design-pixel)) calc(40 * var(--about-us-design-pixel)) calc(21 * var(--about-us-design-pixel));
+  border-radius: 0 calc(150 * var(--about-us-design-pixel)) 0 calc(140 * var(--about-us-design-pixel));
+  background: #eef2e3;
+  text-align: center;
+}
+
+.about-us-traditional-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(38 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(52 * var(--about-us-design-pixel));
+  color: #1f1f1f;
+}
+
+.about-us-traditional-heading-highlight {
+  font-style: italic;
+  color: #c99a1e;
+}
+
+.about-us-traditional-subheading {
+  margin-top: calc(16 * var(--about-us-design-pixel));
+  font-size: calc(15 * var(--about-us-design-pixel));
+  line-height: calc(26 * var(--about-us-design-pixel));
+  color: #555555;
+}
+
+/* Four white cards (227 x 259); the 2nd and 4th sit 30 lower */
+.about-us-traditional-cards {
+  display: grid;
+  grid-template-columns: repeat(4, calc(227 * var(--about-us-design-pixel)));
+  justify-content: center;
+  align-items: start;
+  gap: calc(25 * var(--about-us-design-pixel));
+  margin-top: calc(28 * var(--about-us-design-pixel));
+  text-align: left;
+}
+
+.about-us-traditional-card {
+  min-height: calc(259 * var(--about-us-design-pixel));
+  padding: calc(26 * var(--about-us-design-pixel)) calc(20 * var(--about-us-design-pixel)) calc(26 * var(--about-us-design-pixel))
+    calc(24 * var(--about-us-design-pixel));
+  border-radius: calc(24 * var(--about-us-design-pixel));
+  background: #ffffff;
+}
+
+.about-us-traditional-card:nth-child(even) {
+  margin-top: calc(30 * var(--about-us-design-pixel));
+}
+
+.about-us-traditional-card .about-us-gold-icon-box {
+  width: calc(56 * var(--about-us-design-pixel));
+  height: calc(56 * var(--about-us-design-pixel));
+}
+
+.about-us-traditional-card .about-us-card-title {
+  margin-top: calc(32 * var(--about-us-design-pixel));
+}
+
+.about-us-traditional-card .about-us-card-text {
+  margin-top: calc(14 * var(--about-us-design-pixel));
+}
+
+/* 5. Meet our team: light green panel (1328 wide) with the three big numbers over its bottom edge */
+
+.about-us-team {
+  /* Medium size: this panel, its cards and the three number boxes at 0.85 of the design */
+  --about-us-design-pixel: calc(0.85 * var(--about-us-base-design-pixel));
+
+  /* Own layout box, so the number boxes' negative bottom margin lets them hang over the panel's edge */
+  display: flow-root;
+  width: calc(1328 * var(--about-us-design-pixel));
+  max-width: calc(100% - 32px);
+  margin: calc(76 * var(--about-us-design-pixel)) auto 0;
+  padding-top: calc(66 * var(--about-us-design-pixel));
+  border-radius: calc(26 * var(--about-us-design-pixel));
+  background: #e3ecd9;
+  text-align: center;
+}
+
+.about-us-team-eyebrow {
+  font-size: calc(11 * var(--about-us-design-pixel));
+}
+
+.about-us-team-heading {
+  margin-top: calc(6 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(44 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(51 * var(--about-us-design-pixel));
+  color: #285c3a;
+}
+
+.about-us-team-subheading {
+  width: calc(645 * var(--about-us-design-pixel));
+  max-width: 100%;
+  margin: calc(14 * var(--about-us-design-pixel)) auto 0;
+  font-size: calc(15 * var(--about-us-design-pixel));
+  line-height: calc(25 * var(--about-us-design-pixel));
+  color: #4f5f45;
+}
+
+/* Two cards, 558 x 296 */
+.about-us-team-cards {
+  display: grid;
+  grid-template-columns: repeat(2, calc(558 * var(--about-us-design-pixel)));
+  justify-content: center;
+  gap: calc(64 * var(--about-us-design-pixel));
+  margin-top: calc(34 * var(--about-us-design-pixel));
+  text-align: left;
+}
+
+.about-us-team-card {
+  display: grid;
+  grid-template-columns: calc(140 * var(--about-us-design-pixel)) 1fr;
+  align-items: center;
+  column-gap: calc(40 * var(--about-us-design-pixel));
+  min-height: calc(236 * var(--about-us-design-pixel));
+  padding: calc(19 * var(--about-us-design-pixel)) calc(30 * var(--about-us-design-pixel));
+  border-radius: calc(30 * var(--about-us-design-pixel));
+  background: #f1f6ec;
+}
+
+/* Card contents (photo, words) smaller than the card itself: the card keeps its size */
+.about-us-team-card > *,
+.about-us-big-number > * {
+  --about-us-design-pixel: calc(0.72 * var(--about-us-base-design-pixel));
+}
+
+.about-us-team-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.about-us-team-role {
+  font-size: calc(11 * var(--about-us-design-pixel));
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #285c3a;
+}
+
+.about-us-team-name {
+  margin-top: calc(6 * var(--about-us-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(30 * var(--about-us-design-pixel));
+  font-weight: 700;
+  line-height: calc(36 * var(--about-us-design-pixel));
+  color: #1f1f1f;
+}
+
+.about-us-team-description {
+  max-width: calc(340 * var(--about-us-design-pixel));
+  margin-top: calc(18 * var(--about-us-design-pixel));
+  font-size: calc(14.5 * var(--about-us-design-pixel));
+  line-height: calc(26 * var(--about-us-design-pixel));
+  color: #5f5f5f;
+}
+
+.about-us-team-line {
+  display: block;
+  width: calc(35 * var(--about-us-design-pixel));
+  height: 2px;
+  margin-top: calc(14 * var(--about-us-design-pixel));
+  background: #6d9b79;
+}
+
+.about-us-team-farm {
+  margin-top: calc(12 * var(--about-us-design-pixel));
+  font-size: calc(13 * var(--about-us-design-pixel));
+  color: #8a8a8a;
+}
+
+/* Three dark green boxes (298 x 118), half over the panel's bottom edge */
+.about-us-big-numbers {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, calc(298 * var(--about-us-design-pixel)));
+  justify-content: center;
+  gap: calc(31 * var(--about-us-design-pixel));
+  margin-top: calc(74 * var(--about-us-design-pixel));
+  margin-bottom: calc(-50 * var(--about-us-design-pixel));
+}
+
+.about-us-big-number {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100 * var(--about-us-design-pixel));
+  border-radius: calc(18 * var(--about-us-design-pixel));
+  background: #285c3a;
+}
+
+.about-us-big-number-value {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(40 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(46 * var(--about-us-design-pixel));
+  color: #fcebb6;
+}
+
+.about-us-big-number-label {
+  margin-top: calc(6 * var(--about-us-design-pixel));
+  font-size: calc(13 * var(--about-us-design-pixel));
+  color: #f5bf2c;
+}
+
+/* Call to action */
+
+.about-us-call-to-action {
+  margin-top: calc(114 * var(--about-us-design-pixel));
+  padding: 0 16px calc(90 * var(--about-us-design-pixel));
+  text-align: center;
+}
+
+.about-us-call-to-action-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(32 * var(--about-us-design-pixel));
+  font-weight: 400;
+  line-height: calc(40 * var(--about-us-design-pixel));
+  color: #1f1f1f;
+}
+
+.about-us-call-to-action-text {
+  margin-top: calc(12 * var(--about-us-design-pixel));
+  font-size: calc(15 * var(--about-us-design-pixel));
+  color: #666666;
+}
+
+.about-us-call-to-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(20 * var(--about-us-design-pixel));
+  margin-top: calc(24 * var(--about-us-design-pixel));
+}
+
+.about-us-button-filled,
+.about-us-button-outlined {
+  display: grid;
+  place-items: center;
+  width: calc(190 * var(--about-us-design-pixel));
+  height: calc(55 * var(--about-us-design-pixel));
+  border-radius: 9999px;
+  font-size: calc(15 * var(--about-us-design-pixel));
+  font-weight: 600;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.about-us-button-filled {
+  background: #285c3a;
+  color: #ffffff;
+}
+
+.about-us-button-filled:hover,
+.about-us-button-filled:focus-visible {
+  background: #1f4a2e;
+}
+
+.about-us-button-outlined {
+  border: 1.5px solid #285c3a;
+  color: #285c3a;
+}
+
+.about-us-button-outlined:hover,
+.about-us-button-outlined:focus-visible {
+  background: #285c3a;
+  color: #ffffff;
+}
+
+/*
+  Phone layout (chosen by the landing layout script): one design pixel = 1px, and every block
+  stacks into a single column.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .about-us-page,
+  .about-us-traditional,
+  .about-us-team,
+  .about-us-team-card > *,
+  .about-us-big-number > * {
+    --about-us-design-pixel: 1px;
+    --about-us-navigation-space: 64px;
+  }
+
+  .about-us-container {
+    width: auto;
+    max-width: none;
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .about-us-hero {
+    padding: calc(var(--about-us-navigation-space) + 24px) 0 36px;
+  }
+
+  .about-us-hero-heading {
+    font-size: 36px;
+    line-height: 44px;
+  }
+
+  .about-us-hero-intro {
+    margin-top: 14px;
+  }
+
+  .about-us-hero-text br {
+    display: none;
+  }
+
+  .about-us-hero-text {
+    width: auto;
+    font-size: 15px;
+    line-height: 26px;
+  }
+
+  .about-us-hero-line {
+    display: none;
+  }
+
+  /* Numbers: two by two */
+  .about-us-farm-numbers {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 10px;
+    height: auto;
+    margin-top: 26px;
+    padding: 18px 14px;
+    border-radius: 18px;
+  }
+
+  .about-us-farm-number {
+    gap: 10px;
+    height: auto;
+    padding-left: 0;
+  }
+
+  .about-us-farm-number + .about-us-farm-number {
+    border-left: none;
+  }
+
+  .about-us-farm-number-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .about-us-farm-number-icon .about-us-icon {
+    scale: 0.72;
+  }
+
+  .about-us-farm-number-value {
+    font-size: 26px;
+    line-height: 30px;
+  }
+
+  .about-us-farm-number-label {
+    font-size: 12px;
+  }
+
+  .about-us-story {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-top: 40px;
+  }
+
+  .about-us-story-text {
+    margin-top: 0;
+  }
+
+  .about-us-story-heading {
+    font-size: 30px;
+    line-height: 38px;
+  }
+
+  .about-us-story-paragraph {
+    width: auto;
+    margin-top: 16px;
+  }
+
+  .about-us-founder-note {
+    min-height: 0;
+    margin-top: 24px;
+    padding: 26px 20px 22px 56px;
+  }
+
+  .about-us-founder-note-mark {
+    left: 18px;
+  }
+
+  .about-us-founder-note-quote {
+    max-width: none;
+  }
+
+  .about-us-story-highlights {
+    gap: 8px;
+  }
+
+  .about-us-story-highlight {
+    padding: 12px 10px;
+  }
+
+  .about-us-timeline {
+    min-height: 0;
+    padding: 30px 16px 20px;
+    border-radius: 20px;
+  }
+
+  .about-us-timeline-heading {
+    font-size: 26px;
+    line-height: 32px;
+  }
+
+  .about-us-timeline-steps {
+    margin-top: 18px;
+  }
+
+  .about-us-timeline-step {
+    grid-template-columns: 70px 38px 1fr;
+    column-gap: 10px;
+    height: auto;
+    min-height: 76px;
+  }
+
+  .about-us-timeline-time {
+    height: 28px;
+    font-size: 11.5px;
+  }
+
+  .about-us-timeline-step-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .about-us-timeline-step:not(:last-child) .about-us-timeline-step-icon::after {
+    top: calc(100% + 5px);
+    height: 28px;
+  }
+
+  .about-us-timeline-step-title {
+    font-size: 15px;
+  }
+
+  .about-us-timeline-step-description {
+    font-size: 12.5px;
+  }
+
+  /* Promise: heading, then the three promises one under another */
+  .about-us-promise {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin-top: 48px;
+  }
+
+  .about-us-promise-heading {
+    font-size: 30px;
+    line-height: 38px;
+  }
+
+  .about-us-promise-item {
+    padding: 20px 0 0;
+    border-top: 1px solid #e3e3e3;
+    border-left: none;
+  }
+
+  .about-us-traditional {
+    margin-top: 48px;
+    padding: 32px 16px 24px;
+    border-radius: 0 60px 0 60px;
+  }
+
+  .about-us-traditional-heading {
+    font-size: 26px;
+    line-height: 36px;
+  }
+
+  .about-us-traditional-heading br,
+  .about-us-traditional-subheading br {
+    display: none;
+  }
+
+  .about-us-traditional-subheading {
+    font-size: 14px;
+    line-height: 23px;
+  }
+
+  .about-us-traditional-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  .about-us-traditional-card {
+    min-height: 0;
+    padding: 18px 14px;
+    border-radius: 18px;
+  }
+
+  .about-us-traditional-card:nth-child(even) {
+    margin-top: 0;
+  }
+
+  .about-us-traditional-card .about-us-card-title {
+    margin-top: 14px;
+    font-size: 15px;
+  }
+
+  .about-us-traditional-card .about-us-card-text {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .about-us-team {
+    margin-top: 48px;
+    padding: 34px 14px 0;
+    border-radius: 20px;
+  }
+
+  .about-us-team-heading {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
+  .about-us-team-subheading {
+    font-size: 14px;
+    line-height: 23px;
+  }
+
+  .about-us-team-cards {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .about-us-team-card {
+    grid-template-columns: 96px 1fr;
+    column-gap: 16px;
+    min-height: 0;
+    padding: 18px 16px;
+    border-radius: 20px;
+  }
+
+  .about-us-team-role {
+    margin-top: 4px;
+  }
+
+  .about-us-team-name {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .about-us-team-description {
+    margin-top: 8px;
+    font-size: 13.5px;
+    line-height: 22px;
+  }
+
+  .about-us-big-numbers {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 28px;
+    margin-bottom: -36px;
+  }
+
+  .about-us-big-number {
+    height: 82px;
+    border-radius: 14px;
+  }
+
+  .about-us-big-number-value {
+    font-size: 26px;
+    line-height: 30px;
+  }
+
+  .about-us-big-number-label {
+    margin-top: 2px;
+    font-size: 11px;
+  }
+
+  .about-us-call-to-action {
+    margin-top: 72px;
+    padding-bottom: 48px;
+  }
+
+  .about-us-call-to-action-heading {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .about-us-call-to-action-text {
+    font-size: 14px;
+  }
+
+  .about-us-button-filled,
+  .about-us-button-outlined {
+    width: 168px;
+    height: 48px;
+    font-size: 14px;
+  }
+}

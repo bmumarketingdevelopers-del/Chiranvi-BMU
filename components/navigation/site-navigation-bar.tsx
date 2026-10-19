@@ -39,6 +39,12 @@ const navigationLinks = [
       "M14.5 15a4.5 4.5 0 0 1 6.5 5",
     ],
   },
+  {
+    href: "/about-us",
+    label: "About us",
+    mobileLabel: "About us",
+    iconPaths: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z", "M12 11v5", "M12 7.8h.01"],
+  },
 ];
 
 // Sent when the cart icon is clicked while already on the cart page (the cart page shakes its trolley).
