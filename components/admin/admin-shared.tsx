@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCurrentStaffAccess, type PanelModule, type PermissionAction } from "@/store/staff-access-store";
 import { dashboardAlerts } from "./admin-dashboard-data";
 import AdminDateRangePicker from "./admin-date-range-picker";
 import dashboardStyles from "./admin-dashboard.module.css";
@@ -19,6 +20,31 @@ import styles from "./admin-shared.module.css";
     downloadCsv       Export: saves rows as a CSV file (opens in Excel / Google Sheets)
   Styles come from the dashboard (admin-dashboard.module.css) and admin-shared.module.css.
 */
+
+/*
+  Permissions: AdminFeatureGate (admin-panel-layout.tsx) says which page this is; the shared buttons ask
+  useAdminCan whether the person's role may do something there (Roles & permissions):
+    New / Add button   Create        Export button   Export
+    row menu options   Edit (or Delete for removing)
+  Pages use useAdminCan for their own delete buttons, and useIsPanelOwner for the actions only the owner
+  can do (OWNER_ONLY_MESSAGE).
+*/
+const AdminModuleContext = createContext<PanelModule | null>(null);
+export const AdminModuleProvider = AdminModuleContext.Provider;
+
+export function useAdminCan(action: PermissionAction) {
+  const module = useContext(AdminModuleContext);
+  const access = useCurrentStaffAccess();
+  if (!access) return false;
+  return module ? access.can(module, action) : true;
+}
+
+export function useIsPanelOwner() {
+  return Boolean(useCurrentStaffAccess()?.isOwner);
+}
+
+// Shown when someone other than the owner tries a sensitive action (prices, salaries, big refunds, ...)
+export const OWNER_ONLY_MESSAGE = "Only the owner can do this (later it sends a one-time code to the owner's phone)";
 
 // 13 – 19 Oct 2026 (or 28 Sep – 4 Oct 2026 across months)
 export function formatDateRange(from: Date, to: Date) {
@@ -97,6 +123,11 @@ export function AdminPageTop({
 }) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isRangePickerOpen, setIsRangePickerOpen] = useState(false);
+  // The role decides whether the main (New / Add) button and Export show
+  const canCreate = useAdminCan("create");
+  const canExport = useAdminCan("export");
+  if (!canCreate) onAction = undefined;
+  if (!canExport) onExport = undefined;
   const notificationsRef = useCloseOnOutside(isNotificationsOpen, () => setIsNotificationsOpen(false));
   const rangeRef = useCloseOnOutside(isRangePickerOpen, () => setIsRangePickerOpen(false));
   const hasRange = today && rangeFrom && rangeTo && onRangeChange;
@@ -238,7 +269,10 @@ export type AdminStat = {
 
 export function AdminStatCards({ stats }: { stats: AdminStat[] }) {
   return (
-    <ul className={dashboardStyles["admin-stats"]}>
+    <ul
+      className={dashboardStyles["admin-stats"]}
+      style={stats.length !== 4 ? ({ "--admin-stat-count": stats.length } as CSSProperties) : undefined}
+    >
       {stats.map((stat) => (
         <li
           key={stat.label}
@@ -368,19 +402,22 @@ export function AdminPagination({
   );
 }
 
-// Pop-up form over the page (darkened behind); Escape or Cancel closes it
+// Pop-up form over the page (darkened behind); Escape or Cancel closes it. isDanger: a red main button
+// (deleting something)
 export function AdminDialog({
   title,
   onClose,
   onSubmit,
   submitLabel,
   children,
+  isDanger = false,
 }: {
   title: string;
   onClose: () => void;
   onSubmit: () => void;
   submitLabel: string;
   children: ReactNode;
+  isDanger?: boolean;
 }) {
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
@@ -408,7 +445,7 @@ export function AdminDialog({
           <button type="button" className={styles["admin-dialog-cancel"]} onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className={styles["admin-dialog-submit"]}>
+          <button type="submit" className={`${styles["admin-dialog-submit"]} ${isDanger ? styles["admin-dialog-submit-danger"] : ""}`}>
             {submitLabel}
           </button>
         </div>
@@ -452,10 +489,18 @@ export function AdminRowMenu({
 }: {
   label: string;
   title: string;
-  options: { label: string; onSelect: () => void; isDisabled?: boolean; isDanger?: boolean }[];
+  // permission: what the role needs for the option (Edit when not given; Delete for removing things)
+  options: { label: string; onSelect: () => void; isDisabled?: boolean; isDanger?: boolean; permission?: PermissionAction }[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useCloseOnOutside(isOpen, () => setIsOpen(false));
+  const canEdit = useAdminCan("edit");
+  const canDelete = useAdminCan("delete");
+  const canCreate = useAdminCan("create");
+  const allowed = { view: true, edit: canEdit, delete: canDelete, create: canCreate, export: true };
+  const shownOptions = options.filter((option) => allowed[option.permission ?? "edit"]);
+  // Nothing this role can do here: no "..." button at all
+  if (shownOptions.length === 0) return null;
   return (
     <div ref={menuRef} className={dashboardStyles["admin-popup-anchor"]}>
       <button
@@ -470,7 +515,7 @@ export function AdminRowMenu({
       {isOpen && (
         <div className={`${dashboardStyles["admin-popup"]} ${dashboardStyles["admin-order-menu"]}`}>
           <p className={dashboardStyles["admin-popup-title"]}>{title}</p>
-          {options.map((option) => (
+          {shownOptions.map((option) => (
             <button
               key={option.label}
               type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,10 +10,11 @@ import {
   useLoggedInMobileNumber,
 } from "@/components/login/login-status";
 import { getNameInitials } from "@/components/account/account-profile";
-import { useCurrentStaffAccess, type PanelFeature, type StaffAccess } from "@/store/staff-access-store";
+import { useCurrentStaffAccess, type PanelModule, type StaffAccess } from "@/store/staff-access-store";
 import { usePauseRequests } from "@/store/admin-pause-requests-store";
 import { useComplaintTickets } from "@/store/admin-complaints-store";
 import { useTodayDeliveries } from "@/store/admin-deliveries-store";
+import { AdminModuleProvider } from "./admin-shared";
 import styles from "./admin-panel.module.css";
 
 /*
@@ -21,13 +22,17 @@ import styles from "./admin-panel.module.css";
   a white sidebar (248 wide) with the logo, the pages in five groups (Overview, Sales, Operations,
   Business, System) with count badges, and the signed-in person's card at the bottom; the page on the
   right.
-  Who can open it (store/staff-access-store.ts): the owner, admins and managers. Logged-out visitors
-  are sent to the login (and come back here afterwards); logged-in customers are sent to their account.
-  The sidebar only lists the pages the person may open; a manager typing the address of a page they
-  were not given sees a "no access" message instead (AdminFeatureGate below).
+  Who can open it (store/staff-access-store.ts): the owner, and people whose role has the panel (set on
+  Roles & permissions). Logged-out visitors are sent to the login (and come back here afterwards);
+  logged-in customers are sent to their account.
+  Phones and tablets (900 wide or less): a top bar with a menu button; the sidebar slides in from the
+  left over the page (closes on a page link, the backdrop, the close button or Escape).
+  The sidebar only lists the pages the person's role can View; typing the address of another page shows
+  a "no access" message instead (AdminFeatureGate below). The gate also tells the page's shared buttons
+  (New, Export, row menus) which page they are on, so they hide what the role cannot do.
 */
 
-type PanelPageAccess = PanelFeature | "dashboard" | "owner-only";
+type PanelPageAccess = PanelModule;
 
 type PanelPage = {
   href: string;
@@ -141,7 +146,7 @@ const panelPageGroups: { title: string; pages: PanelPage[] }[] = [
       {
         href: "/admin/staff",
         label: "Staff",
-        access: "owner-only",
+        access: "staff",
         iconPaths: [
           "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z",
           "M3 20a6 6 0 0 1 12 0",
@@ -163,26 +168,21 @@ const panelPageGroups: { title: string; pages: PanelPage[] }[] = [
       {
         href: "/admin/roles",
         label: "Roles & permissions",
-        access: "owner-only",
+        access: "roles",
         iconPaths: ["M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z", "M8.5 12l2.5 2.5L16 9.5"],
       },
     ],
   },
 ];
 
-export const ROLE_LABELS = { owner: "Owner", admin: "Admin", manager: "Manager" };
-
 // The line under the person's name in the sidebar card (design: "Owner, full access")
-const ROLE_ACCESS_LINES = {
-  owner: "Owner, full access",
-  admin: "Admin, all pages",
-  manager: "Manager, limited access",
-};
+function roleAccessLine(access: StaffAccess) {
+  return access.isOwner ? "Owner, full access" : access.roleName;
+}
 
+// A page opens when the person's role can View it
 function canOpenPanelPage(access: StaffAccess, pageAccess: PanelPageAccess) {
-  if (pageAccess === "dashboard") return true;
-  if (pageAccess === "owner-only") return access.canManageTeam;
-  return access.canOpenFeature(pageAccess);
+  return access.can(pageAccess, "view");
 }
 
 export default function AdminPanelLayout({ children }: { children: ReactNode }) {
@@ -198,6 +198,29 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
     (ticket) => ticket.status === "Open" && ticket.priority === "High",
   ).length;
   const missedDeliveries = useTodayDeliveries().filter((delivery) => delivery.status === "Missed").length;
+  // Phones and tablets: the sidebar as a slide-in menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPathname, setMenuPathname] = useState(pathname);
+  // Opening another page closes the menu
+  if (menuPathname !== pathname) {
+    setMenuPathname(pathname);
+    setIsMenuOpen(false);
+  }
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsMenuOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    // The page behind does not scroll while the menu is open
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMenuOpen]);
 
   // Logged out: log in first, then come back. Logged-in customers: their account instead.
   useEffect(() => {
@@ -214,12 +237,44 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
     return <div className={styles["admin-panel-loading"]} aria-busy="true" />;
   }
 
+  const currentPage = panelPageGroups.flatMap((group) => group.pages).find((page) => page.href === pathname);
+  const waitingCount = waitingPauseRequests + urgentComplaints + missedDeliveries;
+
   return (
     <div className={styles["admin-panel"]}>
-      <aside className={styles["admin-sidebar"]}>
-        <Link href="/" className={styles["admin-sidebar-logo"]}>
-          <Image src="/images/brand/chiranvi-farm-logo.webp" alt="Chiranvi Farm" width={516} height={240} priority />
+      {/* Phones and tablets only: menu button, logo, the open page's name */}
+      <header className={styles["admin-topbar"]}>
+        <button
+          type="button"
+          className={styles["admin-topbar-menu-button"]}
+          aria-label="Open the menu"
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen(true)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+          {waitingCount > 0 && <span className={styles["admin-topbar-menu-dot"]} aria-hidden="true" />}
+        </button>
+        <Link href="/admin" className={styles["admin-topbar-logo"]}>
+          <Image src="/images/brand/chiranvi-farm-logo.webp" alt="Chiranvi Panel" width={516} height={240} priority />
         </Link>
+        {currentPage && <span className={styles["admin-topbar-page"]}>{currentPage.label}</span>}
+      </header>
+
+      {isMenuOpen && <div className={styles["admin-sidebar-backdrop"]} onClick={() => setIsMenuOpen(false)} aria-hidden="true" />}
+
+      <aside className={`${styles["admin-sidebar"]} ${isMenuOpen ? styles["admin-sidebar-open"] : ""}`}>
+        <div className={styles["admin-sidebar-top-row"]}>
+          <Link href="/" className={styles["admin-sidebar-logo"]}>
+            <Image src="/images/brand/chiranvi-farm-logo.webp" alt="Chiranvi Farm" width={516} height={240} priority />
+          </Link>
+          <button type="button" className={styles["admin-sidebar-close"]} aria-label="Close the menu" onClick={() => setIsMenuOpen(false)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
 
         <nav aria-label="Chiranvi Panel" className={styles["admin-sidebar-groups"]}>
           {panelPageGroups.map((group) => {
@@ -277,7 +332,7 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
           </span>
           <span className={styles["admin-sidebar-person-text"]}>
             <span className={styles["admin-sidebar-person-name"]}>{staffAccess.name}</span>
-            <span className={styles["admin-sidebar-person-role"]}>{ROLE_ACCESS_LINES[staffAccess.role]}</span>
+            <span className={styles["admin-sidebar-person-role"]}>{roleAccessLine(staffAccess)}</span>
           </span>
           <svg viewBox="0 0 24 24" className={styles["admin-sidebar-person-arrow"]} aria-hidden="true">
             <path d="M9 6l6 6-6 6" />
@@ -291,7 +346,7 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
 }
 
 // Shows the page only to people who were given this feature; everyone else sees "no access".
-export function AdminFeatureGate({ feature, children }: { feature: PanelFeature | "owner-only"; children: ReactNode }) {
+export function AdminFeatureGate({ feature, children }: { feature: PanelModule; children: ReactNode }) {
   const staffAccess = useCurrentStaffAccess();
   if (!staffAccess) return null;
   if (!canOpenPanelPage(staffAccess, feature)) {
@@ -301,13 +356,19 @@ export function AdminFeatureGate({ feature, children }: { feature: PanelFeature 
         <p className={styles["admin-page-description"]}>
           This part of the Chiranvi Panel has not been given to you. Ask the owner if you need it.
         </p>
-        <Link href="/admin" className={styles["admin-button-outlined"]}>
-          Back to dashboard
-        </Link>
+        {feature === "dashboard" ? (
+          <Link href="/account" className={styles["admin-button-outlined"]}>
+            Back to my account
+          </Link>
+        ) : (
+          <Link href="/admin" className={styles["admin-button-outlined"]}>
+            Back to dashboard
+          </Link>
+        )}
       </div>
     );
   }
-  return children;
+  return <AdminModuleProvider value={feature}>{children}</AdminModuleProvider>;
 }
 
 // Title and short line at the top of every panel page.

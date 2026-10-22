@@ -1,0 +1,444 @@
+/*
+  Leave requests pop-up (admin-leave-requests.tsx) on the Staff page: over the blurred page, one card per
+  request, and the attached document on top. Chiranvi colours only (red only for emergency, rejecting
+  and going over the allowance). Sizes use --admin-pixel.
+*/
+
+.admin-leave-backdrop,
+.admin-leave-document-backdrop {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: 16px;
+  background: rgba(19, 37, 27, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.admin-leave-document-backdrop {
+  z-index: 41;
+  background: rgba(19, 37, 27, 0.4);
+}
+
+.admin-leave-popup {
+  display: flex;
+  flex-direction: column;
+  width: min(calc(900 * var(--admin-pixel)), 100%);
+  max-height: calc(100svh - 32px);
+  padding: calc(24 * var(--admin-pixel));
+  border-radius: calc(18 * var(--admin-pixel));
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(19, 37, 27, 0.28);
+}
+
+.admin-leave-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(16 * var(--admin-pixel));
+}
+
+.admin-leave-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(21 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-leave-subtitle {
+  margin-top: calc(3 * var(--admin-pixel));
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-leave-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(34 * var(--admin-pixel));
+  height: calc(34 * var(--admin-pixel));
+  padding: 0;
+  border: 1px solid #e7e8e2;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.admin-leave-close svg {
+  width: calc(16 * var(--admin-pixel));
+  height: calc(16 * var(--admin-pixel));
+  fill: none;
+  stroke: #1b2a20;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.admin-leave-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--admin-pixel));
+  margin-top: calc(16 * var(--admin-pixel));
+  padding-bottom: calc(14 * var(--admin-pixel));
+  border-bottom: 1px solid #eeefea;
+}
+
+/* The list scrolls; the heading and tabs stay */
+.admin-leave-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: calc(12 * var(--admin-pixel));
+  margin-top: calc(14 * var(--admin-pixel));
+  overflow-y: auto;
+}
+
+.admin-leave-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--admin-pixel));
+  padding: calc(14 * var(--admin-pixel)) calc(16 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(12 * var(--admin-pixel));
+}
+
+.admin-leave-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-leave-name {
+  display: block;
+  font-size: calc(13.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-leave-job {
+  display: block;
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-leave-dates {
+  display: flex;
+  align-items: center;
+  gap: calc(7 * var(--admin-pixel));
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1b2a20;
+}
+
+.admin-leave-dates svg {
+  width: calc(15 * var(--admin-pixel));
+  height: calc(15 * var(--admin-pixel));
+  fill: none;
+  stroke: #c99a1e;
+  stroke-width: 1.8;
+}
+
+.admin-leave-today {
+  padding: calc(2 * var(--admin-pixel)) calc(8 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #fbf3e1;
+  color: #a37a12;
+  font-size: calc(10.5 * var(--admin-pixel));
+}
+
+.admin-leave-reason {
+  font-size: calc(12.5 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #3d4a40;
+}
+
+.admin-leave-details-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(8 * var(--admin-pixel));
+}
+
+/* Attached document: a small chip that opens it */
+.admin-leave-attachment {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  min-width: 0;
+  padding: calc(6 * var(--admin-pixel)) calc(10 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(8 * var(--admin-pixel));
+  background: #f6f7f2;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-leave-attachment:hover,
+.admin-leave-attachment:focus-visible {
+  border-color: #8fb98a;
+}
+
+.admin-leave-attachment svg {
+  flex-shrink: 0;
+  width: calc(15 * var(--admin-pixel));
+  height: calc(15 * var(--admin-pixel));
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.admin-leave-attachment-label {
+  display: block;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  color: #13251b;
+}
+
+.admin-leave-attachment-file {
+  display: block;
+  max-width: calc(170 * var(--admin-pixel));
+  overflow: hidden;
+  font-size: calc(10.5 * var(--admin-pixel));
+  color: #7a837c;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.admin-leave-attachment-view {
+  margin-left: calc(4 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-leave-no-attachment {
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #9aa29c;
+}
+
+.admin-leave-balance {
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #5c655e;
+}
+
+.admin-leave-balance-over {
+  font-weight: 600;
+  color: #c0392b;
+}
+
+.admin-leave-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(8 * var(--admin-pixel));
+}
+
+.admin-leave-approve,
+.admin-leave-reject,
+.admin-leave-reject-confirm,
+.admin-leave-cancel {
+  padding: calc(7 * var(--admin-pixel)) calc(18 * var(--admin-pixel));
+  border-radius: calc(8 * var(--admin-pixel));
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-leave-approve {
+  border: 1px solid #1f4d2e;
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+.admin-leave-approve:hover,
+.admin-leave-approve:focus-visible {
+  background: #163a22;
+}
+
+.admin-leave-reject {
+  border: 1px solid #e3b4b4;
+  background: #ffffff;
+  color: #c0392b;
+}
+
+.admin-leave-reject:hover,
+.admin-leave-reject:focus-visible {
+  background: #fdf0f0;
+}
+
+.admin-leave-reject-confirm {
+  border: 1px solid #c0392b;
+  background: #c0392b;
+  color: #ffffff;
+}
+
+.admin-leave-cancel {
+  border: 1px solid #d9dcd4;
+  background: #ffffff;
+  color: #13251b;
+}
+
+.admin-leave-reject-box {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--admin-pixel));
+  padding: calc(10 * var(--admin-pixel));
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #fdf0f0;
+}
+
+.admin-leave-reject-label {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #c0392b;
+}
+
+.admin-leave-reject-input {
+  padding: calc(8 * var(--admin-pixel)) calc(10 * var(--admin-pixel));
+  border: 1px solid #e3b4b4;
+  border-radius: calc(8 * var(--admin-pixel));
+  background: #ffffff;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #13251b;
+  resize: vertical;
+}
+
+.admin-leave-decision {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #5c655e;
+}
+
+.admin-leave-decision-reason {
+  flex-basis: 100%;
+  font-style: italic;
+}
+
+.admin-leave-empty {
+  grid-column: 1 / -1;
+  padding: calc(40 * var(--admin-pixel));
+  font-size: calc(13 * var(--admin-pixel));
+  color: #7a837c;
+  text-align: center;
+}
+
+/* ---------- The attached document ---------- */
+
+.admin-leave-document {
+  width: min(calc(460 * var(--admin-pixel)), 100%);
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  padding: calc(16 * var(--admin-pixel));
+  border-radius: calc(16 * var(--admin-pixel));
+  background: #eef0ea;
+  box-shadow: 0 24px 60px rgba(19, 37, 27, 0.35);
+}
+
+.admin-leave-document-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--admin-pixel));
+  margin-bottom: calc(12 * var(--admin-pixel));
+}
+
+/* A white page with the document's details */
+.admin-leave-paper {
+  padding: calc(28 * var(--admin-pixel)) calc(26 * var(--admin-pixel));
+  border-radius: calc(4 * var(--admin-pixel));
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(19, 37, 27, 0.12);
+}
+
+.admin-leave-paper-issuer {
+  padding-bottom: calc(10 * var(--admin-pixel));
+  border-bottom: 2px solid #1f4d2e;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1f4d2e;
+}
+
+.admin-leave-paper-title {
+  margin-top: calc(18 * var(--admin-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(17 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-leave-paper-details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(8 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  margin-top: calc(18 * var(--admin-pixel));
+  font-size: calc(12.5 * var(--admin-pixel));
+}
+
+.admin-leave-paper-details dt {
+  font-weight: 600;
+  color: #5c655e;
+}
+
+.admin-leave-paper-details dd {
+  color: #13251b;
+}
+
+.admin-leave-paper-sign {
+  margin-top: calc(40 * var(--admin-pixel));
+  padding-top: calc(6 * var(--admin-pixel));
+  border-top: 1px dashed #b9bdb5;
+  width: 50%;
+  margin-left: auto;
+  font-size: calc(11 * var(--admin-pixel));
+  color: #7a837c;
+  text-align: center;
+}
+
+.admin-leave-document-note {
+  margin-top: calc(10 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #5c655e;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .admin-leave-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phones: closer to the screen edges, less padding */
+@media (max-width: 600px) {
+  .admin-leave-backdrop,
+  .admin-leave-document-backdrop {
+    padding: 10px;
+  }
+
+  .admin-leave-popup {
+    max-height: calc(100svh - 20px);
+    padding: 16px 14px;
+  }
+
+  .admin-leave-card {
+    padding: 12px;
+  }
+
+  .admin-leave-paper {
+    padding: 20px 16px;
+  }
+}

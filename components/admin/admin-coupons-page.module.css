@@ -1,0 +1,376 @@
+/*
+  Coupons & offers page (admin-coupons-page.tsx), from the design 14-coupons-offers: coupon tickets
+  (coloured edge, torn line with notches), the redemptions table and the coupon form's extras.
+  Chiranvi colours only (red only for removing). Sizes use --admin-pixel.
+*/
+
+.admin-coupon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(14 * var(--admin-pixel));
+}
+
+/* A ticket: thick coloured edge on the left (status colour) */
+.admin-coupon-ticket {
+  --coupon-edge-colour: #1f4d2e;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: calc(16 * var(--admin-pixel)) calc(20 * var(--admin-pixel)) calc(14 * var(--admin-pixel)) calc(24 * var(--admin-pixel));
+  overflow: hidden;
+  border: 1px solid #e7e8e2;
+  border-left: calc(6 * var(--admin-pixel)) solid var(--coupon-edge-colour);
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #ffffff;
+}
+
+.admin-coupon-ticket-scheduled {
+  --coupon-edge-colour: #8fb98a;
+}
+
+.admin-coupon-ticket-paused {
+  --coupon-edge-colour: #f5bf2c;
+}
+
+.admin-coupon-ticket-expired {
+  --coupon-edge-colour: #cfc6ad;
+}
+
+.admin-coupon-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-coupon-code {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(18 * var(--admin-pixel));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #13251b;
+}
+
+.admin-coupon-ticket-expired .admin-coupon-code {
+  color: #5c655e;
+}
+
+.admin-coupon-description {
+  margin-top: calc(3 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+/* Torn line across the ticket, with half-circle notches cut into both sides */
+.admin-coupon-tear {
+  position: relative;
+  height: 0;
+  margin: calc(16 * var(--admin-pixel)) calc(-20 * var(--admin-pixel)) calc(14 * var(--admin-pixel)) calc(-24 * var(--admin-pixel));
+  border-top: 1.5px dashed #e3e5dd;
+}
+
+.admin-coupon-tear::before,
+.admin-coupon-tear::after {
+  content: "";
+  position: absolute;
+  top: calc(-8 * var(--admin-pixel));
+  width: calc(16 * var(--admin-pixel));
+  height: calc(16 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: 50%;
+  background: #f6f6f1;
+}
+
+.admin-coupon-tear::before {
+  left: calc(-9 * var(--admin-pixel));
+}
+
+.admin-coupon-tear::after {
+  right: calc(-9 * var(--admin-pixel));
+}
+
+.admin-coupon-used-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(12 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-coupon-used-count {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-coupon-used-bar {
+  height: calc(5 * var(--admin-pixel));
+  margin-top: calc(7 * var(--admin-pixel));
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #efeee6;
+}
+
+.admin-coupon-used-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--coupon-edge-colour);
+}
+
+.admin-coupon-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: calc(14 * var(--admin-pixel));
+}
+
+.admin-coupon-validity {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-coupon-validity svg,
+.admin-coupon-dates-button svg {
+  width: calc(14 * var(--admin-pixel));
+  height: calc(14 * var(--admin-pixel));
+  fill: none;
+  stroke: #c99a1e;
+  stroke-width: 1.8;
+}
+
+.admin-coupon-edit,
+.admin-coupon-text-button {
+  padding: calc(4 * var(--admin-pixel)) 0;
+  border: 0;
+  background: none;
+  color: #1f4d2e;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-coupon-edit:hover,
+.admin-coupon-edit:focus-visible,
+.admin-coupon-text-button:hover,
+.admin-coupon-text-button:focus-visible {
+  text-decoration: underline;
+}
+
+.admin-coupon-ticket-buttons {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+/* Delete on the ticket: red text with a bin (deleting is serious) */
+.admin-coupon-delete {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--admin-pixel));
+  padding: calc(4 * var(--admin-pixel)) 0;
+  border: 0;
+  background: none;
+  color: #c0392b;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-coupon-delete:hover,
+.admin-coupon-delete:focus-visible {
+  text-decoration: underline;
+}
+
+.admin-coupon-delete svg {
+  width: calc(14 * var(--admin-pixel));
+  height: calc(14 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-coupon-delete-note {
+  grid-column: 1 / -1;
+  font-size: calc(13 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #5c655e;
+}
+
+.admin-coupon-empty {
+  grid-column: 1 / -1;
+  padding: calc(40 * var(--admin-pixel));
+  border: 1px dashed #d9dcd4;
+  border-radius: calc(14 * var(--admin-pixel));
+  font-size: calc(13 * var(--admin-pixel));
+  color: #7a837c;
+  text-align: center;
+}
+
+/* Redemptions table */
+.admin-coupon-code-cell {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Money taken off: gold with a minus (not red: a discount is not a problem) */
+.admin-coupon-discount-cell {
+  font-weight: 600;
+  color: #a37a12 !important;
+  white-space: nowrap;
+}
+
+/* ---------- Coupon form ---------- */
+
+.admin-coupon-code-input {
+  font-family: var(--font-ubuntu), sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.admin-coupon-dates {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-coupon-dates-row {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+.admin-coupon-dates-button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The calendar opens inside the form (not floating), so the form's scrolling can't cut it off */
+.admin-coupon-calendar-slot [role="dialog"] {
+  position: static;
+  width: min(calc(300 * var(--admin-pixel)), 100%);
+  box-shadow: none;
+}
+
+.admin-coupon-check {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #1b2a20;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-coupon-check input {
+  width: calc(16 * var(--admin-pixel));
+  height: calc(16 * var(--admin-pixel));
+  accent-color: #1f4d2e;
+}
+
+.admin-coupon-edit-extras {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(10 * var(--admin-pixel));
+  padding-top: calc(12 * var(--admin-pixel));
+  border-top: 1px solid #eeefea;
+}
+
+.admin-coupon-edit-extras .admin-coupon-check {
+  white-space: normal;
+}
+
+.admin-coupon-used-note {
+  font-size: calc(12 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-coupon-remove {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #c0392b;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-coupon-remove:hover,
+.admin-coupon-remove:focus-visible {
+  text-decoration: underline;
+}
+
+.admin-coupon-remove-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+  width: 100%;
+  padding: calc(10 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  border: 1px solid #f2c4c4;
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #fdf0f0;
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #c0392b;
+}
+
+.admin-coupon-remove-confirm span {
+  flex: 1;
+  min-width: calc(180 * var(--admin-pixel));
+}
+
+.admin-coupon-remove-keep,
+.admin-coupon-remove-yes {
+  padding: calc(6 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  border-radius: 9999px;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-coupon-remove-keep {
+  border: 1px solid #1f4d2e;
+  background: #ffffff;
+  color: #1f4d2e;
+}
+
+.admin-coupon-remove-yes {
+  border: 1px solid #c0392b;
+  background: #c0392b;
+  color: #ffffff;
+}
+
+@media (max-width: 1100px) {
+  .admin-coupon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-coupon-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-coupon-dates-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

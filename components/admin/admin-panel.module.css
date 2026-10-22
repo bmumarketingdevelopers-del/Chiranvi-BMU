@@ -623,7 +623,22 @@
   margin: calc(28 * var(--admin-pixel)) 0 calc(12 * var(--admin-pixel));
 }
 
-/* Narrow screens: the sidebar becomes a bar on top, columns stack */
+/* Top bar and the sidebar's close button: only on phones and tablets (below) */
+.admin-topbar,
+.admin-sidebar-close {
+  display: none;
+}
+
+.admin-sidebar-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/*
+  Phones and tablets (900 wide or less): a top bar with a menu button; the sidebar slides in from the
+  left over the page, with a dark backdrop behind it.
+*/
 @media (max-width: 900px) {
   .admin-panel {
     --admin-pixel: 1px;
@@ -631,63 +646,144 @@
     flex-direction: column;
   }
 
-  .admin-sidebar {
-    position: static;
-    width: auto;
-    height: auto;
-    padding: 12px 14px;
-    border-right: none;
+  .admin-topbar {
+    position: sticky;
+    z-index: 30;
+    top: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 58px;
+    padding: 0 14px;
     border-bottom: 1px solid #ecede7;
+    background: #ffffff;
   }
 
-  .admin-sidebar-logo {
-    margin: 0 0 8px;
+  .admin-topbar-menu-button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid #e7e8e2;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+  }
+
+  .admin-topbar-menu-button svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: #1f4d2e;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  /* Something is waiting (pause requests, urgent complaints, missed deliveries) */
+  .admin-topbar-menu-dot {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid #ffffff;
+    border-radius: 50%;
+    background: #d23b3b;
+  }
+
+  .admin-topbar-logo img {
+    display: block;
+    width: auto;
+    height: 36px;
+  }
+
+  .admin-topbar-page {
+    margin-left: auto;
+    overflow: hidden;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    background: #fbf3e1;
+    color: #1f4d2e;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* The sidebar: off screen on the left until the menu opens */
+  .admin-sidebar {
+    position: fixed;
+    z-index: 46;
+    top: 0;
+    left: 0;
+    width: min(300px, 86vw);
+    height: 100svh;
+    padding: 14px 12px 16px;
+    border-right: 1px solid #ecede7;
+    transform: translateX(-102%);
+    visibility: hidden;
+    transition:
+      transform 0.25s ease,
+      visibility 0s linear 0.25s;
+  }
+
+  .admin-sidebar-open {
+    transform: translateX(0);
+    visibility: visible;
+    box-shadow: 0 0 40px rgba(19, 37, 27, 0.25);
+    transition: transform 0.25s ease;
+  }
+
+  .admin-sidebar-backdrop {
+    position: fixed;
+    z-index: 45;
+    inset: 0;
+    background: rgba(19, 37, 27, 0.35);
+    animation: admin-sidebar-backdrop-fade 0.2s ease;
+  }
+
+  @keyframes admin-sidebar-backdrop-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .admin-sidebar-close {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 12px;
+    padding: 0;
+    border: 1px solid #e7e8e2;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+  }
+
+  .admin-sidebar-close svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: #1b2a20;
+    stroke-width: 2;
+    stroke-linecap: round;
   }
 
   .admin-sidebar-logo img {
-    height: 44px;
-  }
-
-  .admin-sidebar-groups {
-    flex-direction: row;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .admin-sidebar-group {
-    display: flex;
-    gap: 4px;
-  }
-
-  .admin-sidebar-group-title {
-    display: none;
-  }
-
-  .admin-sidebar-link {
-    flex-shrink: 0;
-  }
-
-  .admin-sidebar-person {
-    margin-top: 10px;
+    width: 130px;
   }
 
   .admin-content {
-    padding: 20px 14px 36px;
+    padding: 18px 14px 36px;
   }
+}
 
-  .admin-team-columns,
-  .admin-owner-edit-fields,
-  .admin-feature-options {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-team-member {
-    grid-template-columns: 1fr auto;
-  }
-
-  .admin-team-member-features,
-  .admin-team-member-actions {
-    grid-column: 1 / -1;
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar,
+  .admin-sidebar-open {
+    transition: none;
   }
 }

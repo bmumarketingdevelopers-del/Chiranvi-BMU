@@ -11,6 +11,7 @@ import {
   type PaymentMethod,
   type PaymentType,
 } from "@/store/admin-payments-store";
+import { useAdminOrders } from "@/store/admin-orders-store";
 import { AdminFeatureGate } from "./admin-panel-layout";
 import {
   AdminDialog,
@@ -22,8 +23,11 @@ import {
   AdminStatCards,
   adminInputClassName,
   downloadCsv,
+  formatDateRange,
   toDateFileName,
   useAdminToast,
+  useIsPanelOwner,
+  OWNER_ONLY_MESSAGE,
 } from "./admin-shared";
 import dashboardStyles from "./admin-dashboard.module.css";
 import sharedStyles from "./admin-shared.module.css";
@@ -36,6 +40,8 @@ import styles from "./admin-payments-page.module.css";
     numbers    collected in the chosen dates, collected today, refunded, failed payments (red: money to
                recover)
     table      All / Success / Failed tabs; 14 a page; "..." retries a failed payment or refunds one
+    this week  money in by kind (subscriptions, one-time orders), refunds, cash still to collect on
+               orders not yet delivered (pending dues), failed payments; for the chosen dates
     methods    how the money came in (UPI, card, cash) as one bar and a list
   Payments come from store/admin-payments-store.ts (saved in this browser for now).
 */
@@ -78,6 +84,7 @@ export default function AdminPaymentsPage() {
 
 function PaymentsPage() {
   const payments = useAdminPayments();
+  const orders = useAdminOrders();
   const [today] = useState(() => new Date());
   const [rangeFrom, setRangeFrom] = useState(() => new Date(today.getTime() - 6 * 86400000));
   const [rangeTo, setRangeTo] = useState(today);
@@ -87,6 +94,8 @@ function PaymentsPage() {
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [newPayment, setNewPayment] = useState(EMPTY_NEW_PAYMENT);
   const { showToast, toast } = useAdminToast();
+  // Sensitive actions only the owner can do (Roles & permissions)
+  const isOwner = useIsPanelOwner();
 
   const paymentsInRange = useMemo(() => {
     const from = new Date(rangeFrom);
@@ -116,6 +125,16 @@ function PaymentsPage() {
   const refunded = refunds.reduce((sum, payment) => sum - payment.amount, 0);
   const failed = paymentsInRange.filter((payment) => payment.status === "Failed");
   const toRecover = failed.reduce((sum, payment) => sum + Math.abs(payment.amount), 0);
+
+  // This week card: money in by kind, and cash still to collect when orders are delivered
+  const collectedFrom = (type: PaymentType) =>
+    moneyIn.filter((payment) => payment.type === type).reduce((sum, payment) => sum + payment.amount, 0);
+  const cashToCollect = orders.filter(
+    (order) => order.payment === "Cash" && (order.status === "Pending" || order.status === "Out for delivery"),
+  );
+  const pendingDues = cashToCollect.reduce((sum, order) => sum + order.amount, 0);
+  const isLastSevenDays =
+    rangeTo.toDateString() === today.toDateString() && Math.round((rangeTo.getTime() - rangeFrom.getTime()) / 86400000) === 6;
 
   const byMethod = PAYMENT_METHODS.map((method) => ({
     method,
@@ -308,6 +327,10 @@ function PaymentsPage() {
                                   isDisabled: payment.type === "Refund",
                                   isDanger: true,
                                   onSelect: () => {
+                                    if (!isOwner && Math.abs(payment.amount) > 500) {
+                                      showToast(OWNER_ONLY_MESSAGE);
+                                      return;
+                                    }
                                     refundPayment(payment.id);
                                     showToast(`${rupees(Math.abs(payment.amount))} refunded to ${payment.customerName}`);
                                   },
@@ -332,7 +355,50 @@ function PaymentsPage() {
           <AdminPagination page={page} pageSize={PAGE_SIZE} total={shown.length} onPageChange={setPage} itemName="payments" />
         </section>
 
-        <section className={`${dashboardStyles["admin-card"]} ${styles["admin-payment-methods"]}`} aria-labelledby="admin-methods-heading">
+        <div className={styles["admin-payments-side"]}>
+        <section className={dashboardStyles["admin-card"]} aria-labelledby="admin-week-heading">
+          <div className={styles["admin-week-heading-row"]}>
+            <h2 id="admin-week-heading" className={dashboardStyles["admin-card-title"]}>
+              {isLastSevenDays ? "This week" : "These dates"}
+            </h2>
+            <span className={styles["admin-week-dates"]}>{formatDateRange(rangeFrom, rangeTo)}</span>
+          </div>
+          <dl className={styles["admin-week-list"]}>
+            <div className={styles["admin-week-total"]}>
+              <dt>Total collected</dt>
+              <dd>{rupees(collected)}</dd>
+            </div>
+            <div>
+              <dt>Subscriptions</dt>
+              <dd>{rupees(collectedFrom("Subscription"))}</dd>
+            </div>
+            <div>
+              <dt>One-time orders</dt>
+              <dd>{rupees(collectedFrom("Order"))}</dd>
+            </div>
+            <div>
+              <dt>Refunds</dt>
+              <dd className={styles["admin-week-refunds"]}>−{rupees(refunded)}</dd>
+            </div>
+            <div>
+              <dt title="Cash orders not delivered yet: collected at the door">
+                Pending dues
+                <span className={styles["admin-week-hint"]}>
+                  {cashToCollect.length} cash {cashToCollect.length === 1 ? "order" : "orders"} to collect
+                </span>
+              </dt>
+              <dd className={styles["admin-week-dues"]}>{rupees(pendingDues)}</dd>
+            </div>
+            <div>
+              <dt>Failed payments</dt>
+              <dd className={styles["admin-week-failed"]}>
+                {failed.length} · {rupees(toRecover)}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className={dashboardStyles["admin-card"]} aria-labelledby="admin-methods-heading">
           <h2 id="admin-methods-heading" className={dashboardStyles["admin-card-title"]}>
             Payment methods
           </h2>
@@ -362,6 +428,7 @@ function PaymentsPage() {
             ))}
           </ul>
         </section>
+        </div>
       </div>
 
       {isRecordOpen && (

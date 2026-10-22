@@ -8,7 +8,6 @@ import {
   dashboardStats,
   revenueLastWeek,
   revenueThisWeek,
-  todaysDeliveries,
 } from "./admin-dashboard-data";
 import {
   ADMIN_ORDER_STATUSES,
@@ -16,6 +15,8 @@ import {
   useAdminOrders,
   type AdminOrderStatus,
 } from "@/store/admin-orders-store";
+import { useTodayDeliveries } from "@/store/admin-deliveries-store";
+import { useDeliveryRoutes } from "@/store/admin-routes-store";
 import sharedStyles from "./admin-shared.module.css";
 import AdminDateRangePicker from "./admin-date-range-picker";
 import styles from "./admin-dashboard.module.css";
@@ -378,7 +379,7 @@ export default function AdminDashboard() {
 
       <div className={styles["admin-charts-row"]}>
         <RevenueChart today={today} />
-        <DeliveriesRing />
+        <DeliveriesGauge />
       </div>
 
       {/* Recent orders */}
@@ -681,109 +682,116 @@ function RevenueChart({ today }: { today: Date }) {
   );
 }
 
-/* Today's deliveries: a segmented ring (delivered in green), the share in the middle, and the counts. */
-function DeliveriesRing() {
-  const { scheduled, routes, delivered, pending, missed } = todaysDeliveries;
-  const deliveredShare = delivered / scheduled;
-  const radius = 54;
-  const circumference = 2 * Math.PI * radius;
-  const segments = 8;
-  const segment = circumference / segments;
+/*
+  Today's deliveries (design): a LIVE tag, a half-circle gauge (delivered green, pending yellow, missed
+  red) with the share delivered in the middle, three tiles with the counts and shares, and which routes
+  missed deliveries. Live from the Deliveries page (store/admin-deliveries-store.ts).
+*/
+function DeliveriesGauge() {
+  const deliveries = useTodayDeliveries();
+  const routes = useDeliveryRoutes();
+  const scheduled = deliveries.length;
+  const delivered = deliveries.filter((delivery) => delivery.status === "Delivered").length;
+  const missedDeliveries = deliveries.filter((delivery) => delivery.status === "Missed");
+  const missed = missedDeliveries.length;
+  const pending = scheduled - delivered - missed;
+  const routeCount = new Set(deliveries.map((delivery) => delivery.routeId)).size;
+  const missedRoutes = [...new Set(missedDeliveries.map((delivery) => delivery.routeId))].map(
+    (routeId) => routes.find((route) => route.id === routeId)?.name ?? routeId,
+  );
+  const shareOf = (count: number) => (scheduled ? (count / scheduled) * 100 : 0);
+
+  // The gauge's three parts, in hundredths of the half circle; a tiny part still shows as a sliver
+  const gap = 0.8;
+  const parts = [
+    { key: "delivered", share: shareOf(delivered) },
+    { key: "pending", share: shareOf(pending) },
+    { key: "missed", share: shareOf(missed) },
+  ]
+    .filter((part) => part.share > 0)
+    .map((part) => ({ ...part, length: Math.max(part.share, 1.6) }));
+  const total = parts.reduce((sum, part) => sum + part.length, 0) + gap * (parts.length - 1);
+  let start = 0;
+  const arcs = parts.map((part) => {
+    const length = (part.length / total) * 100;
+    const arc = { key: part.key, length, start };
+    start += length + (gap / total) * 100;
+    return arc;
+  });
+
+  const tiles = [
+    { key: "delivered", label: "Delivered", count: delivered },
+    { key: "pending", label: "Pending", count: pending },
+    { key: "missed", label: "Missed", count: missed },
+  ];
 
   return (
-    <section
-      className={`${styles["admin-card"]} ${styles["admin-deliveries"]}`}
-      aria-labelledby="admin-deliveries-heading"
-    >
-      <h2 id="admin-deliveries-heading" className={styles["admin-card-title"]}>
-        Today&rsquo;s deliveries
-      </h2>
-      <p className={styles["admin-card-subtitle"]}>
-        {scheduled} scheduled · {routes} routes
-      </p>
-
-      <div className={styles["admin-deliveries-body"]}>
-        <div className={styles["admin-ring"]}>
-          <svg viewBox="0 0 140 140" aria-hidden="true">
-            {/* Grey track */}
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              className={styles["admin-ring-track"]}
-            />
-            {/* Green blocks, one per eighth of the ring */}
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              className={styles["admin-ring-delivered"]}
-              strokeDasharray={`${segment * 0.55} ${segment * 0.45}`}
-              strokeDashoffset={segment * 0.275}
-            />
-            {/* The part not yet delivered goes back to grey */}
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              className={styles["admin-ring-track"]}
-              strokeDasharray={`${circumference * (1 - deliveredShare)} ${circumference}`}
-              strokeDashoffset={-circumference * deliveredShare}
-            />
-            {/* Orange ticks in the middle of each block */}
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              className={styles["admin-ring-ticks"]}
-              strokeDasharray={`2 ${segment - 2}`}
-              strokeDashoffset={1}
-            />
-          </svg>
-          <span className={styles["admin-ring-text"]}>
-            <span className={styles["admin-ring-percent"]}>
-              {(deliveredShare * 100).toFixed(1)}%
-            </span>
-            <span className={styles["admin-ring-caption"]}>delivered</span>
-          </span>
+    <section className={`${styles["admin-card"]} ${styles["admin-deliveries"]}`} aria-labelledby="admin-deliveries-heading">
+      <div className={styles["admin-deliveries-heading-row"]}>
+        <div>
+          <h2 id="admin-deliveries-heading" className={styles["admin-card-title"]}>
+            Today&rsquo;s deliveries
+          </h2>
+          <p className={styles["admin-card-subtitle"]}>
+            {scheduled.toLocaleString("en-IN")} scheduled · {routeCount} routes
+          </p>
         </div>
-
-        <dl className={styles["admin-deliveries-legend"]}>
-          <div>
-            <dt>
-              <span
-                className={`${styles["admin-legend-dot"]} ${styles["admin-legend-dot-green"]}`}
-              />
-              Delivered
-            </dt>
-            <dd>{delivered}</dd>
-          </div>
-          <div>
-            <dt>
-              <span
-                className={`${styles["admin-legend-dot"]} ${styles["admin-legend-dot-orange"]}`}
-              />
-              Pending
-            </dt>
-            <dd>{pending}</dd>
-          </div>
-          <div>
-            <dt>
-              <span
-                className={`${styles["admin-legend-dot"]} ${styles["admin-legend-dot-red"]}`}
-              />
-              Missed
-            </dt>
-            <dd>{missed}</dd>
-          </div>
-        </dl>
+        <span className={styles["admin-deliveries-live"]}>
+          <span className={styles["admin-deliveries-live-dot"]} aria-hidden="true" />
+          Live
+        </span>
       </div>
 
+      <div className={styles["admin-gauge"]}>
+        <svg viewBox="0 0 220 120" aria-hidden="true">
+          <path d="M 20 110 A 90 90 0 0 1 200 110" pathLength={100} className={styles["admin-gauge-track"]} />
+          {arcs.map((arc) => (
+            <path
+              key={arc.key}
+              d="M 20 110 A 90 90 0 0 1 200 110"
+              pathLength={100}
+              className={styles[`admin-gauge-${arc.key}`]}
+              strokeDasharray={`${arc.length} 100`}
+              strokeDashoffset={-arc.start}
+            />
+          ))}
+        </svg>
+        <span className={styles["admin-gauge-text"]}>
+          <span className={styles["admin-gauge-percent"]}>{shareOf(delivered).toFixed(1)}%</span>
+          <span className={styles["admin-gauge-caption"]}>
+            {delivered.toLocaleString("en-IN")} of {scheduled.toLocaleString("en-IN")} delivered
+          </span>
+        </span>
+      </div>
+
+      <ul className={styles["admin-deliveries-tiles"]}>
+        {tiles.map((tile) => (
+          <li key={tile.key} className={`${styles["admin-deliveries-tile"]} ${styles[`admin-deliveries-tile-${tile.key}`]}`}>
+            <span className={styles["admin-deliveries-tile-label"]}>{tile.label}</span>
+            <span className={styles["admin-deliveries-tile-numbers"]}>
+              <span className={styles["admin-deliveries-tile-count"]}>{tile.count.toLocaleString("en-IN")}</span>
+              <span className={styles["admin-deliveries-tile-share"]}>{shareOf(tile.count).toFixed(1)}%</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+
       <p className={styles["admin-deliveries-footer"]}>
-        Missed on Route 2 ·{" "}
-        <Link href="/admin/routes" className={styles["admin-deliveries-link"]}>
-          Reassign agent →
-        </Link>
+        {missed ? (
+          <>
+            {missed} missed on {missedRoutes.join(", ")} ·{" "}
+            <Link href="/admin/deliveries" className={styles["admin-deliveries-link"]}>
+              Reassign agent →
+            </Link>
+          </>
+        ) : (
+          <>
+            Nothing missed today ·{" "}
+            <Link href="/admin/deliveries" className={styles["admin-deliveries-link"]}>
+              Open deliveries →
+            </Link>
+          </>
+        )}
       </p>
     </section>
   );

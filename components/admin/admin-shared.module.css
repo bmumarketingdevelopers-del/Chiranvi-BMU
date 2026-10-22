@@ -114,6 +114,7 @@
   z-index: 40;
   inset: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 16px;
   background: rgba(19, 37, 27, 0.35);
@@ -210,11 +211,59 @@
   background: #173d24;
 }
 
+/* Deleting something: the main button is red */
+.admin-dialog-submit-danger {
+  background: #c0392b;
+}
+
+.admin-dialog-submit-danger:hover {
+  background: #a93226;
+}
+
 .admin-row-menu-danger {
   color: #d23b3b !important;
 }
 
+/*
+  Phones: filter tabs in one row that scrolls sideways (instead of several rows); page numbers below the
+  "Showing ..." line; pop-up forms nearly full width, one field a row.
+*/
 @media (max-width: 600px) {
+  .admin-filter-tabs {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .admin-filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-filter-tab {
+    flex-shrink: 0;
+  }
+
+  .admin-top-row-left {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .admin-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-dialog-backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .admin-dialog {
+    max-height: calc(100svh - 20px);
+    padding: 18px 16px;
+  }
+
   .admin-dialog-fields {
     grid-template-columns: 1fr;
   }

@@ -8,7 +8,8 @@ import styles from "./admin-date-range-picker.module.css";
   month picker on the account Subscription page (components/account/subscription/delivery-week-picker.tsx):
   month name with arrows, M T W T F S S, today with a yellow ring, the chosen days shaded green.
   Click the first day, then the last day: the range is chosen and the calendar closes. Clicking a day
-  before the first one starts again from that day. Days after today cannot be chosen.
+  before the first one starts again from that day. Days after today cannot be chosen, unless
+  allowFutureDays is set (Coupons & offers: when a coupon is valid, which runs into the future).
 */
 
 const weekdayInitials = ["M", "T", "W", "T", "F", "S", "S"];
@@ -35,11 +36,13 @@ export default function AdminDateRangePicker({
   rangeTo,
   today,
   onChooseRange,
+  allowFutureDays = false,
 }: {
   rangeFrom: Date;
   rangeTo: Date;
   today: Date;
   onChooseRange: (from: Date, to: Date) => void;
+  allowFutureDays?: boolean;
 }) {
   const todayStart = startOfDay(today);
   // First day of the month shown (the month of the range's last day)
@@ -88,7 +91,7 @@ export default function AdminDateRangePicker({
           type="button"
           aria-label="Next month"
           className={styles["admin-range-calendar-arrow"]}
-          disabled={lastDayOfMonth >= todayStart}
+          disabled={!allowFutureDays && lastDayOfMonth >= todayStart}
           onClick={() => setShownMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -106,7 +109,7 @@ export default function AdminDateRangePicker({
       <div className={styles["admin-range-calendar-days"]} onPointerLeave={() => setHoveredDay(null)}>
         {days.map((day) => {
           const isInShownMonth = day.getMonth() === shownMonth.getMonth();
-          const isFuture = day > todayStart;
+          const isFuture = !allowFutureDays && day > todayStart;
           const isStart = day.getTime() === shownFrom.getTime();
           const isEnd = day.getTime() === shownTo.getTime();
           const isInRange = day >= shownFrom && day <= shownTo;

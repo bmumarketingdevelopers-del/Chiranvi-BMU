@@ -353,7 +353,8 @@
 
 .admin-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* Four cards on most pages; a page with more sets --admin-stat-count (Staff: five) */
+  grid-template-columns: repeat(var(--admin-stat-count, 4), 1fr);
   gap: calc(14 * var(--admin-pixel));
 }
 
@@ -564,107 +565,155 @@
   flex-direction: column;
 }
 
-.admin-deliveries-body {
+.admin-deliveries-heading-row {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(12 * var(--admin-pixel));
+}
+
+/* "● LIVE": updates as agents mark deliveries */
+.admin-deliveries-live {
+  display: inline-flex;
   align-items: center;
-  gap: calc(22 * var(--admin-pixel));
-  margin: calc(16 * var(--admin-pixel)) 0;
+  gap: calc(6 * var(--admin-pixel));
+  padding: calc(4 * var(--admin-pixel)) calc(10 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #fbe3e3;
+  color: #c0392b;
+  font-size: calc(10.5 * var(--admin-pixel));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.admin-ring {
+.admin-deliveries-live-dot {
+  width: calc(7 * var(--admin-pixel));
+  height: calc(7 * var(--admin-pixel));
+  border-radius: 50%;
+  background: #d23b3b;
+  animation: admin-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes admin-live-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Half-circle gauge: grey track, then delivered (green), pending (yellow), missed (red) */
+.admin-gauge {
   position: relative;
-  flex-shrink: 0;
-  width: calc(140 * var(--admin-pixel));
-  height: calc(140 * var(--admin-pixel));
+  width: min(100%, calc(250 * var(--admin-pixel)));
+  margin: calc(14 * var(--admin-pixel)) auto calc(6 * var(--admin-pixel));
 }
 
-.admin-ring svg {
+.admin-gauge svg {
   display: block;
   width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
+  height: auto;
 }
 
-.admin-ring circle {
+.admin-gauge path {
   fill: none;
-  stroke-width: 13;
+  stroke-width: 22;
 }
 
-.admin-ring-track {
+.admin-gauge-track {
   stroke: #ecece6;
 }
 
-.admin-ring-delivered {
+.admin-gauge-delivered {
   stroke: #2f6b3a;
 }
 
-.admin-ring-ticks {
+.admin-gauge-pending {
   stroke: #f5bf2c;
 }
 
-.admin-ring-text {
+.admin-gauge-missed {
+  stroke: #d23b3b;
+}
+
+.admin-gauge-text {
   position: absolute;
-  inset: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
 }
 
-.admin-ring-percent {
+.admin-gauge-percent {
   font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(19 * var(--admin-pixel));
+  font-size: calc(30 * var(--admin-pixel));
   font-weight: 700;
+  line-height: 1.1;
   color: #13251b;
 }
 
-.admin-ring-caption {
+.admin-gauge-caption {
   font-size: calc(11.5 * var(--admin-pixel));
   color: #6b736c;
 }
 
-.admin-deliveries-legend {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: calc(14 * var(--admin-pixel));
+/* Three tiles under the gauge, tinted by status */
+.admin-deliveries-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(8 * var(--admin-pixel));
+  margin: calc(12 * var(--admin-pixel)) 0 calc(14 * var(--admin-pixel));
 }
 
-.admin-deliveries-legend div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: calc(13 * var(--admin-pixel));
+.admin-deliveries-tile {
+  padding: calc(9 * var(--admin-pixel)) calc(10 * var(--admin-pixel));
+  border: 1px solid transparent;
+  border-left-width: calc(3 * var(--admin-pixel));
+  border-radius: calc(8 * var(--admin-pixel));
 }
 
-.admin-deliveries-legend dt {
-  display: flex;
-  align-items: center;
-  gap: calc(9 * var(--admin-pixel));
-  color: #1b2a20;
+.admin-deliveries-tile-delivered {
+  border-color: #cfe0c9;
+  border-left-color: #2f6b3a;
+  background: #f3f8f0;
 }
 
-.admin-deliveries-legend dd {
+.admin-deliveries-tile-pending {
+  border-color: #f0dca4;
+  border-left-color: #f5bf2c;
+  background: #fdf8ec;
+}
+
+.admin-deliveries-tile-missed {
+  border-color: #f2c4c4;
+  border-left-color: #d23b3b;
+  background: #fdf0f0;
+}
+
+.admin-deliveries-tile-label {
+  display: block;
+  font-size: calc(11 * var(--admin-pixel));
+  color: #5c655e;
+}
+
+.admin-deliveries-tile-numbers {
+  display: flex;
+  align-items: baseline;
+  gap: calc(5 * var(--admin-pixel));
+  margin-top: calc(2 * var(--admin-pixel));
+}
+
+.admin-deliveries-tile-count {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(17 * var(--admin-pixel));
   font-weight: 700;
   color: #13251b;
 }
 
-.admin-legend-dot {
-  width: calc(9 * var(--admin-pixel));
-  height: calc(9 * var(--admin-pixel));
-  border-radius: 50%;
-}
-
-.admin-legend-dot-green {
-  background: #2f6b3a;
-}
-
-.admin-legend-dot-orange {
-  background: #f5bf2c;
-}
-
-.admin-legend-dot-red {
-  background: #d23b3b;
+.admin-deliveries-tile-share {
+  font-size: calc(10.5 * var(--admin-pixel));
+  color: #7a837c;
 }
 
 .admin-deliveries-footer {
@@ -693,6 +742,8 @@
 /* Recent orders */
 
 .admin-table-scroll {
+  /* relative: hidden labels inside (position: absolute) stay in here, instead of widening the page on phones */
+  position: relative;
   overflow-x: auto;
   margin-top: calc(10 * var(--admin-pixel));
 }
@@ -809,6 +860,8 @@
 
 .admin-visually-hidden {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
@@ -819,7 +872,8 @@
 /* Short message at the bottom (e.g. "Reminder sent to 18 customers") */
 .admin-toast {
   position: fixed;
-  z-index: 20;
+  /* Above pop-ups (they are 40-41), so messages show while one is open */
+  z-index: 50;
   bottom: 24px;
   left: 50%;
   padding: 10px 18px;
@@ -848,6 +902,11 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* Two a row: an odd last card (Staff has five) takes the whole row instead of sitting alone */
+  .admin-stats > li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .admin-charts-row {
     grid-template-columns: 1fr;
   }
@@ -866,18 +925,126 @@
   }
 }
 
+/*
+  Phones (600 wide or less): title and line on top; search across the whole width, then the bell and
+  the page's main button; number cards two a row, a little smaller; card headings above their tabs.
+*/
 @media (max-width: 600px) {
-  .admin-alerts,
-  .admin-stats {
+  .admin-alerts {
     grid-template-columns: 1fr;
+  }
+
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .admin-dashboard-greeting {
+    font-size: 26px;
+  }
+
+  .admin-dashboard-date {
+    font-size: 13.5px;
+  }
+
+  .admin-dashboard-header {
+    gap: 12px;
+  }
+
+  .admin-dashboard-header-tools {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Search and the bell side by side; the page's main button on its own row, full width */
+  .admin-search {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 42px;
+  }
+
+  .admin-new-order-button {
+    flex: 1 1 100%;
+    order: 3;
+    justify-content: center;
+    height: 42px;
+    padding: 0 14px;
   }
 
   .admin-dashboard-range-row {
     flex-wrap: wrap;
     justify-content: flex-start;
+    gap: 8px 10px;
+    margin-top: 0;
   }
 
-  .admin-new-order-button {
-    padding: 0 14px;
+  /* Number cards: smaller so two fit side by side */
+  .admin-stat {
+    min-height: 0;
+    padding: 12px 12px 12px;
+  }
+
+  .admin-stat-label {
+    padding-right: 34px;
+    font-size: 12px;
+  }
+
+  .admin-stat-value {
+    margin-top: 6px;
+    font-size: 22px;
+  }
+
+  .admin-stat-note {
+    margin-top: 6px;
+    font-size: 11px;
+  }
+
+  .admin-stat-icon {
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .admin-stat-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .admin-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  /* Card heading above its filter tabs */
+  .admin-card-heading-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* Links like "View all →" and "+ Add agent" stay on the left under the heading */
+  .admin-card-heading-row > button,
+  .admin-card-heading-row > a {
+    align-self: flex-start;
+  }
+
+  .admin-orders-table th,
+  .admin-orders-table td {
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+
+  /* Messages: across the bottom, inside the screen edges */
+  .admin-toast {
+    right: 14px;
+    left: 14px;
+    text-align: center;
+    transform: translateY(10px);
+  }
+
+  .admin-toast[data-visible="true"] {
+    transform: none;
   }
 }

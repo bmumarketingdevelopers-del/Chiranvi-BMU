@@ -1,0 +1,473 @@
+/*
+  Roles & permissions page (admin-roles-page.tsx), from the design 15-roles-permissions: roles and people
+  on the left, the permission grid on the right. Chiranvi colours only (red only for removing). Sizes use
+  --admin-pixel.
+*/
+
+.admin-roles-columns {
+  display: grid;
+  grid-template-columns: calc(380 * var(--admin-pixel)) minmax(0, 1fr);
+  align-items: start;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+/* ---------- Roles ---------- */
+
+.admin-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--admin-pixel));
+  margin-top: calc(14 * var(--admin-pixel));
+}
+
+.admin-role-button {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--admin-pixel));
+  width: 100%;
+  padding: calc(12 * var(--admin-pixel));
+  border: 1px solid transparent;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-role-button:hover {
+  background: #f7f8f3;
+}
+
+/* The chosen role: light yellow, like the active sidebar item */
+.admin-role-button-selected,
+.admin-role-button-selected:hover {
+  border-color: #f0dca4;
+  background: #fbf3e1;
+}
+
+.admin-role-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(38 * var(--admin-pixel));
+  height: calc(38 * var(--admin-pixel));
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #fbf3e1;
+}
+
+.admin-role-button-selected .admin-role-icon {
+  background: #ffffff;
+}
+
+.admin-role-icon svg {
+  width: calc(18 * var(--admin-pixel));
+  height: calc(18 * var(--admin-pixel));
+  fill: none;
+  stroke: #c99a1e;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-role-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-role-name {
+  display: block;
+  font-size: calc(13.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-role-count {
+  display: block;
+  margin-top: calc(1 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-role-arrow {
+  width: calc(16 * var(--admin-pixel));
+  height: calc(16 * var(--admin-pixel));
+  fill: none;
+  stroke: #9aa29c;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* "+ Add new role": dashed box */
+.admin-role-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--admin-pixel));
+  width: 100%;
+  height: calc(44 * var(--admin-pixel));
+  margin-top: calc(10 * var(--admin-pixel));
+  border: 1.5px dashed #d9dcd4;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: none;
+  color: #1f4d2e;
+  font: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-role-add:hover,
+.admin-role-add:focus-visible {
+  border-color: #8fb98a;
+  background: #f3f8f0;
+}
+
+.admin-role-add svg {
+  width: calc(15 * var(--admin-pixel));
+  height: calc(15 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.admin-roles-section-title {
+  margin-top: calc(22 * var(--admin-pixel));
+  padding-top: calc(16 * var(--admin-pixel));
+  border-top: 1px solid #eeefea;
+  font-size: calc(11 * var(--admin-pixel));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #7a837c;
+  text-transform: uppercase;
+}
+
+/* ---------- People with the role ---------- */
+
+.admin-person-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: calc(8 * var(--admin-pixel));
+}
+
+.admin-person-row {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+  padding: calc(8 * var(--admin-pixel)) 0;
+}
+
+.admin-person-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-person-name {
+  display: block;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-person-detail {
+  display: block;
+  overflow: hidden;
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #7a837c;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.admin-person-empty {
+  padding: calc(10 * var(--admin-pixel)) 0;
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #9aa29c;
+}
+
+.admin-person-invite {
+  width: 100%;
+  height: calc(38 * var(--admin-pixel));
+  margin-top: calc(8 * var(--admin-pixel));
+  border: 1px solid #d9dcd4;
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #ffffff;
+  color: #13251b;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-person-invite:hover,
+.admin-person-invite:focus-visible {
+  border-color: #8fb98a;
+  background: #f3f8f0;
+}
+
+.admin-roles-hint {
+  margin-top: calc(8 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #7a837c;
+}
+
+.admin-roles-text-button {
+  padding: calc(4 * var(--admin-pixel)) 0;
+  border: 0;
+  background: none;
+  color: #1f4d2e;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-roles-text-button:hover,
+.admin-roles-text-button:focus-visible {
+  text-decoration: underline;
+}
+
+/* ---------- What each role can do ---------- */
+
+.admin-role-summaries {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--admin-pixel));
+  margin-top: calc(10 * var(--admin-pixel));
+}
+
+.admin-role-summaries li {
+  position: relative;
+  padding-left: calc(16 * var(--admin-pixel));
+}
+
+.admin-role-summaries li::before {
+  content: "";
+  position: absolute;
+  top: calc(6 * var(--admin-pixel));
+  left: 0;
+  width: calc(7 * var(--admin-pixel));
+  height: calc(7 * var(--admin-pixel));
+  border-radius: 50%;
+  background: #2f6b3a;
+}
+
+.admin-role-summary-name {
+  display: block;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-role-summary-text {
+  display: block;
+  margin-top: calc(1 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #7a837c;
+}
+
+/* ---------- Permission grid ---------- */
+
+.admin-permissions-unsaved {
+  margin-left: calc(10 * var(--admin-pixel));
+  padding: calc(2 * var(--admin-pixel)) calc(9 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #fbf3e1;
+  color: #a37a12;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(10.5 * var(--admin-pixel));
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.admin-permissions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-permissions-reset,
+.admin-permissions-save {
+  padding: calc(7 * var(--admin-pixel)) calc(18 * var(--admin-pixel));
+  border-radius: calc(8 * var(--admin-pixel));
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-permissions-reset {
+  border: 1px solid #d9dcd4;
+  background: #ffffff;
+  color: #13251b;
+}
+
+.admin-permissions-save {
+  border: 1px solid #1f4d2e;
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+.admin-permissions-reset:disabled,
+.admin-permissions-save:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.admin-roles-delete-role {
+  padding: calc(4 * var(--admin-pixel)) 0;
+  border: 0;
+  background: none;
+  color: #c0392b;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-permissions-table td {
+  padding-top: calc(11 * var(--admin-pixel));
+  padding-bottom: calc(11 * var(--admin-pixel));
+}
+
+.admin-permissions-column {
+  width: calc(90 * var(--admin-pixel));
+  text-align: center !important;
+}
+
+/* Column heading: click to tick or untick that column for every page */
+.admin-permissions-column-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.admin-permissions-column-button:hover,
+.admin-permissions-column-button:focus-visible {
+  color: #1f4d2e;
+  text-decoration: underline;
+}
+
+/* Tick box: green square with a white tick when on */
+.admin-permission-box {
+  display: inline-grid;
+  place-items: center;
+  width: calc(20 * var(--admin-pixel));
+  height: calc(20 * var(--admin-pixel));
+  padding: 0;
+  border: 1.5px solid #c9cdc4;
+  border-radius: calc(5 * var(--admin-pixel));
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.admin-permission-box:hover:not(:disabled) {
+  border-color: #2f6b3a;
+}
+
+.admin-permission-box:focus-visible {
+  outline: 2px solid #f5bf2c;
+  outline-offset: 2px;
+}
+
+.admin-permission-box-on {
+  border-color: #1f4d2e;
+  background: #1f4d2e;
+}
+
+.admin-permission-box:disabled {
+  cursor: default;
+}
+
+.admin-permission-box svg {
+  width: calc(14 * var(--admin-pixel));
+  height: calc(14 * var(--admin-pixel));
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Sensitive actions: light yellow note with a lock */
+.admin-sensitive-note {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(12 * var(--admin-pixel));
+  margin-top: calc(16 * var(--admin-pixel));
+  padding: calc(14 * var(--admin-pixel)) calc(16 * var(--admin-pixel));
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #fbf3e1;
+}
+
+.admin-sensitive-note svg {
+  flex-shrink: 0;
+  width: calc(18 * var(--admin-pixel));
+  height: calc(18 * var(--admin-pixel));
+  margin-top: 1px;
+  fill: none;
+  stroke: #c99a1e;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.admin-sensitive-title {
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-sensitive-text {
+  margin-top: calc(3 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #5c4a12;
+}
+
+.admin-roles-dialog-note {
+  grid-column: 1 / -1;
+  font-size: calc(12.5 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #5c655e;
+}
+
+@media (max-width: 1100px) {
+  .admin-roles-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phones: narrower tick columns so all five fit beside the page names */
+@media (max-width: 600px) {
+  .admin-permissions-column {
+    width: 44px;
+  }
+
+  .admin-permissions-table th {
+    font-size: 9.5px;
+    letter-spacing: 0;
+  }
+
+  .admin-permissions-table td:first-child {
+    font-size: 12px;
+  }
+
+  .admin-permissions-buttons {
+    justify-content: flex-start;
+  }
+}

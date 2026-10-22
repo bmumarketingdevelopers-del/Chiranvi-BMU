@@ -25,6 +25,8 @@ import {
   downloadCsv,
   toDateFileName,
   useAdminToast,
+  useIsPanelOwner,
+  OWNER_ONLY_MESSAGE,
 } from "./admin-shared";
 import dashboardStyles from "./admin-dashboard.module.css";
 import sharedStyles from "./admin-shared.module.css";
@@ -95,6 +97,8 @@ function ComplaintsPage() {
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [newTicket, setNewTicket] = useState(EMPTY_NEW_TICKET);
   const { showToast, toast } = useAdminToast();
+  // Sensitive actions only the owner can do (Roles & permissions)
+  const isOwner = useIsPanelOwner();
 
   const ticketsInRange = useMemo(() => {
     const from = new Date(rangeFrom);
@@ -135,6 +139,10 @@ function ComplaintsPage() {
   function saveNewTicket() {
     if (!newTicket.customerName.trim()) {
       showToast("Enter the customer's name");
+      return;
+    }
+    if (!isOwner && Number(newTicket.refund) > 500) {
+      showToast(OWNER_ONLY_MESSAGE);
       return;
     }
     const added = addTicket({

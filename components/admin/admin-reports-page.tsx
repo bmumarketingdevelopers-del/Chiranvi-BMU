@@ -258,6 +258,7 @@ function ReportsPage() {
                         {
                           label: "Remove",
                           isDanger: true,
+                          permission: "delete",
                           onSelect: () => {
                             removeScheduledReport(report.id);
                             showToast(`${report.name} removed`);

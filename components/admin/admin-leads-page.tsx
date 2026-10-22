@@ -250,6 +250,7 @@ function LeadsPage() {
                           {
                             label: "Remove lead",
                             isDanger: true,
+                            permission: "delete",
                             onSelect: () => {
                               removeLead(lead.id);
                               showToast(`${lead.name} removed`);

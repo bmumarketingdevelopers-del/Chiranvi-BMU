@@ -15,6 +15,8 @@ import {
   type TodayStatus,
 } from "@/store/admin-staff-store";
 import { addAgent, setAgentOnLeave } from "@/store/admin-routes-store";
+import { useLeaveRequests } from "@/store/admin-leave-store";
+import AdminLeaveRequests from "./admin-leave-requests";
 import { AdminFeatureGate } from "./admin-panel-layout";
 import {
   AdminDialog,
@@ -28,6 +30,8 @@ import {
   downloadCsv,
   toDateFileName,
   useAdminToast,
+  useIsPanelOwner,
+  OWNER_ONLY_MESSAGE,
 } from "./admin-shared";
 import dashboardStyles from "./admin-dashboard.module.css";
 import sharedStyles from "./admin-shared.module.css";
@@ -38,7 +42,8 @@ import styles from "./admin-staff-page.module.css";
   attendance and salaries.
     top        search (name, job or phone), Add staff (pop-up form), Export
     numbers    total staff (delivery / farm / managers), present today (% attendance), on leave or absent
-               (who; click to show only them), payroll this month
+               (who; click to show only them), payroll this month, leave requests (click: the pop-up to
+               read each request and its document, then approve or reject; admin-leave-requests.tsx)
     table      All / Delivery / Farm / Managers tabs; today's status, attendance this month, salary;
                "..." marks present / absent / on leave, edits job, phone, shift and salary, or removes
   Delivery agents are the same people as on Routes & agents: marking one absent or on leave takes them
@@ -72,7 +77,7 @@ const EMPTY_FORM: StaffForm = { name: "", job: STAFF_JOBS[0].job, phone: "", shi
 
 export default function AdminStaffPage() {
   return (
-    <AdminFeatureGate feature="owner-only">
+    <AdminFeatureGate feature="staff">
       <StaffPage />
     </AdminFeatureGate>
   );
@@ -89,7 +94,12 @@ function StaffPage() {
   const [editing, setEditing] = useState<StaffPerson | "new" | null>(null);
   const [form, setForm] = useState<StaffForm>(EMPTY_FORM);
   const [personToRemove, setPersonToRemove] = useState<StaffPerson | null>(null);
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false);
+  const waitingLeave = useLeaveRequests().filter((request) => request.status === "Pending");
+  const sickWaiting = waitingLeave.filter((request) => request.type === "Sick" || request.type === "Emergency").length;
   const { showToast, toast } = useAdminToast();
+  // Sensitive actions only the owner can do (Roles & permissions)
+  const isOwner = useIsPanelOwner();
 
   const monthName = today.toLocaleDateString("en-IN", { month: "short" });
   const words = searchText.trim().toLowerCase();
@@ -139,6 +149,10 @@ function StaffPage() {
       setPage(Math.ceil((staff.length + 1) / PAGE_SIZE));
       showToast(`${added.name} added to the team${group === "Delivery" ? " · also on Routes & agents" : ""}`);
     } else if (editing) {
+      if (!isOwner && salary !== editing.salary) {
+        showToast(OWNER_ONLY_MESSAGE);
+        return;
+      }
       updateStaffPerson(editing.id, { job: form.job, group, phone, shift: form.shift, salary });
       showToast(`${editing.name} saved`);
     }
@@ -213,6 +227,16 @@ function StaffPage() {
             note: `Paid on ${payday.getDate()} ${payday.toLocaleDateString("en-IN", { month: "short" })}`,
             trend: "plain",
             icon: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z", "M9 8h6M9 11h6M13 8c2 0 2 6-4 6l5 3"],
+          },
+          {
+            label: "Leave requests",
+            value: String(waitingLeave.length),
+            note: waitingLeave.length ? `Waiting for you${sickWaiting ? ` · ${sickWaiting} urgent` : ""}` : "All decided",
+            // Priority: red while requests are waiting
+            trend: waitingLeave.length ? "bad" : "plain",
+            icon: ["M6 3.5h9l3.5 3.5v13.5h-12.5z", "M15 3.5V7h3.5", "M9 12h6M9 15.5h4"],
+            onClick: () => setIsLeaveOpen(true),
+            clickLabel: "Open leave requests",
           },
         ]}
       />
@@ -305,7 +329,7 @@ function StaffPage() {
                             onSelect: () => changeToday(person, status),
                           })),
                           { label: "Edit job, shift & salary", onSelect: () => openForm(person) },
-                          { label: "Remove from team", isDanger: true, onSelect: () => setPersonToRemove(person) },
+                          { label: "Remove from team", isDanger: true, permission: "delete", onSelect: () => setPersonToRemove(person) },
                         ]}
                       />
                     </td>
@@ -396,6 +420,8 @@ function StaffPage() {
           </p>
         </AdminDialog>
       )}
+
+      {isLeaveOpen && <AdminLeaveRequests staff={staff} onClose={() => setIsLeaveOpen(false)} showToast={showToast} />}
 
       {toast}
     </div>

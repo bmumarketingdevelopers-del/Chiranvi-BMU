@@ -41,9 +41,88 @@
   color: #5c655e !important;
 }
 
-.admin-payment-methods {
+/* Right column: This week, then Payment methods; stays in view while the table scrolls */
+.admin-payments-side {
   position: sticky;
   top: calc(16 * var(--admin-pixel));
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+/* ---------- This week ---------- */
+
+.admin-week-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-week-dates {
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #7a837c;
+  white-space: nowrap;
+}
+
+.admin-week-list {
+  margin-top: calc(12 * var(--admin-pixel));
+}
+
+.admin-week-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10 * var(--admin-pixel));
+  padding: calc(11 * var(--admin-pixel)) 0;
+  border-top: 1px solid #f1f1ec;
+  font-size: calc(13 * var(--admin-pixel));
+}
+
+.admin-week-list dt {
+  color: #5c655e;
+}
+
+.admin-week-list dd {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-weight: 700;
+  color: #13251b;
+  white-space: nowrap;
+}
+
+/* Total collected: first line, bold */
+.admin-week-list .admin-week-total {
+  border-top: none;
+}
+
+.admin-week-total dt {
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-week-total dd {
+  font-size: calc(15 * var(--admin-pixel));
+}
+
+.admin-week-hint {
+  display: block;
+  font-size: calc(10.5 * var(--admin-pixel));
+  color: #9aa29c;
+}
+
+/* Money out: grey with a minus (like refunds in the table) */
+.admin-week-list .admin-week-refunds {
+  color: #5c655e;
+}
+
+/* Still to collect: gold */
+.admin-week-list .admin-week-dues {
+  color: #a37a12;
+}
+
+/* Failed: red (money to recover) */
+.admin-week-list .admin-week-failed {
+  color: #c0392b;
 }
 
 /* One bar split by method */
@@ -109,7 +188,7 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-payment-methods {
+  .admin-payments-side {
     position: static;
   }
 }

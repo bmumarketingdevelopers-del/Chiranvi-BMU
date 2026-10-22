@@ -25,6 +25,8 @@ import {
   downloadCsv,
   toDateFileName,
   useAdminToast,
+  useIsPanelOwner,
+  OWNER_ONLY_MESSAGE,
 } from "./admin-shared";
 import dashboardStyles from "./admin-dashboard.module.css";
 import sharedStyles from "./admin-shared.module.css";
@@ -78,6 +80,8 @@ function CustomersPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState(EMPTY_NEW_CUSTOMER);
   const { showToast, toast } = useAdminToast();
+  // Sensitive actions only the owner can do (Roles & permissions)
+  const isOwner = useIsPanelOwner();
 
   const matchingSearch = useMemo(() => {
     const words = searchText.trim().toLowerCase();
@@ -287,7 +291,12 @@ function CustomersPage() {
                           {
                             label: "Remove customer",
                             isDanger: true,
+                            permission: "delete",
                             onSelect: () => {
+                              if (!isOwner) {
+                                showToast(OWNER_ONLY_MESSAGE);
+                                return;
+                              }
                               removeCustomer(customer.id);
                               showToast(`${customer.name} removed`);
                             },

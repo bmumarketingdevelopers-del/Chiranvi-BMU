@@ -25,7 +25,10 @@ import {
   adminInputClassName,
   downloadCsv,
   toDateFileName,
+  useAdminCan,
   useAdminToast,
+  useIsPanelOwner,
+  OWNER_ONLY_MESSAGE,
 } from "./admin-shared";
 import dashboardStyles from "./admin-dashboard.module.css";
 import sharedStyles from "./admin-shared.module.css";
@@ -399,6 +402,9 @@ function ProductPopup({
   const [form, setForm] = useState<ProductForm>(() => (product ? toForm(product) : EMPTY_FORM));
   const changedBy = useCurrentStaffAccess()?.name ?? "Chiranvi Panel";
   const team = useStaffMembers();
+  // Prices are changed only by the owner; the Delete button needs Delete (Roles & permissions)
+  const isOwner = useIsPanelOwner();
+  const canDelete = useAdminCan("delete");
   const isOutOfStock = product?.stock === "out";
   const startingPhoto = product ? getStartingPhoto(product.productId) : null;
   const waitingCount = product?.waitingCustomers?.length ?? 0;
@@ -467,6 +473,15 @@ function ProductPopup({
       return;
     }
     const oldPrice = Number(form.originalPrice);
+    const isPriceChanged =
+      product &&
+      (price !== product.price ||
+        (Number(form.originalPrice) || undefined) !== product.originalPrice ||
+        (form.category === "Milk" ? Number(form.subscriptionPrice) || undefined : undefined) !== product.subscriptionPrice);
+    if (isPriceChanged && !isOwner) {
+      showToast(OWNER_ONLY_MESSAGE);
+      return;
+    }
     const details = {
       name: form.name.trim(),
       category: form.category,
@@ -489,7 +504,7 @@ function ProductPopup({
     }
 
     if (isOutOfStock && form.isRestocked) {
-      const managers = team.filter((member) => member.role === "manager").map((member) => member.name);
+      const managers = team.filter((member) => member.roleId === "manager").map((member) => member.name);
       const notice = markRestocked(product.productId, changedBy, managers);
       updateProduct(product.productId, { ...details, stock: form.stock === "out" ? "in" : form.stock }, changedBy);
       showToast(
@@ -759,7 +774,7 @@ function ProductPopup({
           </div>
         ) : (
           <div className={styles["admin-product-popup-buttons"]}>
-            {product && (
+            {product && canDelete && (
               <button type="button" className={styles["admin-product-delete-button"]} onClick={() => setIsDeleteAsked(true)}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12.5h9L17.5 7M9.5 7V4.5h5V7" />

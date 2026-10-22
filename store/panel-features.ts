@@ -3,7 +3,8 @@
   read it too. store/staff-access-store.ts uses it for access.
 */
 
-// Each one is a page in the Chiranvi Panel sidebar (Staff and Roles & permissions are owner-only).
+// Each one is a page in the Chiranvi Panel sidebar. Dashboard, Staff and Roles & permissions are added to these
+// in store/staff-access-store.ts (PANEL_MODULES) for the permission grid.
 export const PANEL_FEATURES = [
   { key: "orders", label: "Orders", group: "Sales", description: "See orders and change their status" },
   { key: "subscriptions", label: "Subscriptions", group: "Sales", description: "Daily and monthly milk plans" },
