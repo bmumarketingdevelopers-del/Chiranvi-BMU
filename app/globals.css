@@ -23,4 +23,21 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* No "I" text cursor and no blinking typing line on normal text; only fields people type in get them
+     (below). Links and buttons keep their hand pointer from their own styles. */
+  cursor: default;
+  caret-color: transparent;
+}
+
+/* :where() keeps these weak, so a component's own cursor or caret style still wins */
+:where(input, textarea, [contenteditable="true"]) {
+  caret-color: auto;
+}
+
+:where(
+    input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="range"]),
+    textarea,
+    [contenteditable="true"]
+  ) {
+  cursor: text;
 }

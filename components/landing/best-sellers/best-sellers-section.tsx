@@ -3,31 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { rememberPageAfterLogin, useIsLoggedIn, useLoggedInMobileNumber } from "@/components/login/login-status";
-import {
-  addProductToCart,
-  changeCartItemQuantity,
-  rememberPendingCartProduct,
-  useCartItems,
-  type CartProduct,
-} from "@/store/cart-store";
+import { rememberPageAfterLogin, useLoggedInMobileNumber } from "@/components/login/login-status";
 import { askToBeNotified, isAvailableToOrder, useShopProducts, type ShopProduct } from "@/store/products-store";
 import styles from "./best-sellers-section.module.css";
 
 /*
   Landing page section below Shop By Category: "Best Sellers" heading and six product cards
-  (picture, name, star rating, pack size, price with the old price crossed out, Add to cart).
+  (picture, name, star rating, pack size, price with the old price crossed out, View Product).
   Products, prices and pack sizes come from the Chiranvi Panel (store/products-store.ts); ratings are
   placeholders from the design until real product data exists.
-  "Add to cart" never leaves the landing page:
-  - logged in: adds the product to the cart (the cart badge in the navigation bar goes up);
-  - not logged in: remembers the product and asks for the login first; logging in adds it and
-    comes back here.
-  Once a product is in the cart, its button becomes two: "- quantity +" and "View Cart" (opens the
-  cart page); at 0 it is "Add to cart" again.
-  Only the navigation bar's cart icon opens the cart page.
+  "View Product" opens the product's own page (/products/<productId>), where the customer reads the
+  details and adds it to the cart; customers buy after seeing the details, not from this card.
+  Only the milk page exists so far (/products/a2-desi-milk); the others open "not found" until their
+  pages are made.
   Sold out (switched off or out of stock in the panel): the card stays, with a "Sold out" tag on the
-  picture, "We'll let you know when it's available" and a "Notify me" button instead of Add to cart.
+  picture, "We'll let you know when it's available" and a "Notify me" button instead of View Product.
   Scroll reveal: when the section scrolls into view, the heading and all the cards fade and
   slide up together.
 */
@@ -69,92 +59,15 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-// The product details the cart page needs (without the rating).
-function toCartProduct(product: BestSellingProduct): CartProduct {
-  const { productId, name, imageSource, imageWidth, imageHeight, packSize, price, originalPrice } = product;
-  return {
-    productId,
-    name,
-    imageSource,
-    imageWidth: imageWidth ?? 400,
-    imageHeight: imageHeight ?? 400,
-    packSize,
-    price,
-    // The cart always shows an old price; without one it is the same as the price
-    originalPrice: originalPrice ?? price,
-  };
-}
-
-/*
-  The card's cart button:
-  - in the cart: "- quantity +" and "View Cart" side by side (stacked on phones); - at 1 takes it out
-    of the cart, and the button is "Add to cart" again;
-  - logged in: "Add to cart" adds one pack and stays on the page;
-  - not logged in: "Add to cart" links to the login. The product is remembered just before the click
-    (pointer down / Enter key), because on phones the login sheet takes over the click itself.
-*/
-function AddToCartControl({
-  product,
-  isLoggedIn,
-  quantityInCart,
-}: {
-  product: BestSellingProduct;
-  isLoggedIn: boolean;
-  quantityInCart: number;
-}) {
-  if (quantityInCart > 0) {
-    return (
-      <div className={styles["best-seller-in-cart-actions"]}>
-        <div className={styles["best-seller-quantity-control"]} role="group" aria-label={`${product.name} quantity`}>
-          <button
-            type="button"
-            aria-label={`Remove one ${product.name}`}
-            className={styles["best-seller-quantity-button"]}
-            onClick={() => changeCartItemQuantity(product.productId, -1)}
-          >
-            −
-          </button>
-          <span className={styles["best-seller-quantity"]} aria-live="polite">
-            {quantityInCart}
-          </span>
-          <button
-            type="button"
-            aria-label={`Add one more ${product.name}`}
-            className={styles["best-seller-quantity-button"]}
-            onClick={() => changeCartItemQuantity(product.productId, 1)}
-          >
-            +
-          </button>
-        </div>
-        <Link href="/cart" className={styles["best-seller-view-cart-button"]}>
-          View Cart
-        </Link>
-      </div>
-    );
-  }
-
-  if (isLoggedIn) {
-    return (
-      <button
-        type="button"
-        className={styles["best-seller-add-to-cart-button"]}
-        onClick={() => addProductToCart(toCartProduct(product))}
-      >
-        Add to cart
-      </button>
-    );
-  }
-
+// The card's button: opens the product page (same look as the old Add to cart button).
+function ViewProductLink({ product }: { product: BestSellingProduct }) {
   return (
     <Link
-      href="/login"
+      href={`/products/${product.productId}`}
+      aria-label={`View ${product.name}`}
       className={styles["best-seller-add-to-cart-button"]}
-      onPointerDown={() => rememberPendingCartProduct(toCartProduct(product))}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") rememberPendingCartProduct(toCartProduct(product));
-      }}
     >
-      Add to cart
+      View Product
     </Link>
   );
 }
@@ -210,8 +123,6 @@ export default function BestSellersSection({
 }: {
   placement?: "landing-page" | "account-orders";
 }) {
-  const isLoggedIn = useIsLoggedIn();
-  const cartItems = useCartItems();
   const bestSellingProducts = useBestSellingProducts();
   const isOnAccountOrdersPage = placement === "account-orders";
   const sectionRef = useRef<HTMLElement>(null);
@@ -313,11 +224,7 @@ export default function BestSellersSection({
             {isSoldOut ? (
               <NotifyMeControl product={product} />
             ) : (
-              <AddToCartControl
-                product={product}
-                isLoggedIn={isLoggedIn}
-                quantityInCart={cartItems.find((cartItem) => cartItem.productId === product.productId)?.quantity ?? 0}
-              />
+              <ViewProductLink product={product} />
             )}
           </li>
           );
