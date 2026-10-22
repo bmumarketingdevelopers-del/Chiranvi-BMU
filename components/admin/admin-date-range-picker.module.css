@@ -1,0 +1,177 @@
+/*
+  Date range calendar on the Chiranvi Panel dashboard, in the style of the account Subscription page's
+  week picker (delivery-week-picker.module.css): Ubuntu month name, Poppins numbers, #1E2A22 / #6E7A72,
+  green #2F6B3F for the chosen days and a yellow ring for today.
+  Numbers in calc() are design pixels multiplied by --admin-pixel (set by the panel frame).
+*/
+
+.admin-range-calendar {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8 * var(--admin-pixel));
+  left: 0;
+  width: calc(300 * var(--admin-pixel));
+  padding: calc(14 * var(--admin-pixel));
+  border: 1px solid #e8ece6;
+  border-radius: calc(14 * var(--admin-pixel));
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(22, 26, 23, 0.16);
+  animation: admin-range-calendar-open 150ms ease-out;
+}
+
+.admin-range-calendar-month-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-range-calendar-month-name {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.admin-range-calendar-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(30 * var(--admin-pixel));
+  height: calc(30 * var(--admin-pixel));
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #1e2a22;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.admin-range-calendar-arrow:hover:not(:disabled),
+.admin-range-calendar-arrow:focus-visible {
+  background: #eef4ea;
+}
+
+.admin-range-calendar-arrow:disabled {
+  color: #c9cfc8;
+  cursor: default;
+}
+
+.admin-range-calendar-arrow svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* M T W T F S S, and the days: seven equal columns */
+.admin-range-calendar-weekdays,
+.admin-range-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.admin-range-calendar-weekdays {
+  margin-top: calc(10 * var(--admin-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(11 * var(--admin-pixel));
+  font-weight: 700;
+  text-align: center;
+  color: #6e7a72;
+}
+
+.admin-range-calendar-days {
+  row-gap: calc(3 * var(--admin-pixel));
+  margin-top: calc(6 * var(--admin-pixel));
+}
+
+/* Each day: the strip behind it shades the range; the round number on top marks the start and end */
+.admin-range-calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(32 * var(--admin-pixel));
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #1e2a22;
+  cursor: pointer;
+}
+
+.admin-range-calendar-day span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(28 * var(--admin-pixel));
+  height: calc(28 * var(--admin-pixel));
+  border-radius: 50%;
+  transition: background-color 120ms ease;
+}
+
+.admin-range-calendar-day:hover:not(:disabled) span,
+.admin-range-calendar-day:focus-visible span {
+  background: #eef4ea;
+}
+
+.admin-range-calendar-day-other-month {
+  color: #b3bcb4;
+}
+
+.admin-range-calendar-day:disabled {
+  color: #d3d8d2;
+  cursor: default;
+}
+
+.admin-range-calendar-day-in-range {
+  background: #e6f0e1;
+}
+
+.admin-range-calendar-day-start {
+  border-radius: 50% 0 0 50%;
+}
+
+.admin-range-calendar-day-end {
+  border-radius: 0 50% 50% 0;
+}
+
+.admin-range-calendar-day-start.admin-range-calendar-day-end {
+  border-radius: 50%;
+}
+
+.admin-range-calendar-day-start span,
+.admin-range-calendar-day-end span,
+.admin-range-calendar-day-start:hover span,
+.admin-range-calendar-day-end:hover span {
+  background: #2f6b3f;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.admin-range-calendar-day-today span {
+  box-shadow: inset 0 0 0 1.5px #f5b82e;
+  font-weight: 700;
+}
+
+.admin-range-calendar-hint {
+  margin-top: calc(10 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  text-align: center;
+  color: #6e7a72;
+}
+
+@keyframes admin-range-calendar-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-range-calendar {
+    animation: none;
+  }
+}

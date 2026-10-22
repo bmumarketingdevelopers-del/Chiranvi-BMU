@@ -1,9 +1,13 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+import { useLoggedInMobileNumber } from "@/components/login/login-status";
+import { useOwnerDetails } from "@/store/staff-access-store";
 
 /*
   The logged-in customer's details on the account dashboard (sidebar name, welcome banner, Profile form).
   Placeholder values from the design until a real customer account exists. Kept only in the open
-  page's memory, like the login: "Save changes" updates them until the page is refreshed.
+  page's memory: "Save changes" updates them until the page is refreshed.
+  The mobile number is always the one that was used to log in. The owner's name comes from the owner
+  details (Team access in the Chiranvi Panel) until they save a different name in the Profile form.
 */
 
 export type AccountProfile = {
@@ -39,12 +43,29 @@ function subscribeToAccountProfile(onChange: () => void) {
   };
 }
 
+// "8754852810" -> "+91 87548 52810"
+export function formatIndianMobileNumber(mobileNumber: string) {
+  return `+91 ${mobileNumber.slice(0, 5)} ${mobileNumber.slice(5)}`;
+}
+
 export function useAccountProfile() {
-  return useSyncExternalStore(
+  const savedProfile = useSyncExternalStore(
     subscribeToAccountProfile,
     () => accountProfile,
     () => placeholderProfile,
   );
+  const loggedInMobileNumber = useLoggedInMobileNumber();
+  const owner = useOwnerDetails();
+  return useMemo(() => {
+    if (!loggedInMobileNumber) return savedProfile;
+    const isOwnerWithDefaultName =
+      loggedInMobileNumber === owner.mobileNumber && savedProfile.fullName === placeholderProfile.fullName;
+    return {
+      ...savedProfile,
+      fullName: isOwnerWithDefaultName ? owner.name : savedProfile.fullName,
+      mobileNumber: formatIndianMobileNumber(loggedInMobileNumber),
+    };
+  }, [savedProfile, loggedInMobileNumber, owner]);
 }
 
 // "Priya Sharma" -> "PS" (the round avatar in the sidebar).

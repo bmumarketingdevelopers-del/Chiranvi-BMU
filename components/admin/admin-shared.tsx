@@ -1,0 +1,491 @@
+"use client";
+
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { dashboardAlerts } from "./admin-dashboard-data";
+import AdminDateRangePicker from "./admin-date-range-picker";
+import dashboardStyles from "./admin-dashboard.module.css";
+import styles from "./admin-shared.module.css";
+
+/*
+  Pieces shared by the Chiranvi Panel pages (Orders, Subscriptions, Customers, ...), so every page has the
+  same top bar, number cards, filter tabs, page numbers and pop-up forms as the dashboard:
+    AdminPageTop      title and line under it; search, notifications bell, the page's main button;
+                      Custom range calendar and Export
+    AdminStatCards    the row of four number cards with yellow icons
+    AdminFilterTabs   the round "All 412 / Delivered 368 / ..." buttons
+    AdminPagination   "Showing 1-14 of 412" and the page buttons
+    AdminDialog       the pop-up form (New order, Add customer, ...)
+    useAdminToast     the short message at the bottom ("Order added")
+    downloadCsv       Export: saves rows as a CSV file (opens in Excel / Google Sheets)
+  Styles come from the dashboard (admin-dashboard.module.css) and admin-shared.module.css.
+*/
+
+// 13 – 19 Oct 2026 (or 28 Sep – 4 Oct 2026 across months)
+export function formatDateRange(from: Date, to: Date) {
+  const month = (date: Date) => date.toLocaleDateString("en-IN", { month: "short" });
+  if (from.toDateString() === to.toDateString()) return `${to.getDate()} ${month(to)} ${to.getFullYear()}`;
+  const sameMonth = from.getMonth() === to.getMonth() && from.getFullYear() === to.getFullYear();
+  return sameMonth
+    ? `${from.getDate()} – ${to.getDate()} ${month(to)} ${to.getFullYear()}`
+    : `${from.getDate()} ${month(from)} – ${to.getDate()} ${month(to)} ${to.getFullYear()}`;
+}
+
+export function toDateFileName(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+// Export: rows (the first is the header) saved as a CSV file
+export function downloadCsv(fileName: string, rows: (string | number)[][]) {
+  const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+// Closes a pop-up on Escape or a click outside the element
+function useCloseOnOutside(isOpen: boolean, close: () => void) {
+  const areaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") close();
+    }
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (!areaRef.current?.contains(event.target as Node)) close();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+    };
+  }, [isOpen, close]);
+  return areaRef;
+}
+
+export function AdminPageTop({
+  title,
+  description,
+  searchText,
+  onSearchTextChange,
+  searchPlaceholder = "Search...",
+  actionLabel,
+  onAction,
+  today,
+  rangeFrom,
+  rangeTo,
+  onRangeChange,
+  onExport,
+  belowSearch,
+}: {
+  title: string;
+  description: string;
+  searchText: string;
+  onSearchTextChange: (text: string) => void;
+  searchPlaceholder?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  today?: Date;
+  rangeFrom?: Date;
+  rangeTo?: Date;
+  onRangeChange?: (from: Date, to: Date) => void;
+  onExport?: () => void;
+  // Shown on the left of the second row instead of nothing (Products: the category tabs)
+  belowSearch?: ReactNode;
+}) {
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isRangePickerOpen, setIsRangePickerOpen] = useState(false);
+  const notificationsRef = useCloseOnOutside(isNotificationsOpen, () => setIsNotificationsOpen(false));
+  const rangeRef = useCloseOnOutside(isRangePickerOpen, () => setIsRangePickerOpen(false));
+  const hasRange = today && rangeFrom && rangeTo && onRangeChange;
+
+  return (
+    <>
+      <div className={dashboardStyles["admin-dashboard-header"]}>
+        <div>
+          <h1 className={dashboardStyles["admin-dashboard-greeting"]}>{title}</h1>
+          <p className={dashboardStyles["admin-dashboard-date"]}>{description}</p>
+        </div>
+
+        <div className={dashboardStyles["admin-dashboard-header-tools"]}>
+          <label className={dashboardStyles["admin-search"]}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <input
+              type="search"
+              value={searchText}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              onChange={(changeEvent) => onSearchTextChange(changeEvent.target.value)}
+            />
+          </label>
+
+          <div ref={notificationsRef} className={dashboardStyles["admin-popup-anchor"]}>
+            <button
+              type="button"
+              className={dashboardStyles["admin-bell-button"]}
+              aria-label="Notifications"
+              aria-expanded={isNotificationsOpen}
+              onClick={() => setIsNotificationsOpen((isOpen) => !isOpen)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" />
+                <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
+              </svg>
+              <span className={dashboardStyles["admin-bell-dot"]} aria-hidden="true" />
+            </button>
+            {isNotificationsOpen && (
+              <div className={`${dashboardStyles["admin-popup"]} ${dashboardStyles["admin-notifications"]}`}>
+                <p className={dashboardStyles["admin-popup-title"]}>Needs your attention</p>
+                {dashboardAlerts.map((alert) => (
+                  <p key={alert.title} className={dashboardStyles["admin-notification"]}>
+                    <span
+                      className={`${dashboardStyles["admin-alert-icon"]} ${dashboardStyles[`admin-alert-icon-${alert.tone}`]}`}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        {alert.icon.map((path) => (
+                          <path key={path} d={path} />
+                        ))}
+                      </svg>
+                    </span>
+                    <span>
+                      <span className={dashboardStyles["admin-alert-title"]}>{alert.title}</span>
+                      <span className={dashboardStyles["admin-alert-detail"]}>{alert.detail}</span>
+                    </span>
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {actionLabel && onAction && (
+            <button type="button" className={dashboardStyles["admin-new-order-button"]} onClick={onAction}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {actionLabel}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {(hasRange || onExport || belowSearch) && (
+        <div className={`${dashboardStyles["admin-dashboard-range-row"]} ${belowSearch ? styles["admin-top-row-with-tabs"] : ""}`}>
+          {belowSearch && <div className={styles["admin-top-row-left"]}>{belowSearch}</div>}
+          {hasRange && (
+            <>
+              <div ref={rangeRef} className={dashboardStyles["admin-popup-anchor"]}>
+                <button
+                  type="button"
+                  className={dashboardStyles["admin-range-button"]}
+                  aria-expanded={isRangePickerOpen}
+                  onClick={() => setIsRangePickerOpen((isOpen) => !isOpen)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16v14H4z" />
+                    <path d="M4 10h16M8 3.5v4M16 3.5v4" />
+                  </svg>
+                  Custom range
+                </button>
+                {isRangePickerOpen && (
+                  <AdminDateRangePicker
+                    rangeFrom={rangeFrom}
+                    rangeTo={rangeTo}
+                    today={today}
+                    onChooseRange={(from, to) => {
+                      onRangeChange(from, to);
+                      setIsRangePickerOpen(false);
+                    }}
+                  />
+                )}
+              </div>
+              <span className={dashboardStyles["admin-range-label"]}>{formatDateRange(rangeFrom, rangeTo)}</span>
+            </>
+          )}
+          {onExport && (
+            <button type="button" className={dashboardStyles["admin-export-button"]} onClick={onExport}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" />
+                <path d="M4.5 19.5h15" />
+              </svg>
+              Export
+            </button>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+export type AdminStat = {
+  label: string;
+  value: string;
+  note: string;
+  // up: green; plain: grey; bad: red (serious, e.g. failed payments)
+  trend: "up" | "plain" | "bad";
+  icon: string[];
+  // The value is words, not a number (e.g. "Cow Milk 1 L"): shown smaller
+  isTextValue?: boolean;
+  // Clickable card (Products: Low stock / Out of stock show those products); isSelected while it is on
+  onClick?: () => void;
+  isSelected?: boolean;
+  clickLabel?: string;
+};
+
+export function AdminStatCards({ stats }: { stats: AdminStat[] }) {
+  return (
+    <ul className={dashboardStyles["admin-stats"]}>
+      {stats.map((stat) => (
+        <li
+          key={stat.label}
+          className={`${dashboardStyles["admin-stat"]} ${stat.onClick ? styles["admin-stat-clickable"] : ""} ${
+            stat.isSelected ? styles["admin-stat-selected"] : ""
+          }`}
+        >
+          {stat.onClick && (
+            <button
+              type="button"
+              className={styles["admin-stat-button"]}
+              aria-pressed={Boolean(stat.isSelected)}
+              aria-label={stat.clickLabel ?? `Show ${stat.label.toLowerCase()}`}
+              onClick={stat.onClick}
+            />
+          )}
+          <span className={dashboardStyles["admin-stat-label"]}>{stat.label}</span>
+          <span className={`${dashboardStyles["admin-stat-value"]} ${stat.isTextValue ? styles["admin-stat-value-text"] : ""}`}>
+            {stat.value}
+          </span>
+          <span className={`${dashboardStyles["admin-stat-note"]} ${dashboardStyles[`admin-stat-note-${stat.trend}`]}`}>
+            {stat.note}
+          </span>
+          <span className={`${dashboardStyles["admin-stat-icon"]} ${dashboardStyles["admin-stat-icon-green"]}`}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              {stat.icon.map((path) => (
+                <path key={path} d={path} />
+              ))}
+            </svg>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function AdminFilterTabs<Key extends string>({
+  tabs,
+  selected,
+  onSelect,
+  label,
+}: {
+  tabs: { key: Key; label: string }[];
+  selected: Key;
+  onSelect: (key: Key) => void;
+  label: string;
+}) {
+  return (
+    <div className={styles["admin-filter-tabs"]} role="group" aria-label={label}>
+      {tabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          aria-pressed={tab.key === selected}
+          className={`${styles["admin-filter-tab"]} ${tab.key === selected ? styles["admin-filter-tab-selected"] : ""}`}
+          onClick={() => onSelect(tab.key)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Page numbers: first, the current one and its neighbours, last, with "..." in the gaps
+export function AdminPagination({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  itemName,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  itemName: string;
+}) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const first = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const last = Math.min(total, page * pageSize);
+  const shownPages = [...new Set([1, page - 1, page, page + 1, pageCount])]
+    .filter((pageNumber) => pageNumber >= 1 && pageNumber <= pageCount)
+    .sort((a, b) => a - b);
+
+  return (
+    <div className={styles["admin-pagination"]}>
+      <p className={styles["admin-pagination-summary"]}>
+        Showing {first}–{last} of {total.toLocaleString("en-IN")} {itemName}
+      </p>
+      <div className={styles["admin-pagination-buttons"]}>
+        <button
+          type="button"
+          aria-label="Previous page"
+          disabled={page <= 1}
+          className={styles["admin-pagination-button"]}
+          onClick={() => onPageChange(page - 1)}
+        >
+          ‹
+        </button>
+        {shownPages.map((pageNumber, index) => (
+          <span key={pageNumber} className={styles["admin-pagination-group"]}>
+            {index > 0 && pageNumber - shownPages[index - 1] > 1 && (
+              <span className={styles["admin-pagination-gap"]}>…</span>
+            )}
+            <button
+              type="button"
+              aria-current={pageNumber === page ? "page" : undefined}
+              className={`${styles["admin-pagination-button"]} ${pageNumber === page ? styles["admin-pagination-button-current"] : ""}`}
+              onClick={() => onPageChange(pageNumber)}
+            >
+              {pageNumber}
+            </button>
+          </span>
+        ))}
+        <button
+          type="button"
+          aria-label="Next page"
+          disabled={page >= pageCount}
+          className={styles["admin-pagination-button"]}
+          onClick={() => onPageChange(page + 1)}
+        >
+          ›
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Pop-up form over the page (darkened behind); Escape or Cancel closes it
+export function AdminDialog({
+  title,
+  onClose,
+  onSubmit,
+  submitLabel,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  onSubmit: () => void;
+  submitLabel: string;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return (
+    <div className={styles["admin-dialog-backdrop"]} onPointerDown={(event) => event.target === event.currentTarget && onClose()}>
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={styles["admin-dialog"]}
+        onSubmit={(submitEvent) => {
+          submitEvent.preventDefault();
+          onSubmit();
+        }}
+      >
+        <h2 className={styles["admin-dialog-title"]}>{title}</h2>
+        <div className={styles["admin-dialog-fields"]}>{children}</div>
+        <div className={styles["admin-dialog-buttons"]}>
+          <button type="button" className={styles["admin-dialog-cancel"]} onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className={styles["admin-dialog-submit"]}>
+            {submitLabel}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// One labelled field inside AdminDialog
+export function AdminDialogField({ label, children, isWide }: { label: string; children: ReactNode; isWide?: boolean }) {
+  return (
+    <label className={`${styles["admin-dialog-field"]} ${isWide ? styles["admin-dialog-field-wide"] : ""}`}>
+      <span className={styles["admin-dialog-label"]}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+export const adminInputClassName = styles["admin-dialog-input"];
+
+export function useAdminToast() {
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(""), 3000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+  const toast = (
+    <p className={dashboardStyles["admin-toast"]} role="status" data-visible={message ? "true" : "false"}>
+      {message}
+    </p>
+  );
+  return { showToast: setMessage, toast };
+}
+
+// The "•••" button with a small menu of actions for one row
+export function AdminRowMenu({
+  label,
+  title,
+  options,
+}: {
+  label: string;
+  title: string;
+  options: { label: string; onSelect: () => void; isDisabled?: boolean; isDanger?: boolean }[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useCloseOnOutside(isOpen, () => setIsOpen(false));
+  return (
+    <div ref={menuRef} className={dashboardStyles["admin-popup-anchor"]}>
+      <button
+        type="button"
+        className={dashboardStyles["admin-more-button"]}
+        aria-label={label}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((wasOpen) => !wasOpen)}
+      >
+        •••
+      </button>
+      {isOpen && (
+        <div className={`${dashboardStyles["admin-popup"]} ${dashboardStyles["admin-order-menu"]}`}>
+          <p className={dashboardStyles["admin-popup-title"]}>{title}</p>
+          {options.map((option) => (
+            <button
+              key={option.label}
+              type="button"
+              disabled={option.isDisabled}
+              className={option.isDanger ? styles["admin-row-menu-danger"] : undefined}
+              onClick={() => {
+                option.onSelect();
+                setIsOpen(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

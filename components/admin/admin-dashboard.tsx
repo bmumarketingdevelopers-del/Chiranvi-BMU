@@ -1,0 +1,790 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useCurrentStaffAccess } from "@/store/staff-access-store";
+import {
+  dashboardAlerts,
+  dashboardStats,
+  revenueLastWeek,
+  revenueThisWeek,
+  todaysDeliveries,
+} from "./admin-dashboard-data";
+import {
+  ADMIN_ORDER_STATUSES,
+  changeAdminOrderStatus,
+  useAdminOrders,
+  type AdminOrderStatus,
+} from "@/store/admin-orders-store";
+import sharedStyles from "./admin-shared.module.css";
+import AdminDateRangePicker from "./admin-date-range-picker";
+import styles from "./admin-dashboard.module.css";
+
+/*
+  Chiranvi Panel dashboard (/admin), from the design 01-dashboard:
+    header      greeting with the person's name and today's date; customer search (filters the recent
+                orders), notifications bell (the alerts), "+ New order"; the date range and Export
+    alerts      missed deliveries, low stock, pause requests, each with its action
+    numbers     eight cards (deliveries, revenue, plans ending, orders, subscriptions, churn, failed payments)
+    revenue     this week against last week (line chart; hover a day to see its amount)
+    deliveries  today's delivered / pending / missed ring
+    orders      the five newest orders (shared with the Orders page, store/admin-orders-store.ts);
+                "..." changes an order's status; Export downloads them as a CSV file
+  The numbers are samples (admin-dashboard-data.ts) until the database is connected.
+*/
+
+const STATUS_CLASS_NAMES: Record<AdminOrderStatus, string> = {
+  Delivered: styles["admin-status-delivered"],
+  "Out for delivery": styles["admin-status-out-for-delivery"],
+  Pending: styles["admin-status-pending"],
+  Cancelled: sharedStyles["admin-status-cancelled"],
+};
+
+// 6:47 AM
+function formatOrderTime(placedAt: string) {
+  return new Date(placedAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true }).toUpperCase();
+}
+
+function getGreeting(hour: number) {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+// 13 – 19 Oct 2026 (or 28 Sep – 4 Oct 2026 across months)
+function formatDateRange(from: Date, to: Date) {
+  const sameMonth =
+    from.getMonth() === to.getMonth() &&
+    from.getFullYear() === to.getFullYear();
+  const day = (date: Date) => date.getDate();
+  const month = (date: Date) =>
+    date.toLocaleDateString("en-IN", { month: "short" });
+  return sameMonth
+    ? `${day(from)} – ${day(to)} ${month(to)} ${to.getFullYear()}`
+    : `${day(from)} ${month(from)} – ${day(to)} ${month(to)} ${to.getFullYear()}`;
+}
+
+function toDateInputValue(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export default function AdminDashboard() {
+  const staffAccess = useCurrentStaffAccess();
+  const [today] = useState(() => new Date());
+  const [searchText, setSearchText] = useState("");
+  const allOrders = useAdminOrders();
+  const orders = useMemo(() => allOrders.slice(0, 5), [allOrders]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isRangePickerOpen, setIsRangePickerOpen] = useState(false);
+  // The chosen date range: the last seven days at first
+  const [rangeFrom, setRangeFrom] = useState(
+    () => new Date(today.getTime() - 6 * 86400000),
+  );
+  const [rangeTo, setRangeTo] = useState(today);
+  const [openOrderMenu, setOpenOrderMenu] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState("");
+
+  // Close the open pop-ups on Escape or a click elsewhere
+  useEffect(() => {
+    function closePopups(event: Event) {
+      if (event instanceof KeyboardEvent && event.key !== "Escape") return;
+      if (
+        event instanceof PointerEvent &&
+        (event.target as Element).closest?.("[data-admin-popup]")
+      )
+        return;
+      setIsNotificationsOpen(false);
+      setIsRangePickerOpen(false);
+      setOpenOrderMenu(null);
+    }
+    document.addEventListener("pointerdown", closePopups);
+    window.addEventListener("keydown", closePopups);
+    return () => {
+      document.removeEventListener("pointerdown", closePopups);
+      window.removeEventListener("keydown", closePopups);
+    };
+  }, []);
+
+  // A short message at the bottom of the screen, gone after 3 seconds
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = window.setTimeout(() => setToastMessage(""), 3000);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
+  const filteredOrders = useMemo(() => {
+    const words = searchText.trim().toLowerCase();
+    if (!words) return orders;
+    return orders.filter((order) =>
+      `${order.customerName} ${order.area} ${order.orderNumber}`
+        .toLowerCase()
+        .includes(words),
+    );
+  }, [orders, searchText]);
+
+  if (!staffAccess) return null;
+
+  const dateLine = today.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const rangeLabel = formatDateRange(rangeFrom, rangeTo);
+
+  function changeOrderStatus(orderNumber: string, status: AdminOrderStatus) {
+    changeAdminOrderStatus(orderNumber, status);
+    setOpenOrderMenu(null);
+    setToastMessage(`${orderNumber} marked as ${status.toLowerCase()}`);
+  }
+
+  // Export: the recent orders as a CSV file (opens in Excel / Google Sheets)
+  function exportOrders() {
+    const header = [
+      "Order",
+      "Time",
+      "Customer",
+      "Area",
+      "Items",
+      "Amount (₹)",
+      "Payment",
+      "Status",
+    ];
+    const rows = orders.map((order) => [
+      order.orderNumber,
+      formatOrderTime(order.placedAt),
+      order.customerName,
+      order.area,
+      order.items,
+      String(order.amount),
+      order.payment,
+      order.status,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) =>
+        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(
+      new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }),
+    );
+    link.download = `chiranvi-orders-${toDateInputValue(rangeTo)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  return (
+    <div className={styles["admin-dashboard"]}>
+      {/* Header */}
+      <div className={styles["admin-dashboard-header"]}>
+        <div>
+          <h1 className={styles["admin-dashboard-greeting"]}>
+            {getGreeting(today.getHours())}, {staffAccess.name}
+          </h1>
+          <p className={styles["admin-dashboard-date"]}>
+            {dateLine} · Here&rsquo;s how Chiranvi is doing
+          </p>
+        </div>
+
+        <div className={styles["admin-dashboard-header-tools"]}>
+          <label className={styles["admin-search"]}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <input
+              type="search"
+              value={searchText}
+              placeholder="Search customer by name or phone..."
+              aria-label="Search customer"
+              onChange={(changeEvent) =>
+                setSearchText(changeEvent.target.value)
+              }
+            />
+          </label>
+
+          <div className={styles["admin-popup-anchor"]} data-admin-popup>
+            <button
+              type="button"
+              className={styles["admin-bell-button"]}
+              aria-label="Notifications"
+              aria-expanded={isNotificationsOpen}
+              onClick={() => setIsNotificationsOpen((isOpen) => !isOpen)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" />
+                <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
+              </svg>
+              <span className={styles["admin-bell-dot"]} aria-hidden="true" />
+            </button>
+            {isNotificationsOpen && (
+              <div
+                className={`${styles["admin-popup"]} ${styles["admin-notifications"]}`}
+              >
+                <p className={styles["admin-popup-title"]}>
+                  Needs your attention
+                </p>
+                {dashboardAlerts.map((alert) => (
+                  <p key={alert.title} className={styles["admin-notification"]}>
+                    <span
+                      className={`${styles["admin-alert-icon"]} ${styles[`admin-alert-icon-${alert.tone}`]}`}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        {alert.icon.map((path) => (
+                          <path key={path} d={path} />
+                        ))}
+                      </svg>
+                    </span>
+                    <span>
+                      <span className={styles["admin-alert-title"]}>
+                        {alert.title}
+                      </span>
+                      <span className={styles["admin-alert-detail"]}>
+                        {alert.detail}
+                      </span>
+                    </span>
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Link
+            href="/admin/orders"
+            className={styles["admin-new-order-button"]}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            New order
+          </Link>
+        </div>
+      </div>
+
+      <div className={styles["admin-dashboard-range-row"]}>
+        <div className={styles["admin-popup-anchor"]} data-admin-popup>
+          <button
+            type="button"
+            className={styles["admin-range-button"]}
+            aria-expanded={isRangePickerOpen}
+            onClick={() => setIsRangePickerOpen((isOpen) => !isOpen)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16v14H4z" />
+              <path d="M4 10h16M8 3.5v4M16 3.5v4" />
+            </svg>
+            Custom range
+          </button>
+          {isRangePickerOpen && (
+            <AdminDateRangePicker
+              rangeFrom={rangeFrom}
+              rangeTo={rangeTo}
+              today={today}
+              onChooseRange={(from, to) => {
+                setRangeFrom(from);
+                setRangeTo(to);
+                setIsRangePickerOpen(false);
+              }}
+            />
+          )}
+        </div>
+        <span className={styles["admin-range-label"]}>{rangeLabel}</span>
+        <button
+          type="button"
+          className={styles["admin-export-button"]}
+          onClick={exportOrders}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" />
+            <path d="M4.5 19.5h15" />
+          </svg>
+          Export
+          <svg
+            viewBox="0 0 24 24"
+            className={styles["admin-export-chevron"]}
+            aria-hidden="true"
+          >
+            <path d="m7 10 5 5 5-5" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Alerts */}
+      <ul className={styles["admin-alerts"]}>
+        {dashboardAlerts.map((alert) => (
+          <li
+            key={alert.title}
+            className={`${styles["admin-alert"]} ${styles[`admin-alert-${alert.tone}`]}`}
+          >
+            <span
+              className={`${styles["admin-alert-icon"]} ${styles[`admin-alert-icon-${alert.tone}`]}`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                {alert.icon.map((path) => (
+                  <path key={path} d={path} />
+                ))}
+              </svg>
+            </span>
+            <span className={styles["admin-alert-text"]}>
+              <span className={styles["admin-alert-title"]}>{alert.title}</span>
+              <span className={styles["admin-alert-detail"]}>
+                {alert.detail}
+              </span>
+            </span>
+            {alert.href ? (
+              <Link
+                href={alert.href}
+                className={`${styles["admin-alert-action"]} ${styles[`admin-alert-action-${alert.tone}`]}`}
+              >
+                {alert.action} →
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className={`${styles["admin-alert-action"]} ${styles[`admin-alert-action-${alert.tone}`]}`}
+                onClick={() => setToastMessage(alert.doneMessage ?? "Done")}
+              >
+                {alert.action} →
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {/* Numbers */}
+      <ul className={styles["admin-stats"]}>
+        {dashboardStats.map((stat) => (
+          <li key={stat.label} className={styles["admin-stat"]}>
+            <span className={styles["admin-stat-label"]}>{stat.label}</span>
+            <span className={styles["admin-stat-value"]}>{stat.value}</span>
+            <span
+              className={`${styles["admin-stat-note"]} ${styles[`admin-stat-note-${stat.trend}`]}`}
+            >
+              {stat.note}
+            </span>
+            <span
+              className={`${styles["admin-stat-icon"]} ${styles[`admin-stat-icon-${stat.iconTone}`]}`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                {stat.icon.map((path) => (
+                  <path key={path} d={path} />
+                ))}
+              </svg>
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className={styles["admin-charts-row"]}>
+        <RevenueChart today={today} />
+        <DeliveriesRing />
+      </div>
+
+      {/* Recent orders */}
+      <section
+        className={styles["admin-card"]}
+        aria-labelledby="admin-recent-orders-heading"
+      >
+        <div className={styles["admin-card-heading-row"]}>
+          <h2
+            id="admin-recent-orders-heading"
+            className={styles["admin-card-title"]}
+          >
+            Recent orders
+          </h2>
+          <Link href="/admin/orders" className={styles["admin-view-all"]}>
+            View all →
+          </Link>
+        </div>
+        <div className={styles["admin-table-scroll"]}>
+          <table className={styles["admin-orders-table"]}>
+            <thead>
+              <tr>
+                <th scope="col">Order</th>
+                <th scope="col">Time</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Items</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Payment</th>
+                <th scope="col">Status</th>
+                <th scope="col">
+                  <span className={styles["admin-visually-hidden"]}>
+                    Actions
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.map((order) => (
+                <tr key={order.orderNumber}>
+                  <td className={styles["admin-orders-muted"]}>
+                    {order.orderNumber}
+                  </td>
+                  <td className={styles["admin-orders-muted"]}>{formatOrderTime(order.placedAt)}</td>
+                  <td>
+                    <span className={styles["admin-orders-customer"]}>
+                      {order.customerName}
+                    </span>
+                    <span className={styles["admin-orders-area"]}>
+                      {order.area}
+                    </span>
+                  </td>
+                  <td>{order.items}</td>
+                  <td className={styles["admin-orders-amount"]}>
+                    ₹{order.amount}
+                  </td>
+                  <td>{order.payment}</td>
+                  <td>
+                    <span
+                      className={`${styles["admin-status"]} ${STATUS_CLASS_NAMES[order.status]}`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
+                  <td className={styles["admin-orders-actions"]}>
+                    <div
+                      className={styles["admin-popup-anchor"]}
+                      data-admin-popup
+                    >
+                      <button
+                        type="button"
+                        className={styles["admin-more-button"]}
+                        aria-label={`Change status of ${order.orderNumber}`}
+                        aria-expanded={openOrderMenu === order.orderNumber}
+                        onClick={() =>
+                          setOpenOrderMenu((current) =>
+                            current === order.orderNumber
+                              ? null
+                              : order.orderNumber,
+                          )
+                        }
+                      >
+                        •••
+                      </button>
+                      {openOrderMenu === order.orderNumber && (
+                        <div
+                          className={`${styles["admin-popup"]} ${styles["admin-order-menu"]}`}
+                        >
+                          <p className={styles["admin-popup-title"]}>Mark as</p>
+                          {ADMIN_ORDER_STATUSES.map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              disabled={status === order.status}
+                              onClick={() =>
+                                changeOrderStatus(order.orderNumber, status)
+                              }
+                            >
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredOrders.length === 0 && (
+                <tr>
+                  <td colSpan={8} className={styles["admin-orders-empty"]}>
+                    No recent orders match &ldquo;{searchText}&rdquo;.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <p
+        className={styles["admin-toast"]}
+        role="status"
+        data-visible={toastMessage ? "true" : "false"}
+      >
+        {toastMessage}
+      </p>
+    </div>
+  );
+}
+
+/*
+  Revenue line chart: this week (dark green line, shaded below) against last week (dashed yellow),
+  ₹20k to ₹60k. Today's amount is shown in a dark label; hovering another day moves the label there.
+  The chart is drawn at its real size on screen (one chart unit = one pixel), so its labels keep the
+  same text size as the rest of the panel however wide the card is.
+*/
+function RevenueChart({ today }: { today: Date }) {
+  const [hoveredDay, setHoveredDay] = useState(revenueThisWeek.length - 1);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
+  const [chartSize, setChartSize] = useState({ width: 600, height: 210 });
+  useEffect(() => {
+    const chartArea = chartAreaRef.current;
+    if (!chartArea) return;
+    const measure = () =>
+      setChartSize({
+        width: chartArea.clientWidth,
+        height: chartArea.clientHeight,
+      });
+    measure();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(chartArea);
+    return () => resizeObserver.disconnect();
+  }, []);
+  const { width, height } = chartSize;
+  const left = 46;
+  const right = 14;
+  const top = 18;
+  const bottom = 30;
+  const minimum = 20000;
+  const maximum = 60000;
+  const x = (dayIndex: number) =>
+    left + (dayIndex * (width - left - right)) / (revenueThisWeek.length - 1);
+  const y = (amount: number) =>
+    top + ((maximum - amount) * (height - top - bottom)) / (maximum - minimum);
+  const line = (values: number[]) =>
+    values
+      .map((value, index) => `${index ? "L" : "M"}${x(index)},${y(value)}`)
+      .join(" ");
+  const dayLabels = revenueThisWeek.map((_, index) => {
+    const date = new Date(
+      today.getTime() - (revenueThisWeek.length - 1 - index) * 86400000,
+    );
+    return `${date.toLocaleDateString("en-IN", { weekday: "short" })} ${date.getDate()}`;
+  });
+  const isToday = hoveredDay === revenueThisWeek.length - 1;
+  const tooltipText = `${isToday ? "Today" : dayLabels[hoveredDay]} ₹${revenueThisWeek[hoveredDay].toLocaleString("en-IN")}`;
+  const tooltipWidth = tooltipText.length * 7.8 + 20;
+
+  return (
+    <section
+      className={`${styles["admin-card"]} ${styles["admin-revenue"]}`}
+      aria-labelledby="admin-revenue-heading"
+    >
+      <div className={styles["admin-card-heading-row"]}>
+        <div>
+          <h2 id="admin-revenue-heading" className={styles["admin-card-title"]}>
+            Revenue
+          </h2>
+          <p className={styles["admin-card-subtitle"]}>
+            This week vs last week
+          </p>
+        </div>
+        <p className={styles["admin-chart-legend"]}>
+          <span className={styles["admin-chart-legend-this-week"]}>
+            This week
+          </span>
+          <span className={styles["admin-chart-legend-last-week"]}>
+            Last week
+          </span>
+        </p>
+      </div>
+
+      <div ref={chartAreaRef} className={styles["admin-revenue-chart-area"]}>
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className={styles["admin-revenue-chart"]}
+          role="img"
+          aria-label="Revenue this week against last week"
+        >
+          <defs>
+            <linearGradient id="admin-revenue-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#285c3a" stopOpacity="0.2" />
+              <stop offset="1" stopColor="#285c3a" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {[60000, 50000, 40000, 30000, 20000].map((amount) => (
+            <g key={amount}>
+              <line
+                x1={left}
+                x2={width - right}
+                y1={y(amount)}
+                y2={y(amount)}
+                className={styles["admin-chart-grid"]}
+              />
+              <text
+                x={left - 8}
+                y={y(amount) + 4}
+                textAnchor="end"
+                className={styles["admin-chart-axis"]}
+              >
+                ₹{amount / 1000}k
+              </text>
+            </g>
+          ))}
+          <path
+            d={`${line(revenueThisWeek)} L${x(revenueThisWeek.length - 1)},${y(minimum)} L${x(0)},${y(minimum)} Z`}
+            fill="url(#admin-revenue-fill)"
+          />
+          <path
+            d={line(revenueLastWeek)}
+            className={styles["admin-chart-last-week"]}
+          />
+          <path
+            d={line(revenueThisWeek)}
+            className={styles["admin-chart-this-week"]}
+          />
+          {revenueThisWeek.map((amount, index) => (
+            <g key={index}>
+              <circle
+                cx={x(index)}
+                cy={y(amount)}
+                r={index === revenueThisWeek.length - 1 ? 5.5 : 4}
+                className={
+                  index === revenueThisWeek.length - 1
+                    ? styles["admin-chart-point-today"]
+                    : styles["admin-chart-point"]
+                }
+              />
+              {/* Wide invisible strip, so the day is easy to hover */}
+              <rect
+                x={x(index) - 30}
+                y={top}
+                width={60}
+                height={height - top - bottom}
+                fill="transparent"
+                onPointerEnter={() => setHoveredDay(index)}
+                onPointerLeave={() => setHoveredDay(revenueThisWeek.length - 1)}
+              />
+              <text
+                x={x(index)}
+                y={height - 8}
+                textAnchor="middle"
+                className={styles["admin-chart-axis"]}
+              >
+                {dayLabels[index]}
+              </text>
+            </g>
+          ))}
+          <g
+            transform={`translate(${Math.min(x(hoveredDay) - tooltipWidth + 12, width - right - tooltipWidth)}, ${y(revenueThisWeek[hoveredDay]) - 34})`}
+            pointerEvents="none"
+          >
+            <rect
+              width={tooltipWidth}
+              height={24}
+              rx={6}
+              className={styles["admin-chart-tooltip"]}
+            />
+            <text
+              x={tooltipWidth / 2}
+              y={16}
+              textAnchor="middle"
+              className={styles["admin-chart-tooltip-text"]}
+            >
+              {tooltipText}
+            </text>
+          </g>
+        </svg>
+      </div>
+    </section>
+  );
+}
+
+/* Today's deliveries: a segmented ring (delivered in green), the share in the middle, and the counts. */
+function DeliveriesRing() {
+  const { scheduled, routes, delivered, pending, missed } = todaysDeliveries;
+  const deliveredShare = delivered / scheduled;
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const segments = 8;
+  const segment = circumference / segments;
+
+  return (
+    <section
+      className={`${styles["admin-card"]} ${styles["admin-deliveries"]}`}
+      aria-labelledby="admin-deliveries-heading"
+    >
+      <h2 id="admin-deliveries-heading" className={styles["admin-card-title"]}>
+        Today&rsquo;s deliveries
+      </h2>
+      <p className={styles["admin-card-subtitle"]}>
+        {scheduled} scheduled · {routes} routes
+      </p>
+
+      <div className={styles["admin-deliveries-body"]}>
+        <div className={styles["admin-ring"]}>
+          <svg viewBox="0 0 140 140" aria-hidden="true">
+            {/* Grey track */}
+            <circle
+              cx="70"
+              cy="70"
+              r={radius}
+              className={styles["admin-ring-track"]}
+            />
+            {/* Green blocks, one per eighth of the ring */}
+            <circle
+              cx="70"
+              cy="70"
+              r={radius}
+              className={styles["admin-ring-delivered"]}
+              strokeDasharray={`${segment * 0.55} ${segment * 0.45}`}
+              strokeDashoffset={segment * 0.275}
+            />
+            {/* The part not yet delivered goes back to grey */}
+            <circle
+              cx="70"
+              cy="70"
+              r={radius}
+              className={styles["admin-ring-track"]}
+              strokeDasharray={`${circumference * (1 - deliveredShare)} ${circumference}`}
+              strokeDashoffset={-circumference * deliveredShare}
+            />
+            {/* Orange ticks in the middle of each block */}
+            <circle
+              cx="70"
+              cy="70"
+              r={radius}
+              className={styles["admin-ring-ticks"]}
+              strokeDasharray={`2 ${segment - 2}`}
+              strokeDashoffset={1}
+            />
+          </svg>
+          <span className={styles["admin-ring-text"]}>
+            <span className={styles["admin-ring-percent"]}>
+              {(deliveredShare * 100).toFixed(1)}%
+            </span>
+            <span className={styles["admin-ring-caption"]}>delivered</span>
+          </span>
+        </div>
+
+        <dl className={styles["admin-deliveries-legend"]}>
+          <div>
+            <dt>
+              <span
+                className={`${styles["admin-legend-dot"]} ${styles["admin-legend-dot-green"]}`}
+              />
+              Delivered
+            </dt>
+            <dd>{delivered}</dd>
+          </div>
+          <div>
+            <dt>
+              <span
+                className={`${styles["admin-legend-dot"]} ${styles["admin-legend-dot-orange"]}`}
+              />
+              Pending
+            </dt>
+            <dd>{pending}</dd>
+          </div>
+          <div>
+            <dt>
+              <span
+                className={`${styles["admin-legend-dot"]} ${styles["admin-legend-dot-red"]}`}
+              />
+              Missed
+            </dt>
+            <dd>{missed}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <p className={styles["admin-deliveries-footer"]}>
+        Missed on Route 2 ·{" "}
+        <Link href="/admin/routes" className={styles["admin-deliveries-link"]}>
+          Reassign agent →
+        </Link>
+      </p>
+    </section>
+  );
+}

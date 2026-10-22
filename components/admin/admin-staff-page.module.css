@@ -1,0 +1,38 @@
+/*
+  Staff page (admin-staff-page.tsx), from the design 13-staff: the attendance bar in the team table and
+  the remove pop-up's line. Everything else comes from the shared admin styles. Sizes use --admin-pixel.
+*/
+
+.admin-attendance-cell {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-attendance-bar {
+  width: calc(90 * var(--admin-pixel));
+  height: calc(5 * var(--admin-pixel));
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #efeee6;
+}
+
+.admin-attendance-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1f4d2e;
+}
+
+.admin-attendance-days {
+  font-size: calc(12 * var(--admin-pixel));
+  color: #5c655e;
+  white-space: nowrap;
+}
+
+.admin-staff-dialog-note {
+  grid-column: 1 / -1;
+  font-size: calc(13 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #5c655e;
+}

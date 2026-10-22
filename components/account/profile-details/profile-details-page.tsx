@@ -138,13 +138,13 @@ export default function ProfileDetailsPage() {
           </label>
           <label className={styles["profile-form-field"]}>
             <span className={styles["profile-form-label"]}>Mobile number</span>
+            {/* The number used to log in: shown, not editable (changing it would change the account) */}
             <input
               className={styles["profile-form-input"]}
               type="tel"
-              value={formValues.mobileNumber}
-              autoComplete="tel"
-              placeholder={fieldExamples.mobileNumber}
-              onChange={(event) => updateFormValue("mobileNumber", event.target.value)}
+              value={accountProfile.mobileNumber}
+              readOnly
+              title="This is the number you log in with"
             />
           </label>
           <label className={styles["profile-form-field"]}>

@@ -1,0 +1,883 @@
+/*
+  Chiranvi Panel dashboard, from the design 01-dashboard (1440 wide; the page area is 1192 wide with
+  28 on each side). Numbers in calc() are design pixels multiplied by --admin-pixel (set by the panel
+  frame, admin-panel.module.css).
+*/
+
+.admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+/* Header */
+
+.admin-dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(20 * var(--admin-pixel));
+}
+
+.admin-dashboard-greeting {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(35 * var(--admin-pixel));
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1b2a20;
+}
+
+.admin-dashboard-date {
+  margin-top: calc(4 * var(--admin-pixel));
+  font-size: calc(15 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-dashboard-header-tools {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: calc(9 * var(--admin-pixel));
+  width: calc(360 * var(--admin-pixel));
+  height: calc(42 * var(--admin-pixel));
+  padding: 0 calc(16 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: 9999px;
+  background: #ffffff;
+}
+
+.admin-search svg,
+.admin-bell-button svg,
+.admin-new-order-button svg,
+.admin-range-button svg,
+.admin-export-button svg {
+  flex-shrink: 0;
+  width: calc(17 * var(--admin-pixel));
+  height: calc(17 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-search svg {
+  color: #6b736c;
+}
+
+.admin-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  color: #1b2a20;
+  outline: none;
+}
+
+.admin-search:focus-within {
+  border-color: #2f6b3a;
+}
+
+.admin-bell-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(42 * var(--admin-pixel));
+  height: calc(42 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1b2a20;
+  cursor: pointer;
+}
+
+.admin-bell-dot {
+  position: absolute;
+  top: calc(8 * var(--admin-pixel));
+  right: calc(9 * var(--admin-pixel));
+  width: calc(8 * var(--admin-pixel));
+  height: calc(8 * var(--admin-pixel));
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  background: #d23b3b;
+}
+
+.admin-new-order-button {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  height: calc(42 * var(--admin-pixel));
+  padding: 0 calc(22 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #1f4d2e;
+  font-size: calc(13.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.admin-new-order-button:hover,
+.admin-new-order-button:focus-visible {
+  background: #173d24;
+}
+
+/* Date range row (right-aligned) */
+.admin-dashboard-range-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(14 * var(--admin-pixel));
+  margin-top: calc(-4 * var(--admin-pixel));
+}
+
+.admin-range-button,
+.admin-export-button {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  height: calc(36 * var(--admin-pixel));
+  padding: 0 calc(16 * var(--admin-pixel));
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.admin-range-button {
+  border: 1px solid #e0e2da;
+  background: #ffffff;
+  color: #1b2a20;
+}
+
+.admin-range-label {
+  font-size: calc(13 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-export-button {
+  height: calc(38 * var(--admin-pixel));
+  border: 1.5px solid #1f4d2e;
+  background: #ffffff;
+  font-weight: 600;
+  color: #1f4d2e;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.admin-export-button:hover,
+.admin-export-button:focus-visible {
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+.admin-export-button .admin-export-chevron {
+  width: calc(14 * var(--admin-pixel));
+  height: calc(14 * var(--admin-pixel));
+}
+
+/* Pop-ups (notifications, date range, order status) */
+
+.admin-popup-anchor {
+  position: relative;
+}
+
+.admin-popup {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8 * var(--admin-pixel));
+  right: 0;
+  padding: calc(12 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(20, 40, 25, 0.14);
+}
+
+.admin-popup-title {
+  margin-bottom: calc(8 * var(--admin-pixel));
+  font-size: calc(11 * var(--admin-pixel));
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b736c;
+}
+
+.admin-notifications {
+  width: calc(290 * var(--admin-pixel));
+}
+
+.admin-notification {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+  padding: calc(7 * var(--admin-pixel)) 0;
+}
+
+.admin-order-menu {
+  width: calc(170 * var(--admin-pixel));
+}
+
+.admin-order-menu button {
+  display: block;
+  width: 100%;
+  padding: calc(7 * var(--admin-pixel)) calc(8 * var(--admin-pixel));
+  border: none;
+  border-radius: calc(6 * var(--admin-pixel));
+  background: none;
+  font-family: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  text-align: left;
+  color: #1b2a20;
+  cursor: pointer;
+}
+
+.admin-order-menu button:hover:not(:disabled) {
+  background: #f1f6ee;
+}
+
+.admin-order-menu button:disabled {
+  color: #a6aba3;
+  cursor: default;
+}
+
+/* Alerts: three in a row */
+
+.admin-alerts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(14 * var(--admin-pixel));
+}
+
+.admin-alert {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+  min-height: calc(56 * var(--admin-pixel));
+  padding: calc(9 * var(--admin-pixel)) calc(14 * var(--admin-pixel)) calc(9 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #ffffff;
+}
+
+/* Only Chiranvi colours (green, yellow, white): every alert card is white */
+
+.admin-alert-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(30 * var(--admin-pixel));
+  height: calc(30 * var(--admin-pixel));
+  border-radius: 50%;
+  color: #ffffff;
+}
+
+.admin-alert-icon svg {
+  width: calc(16 * var(--admin-pixel));
+  height: calc(16 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Serious alerts (missed deliveries) in red; the others in yellow */
+.admin-alert-icon-red {
+  background: #d23b3b;
+  color: #ffffff;
+}
+
+.admin-alert-icon-amber,
+.admin-alert-icon-orange,
+.admin-alert-icon-blue {
+  background: #f5bf2c;
+  color: #1f4d2e;
+}
+
+.admin-alert-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-alert-title {
+  display: block;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1b2a20;
+}
+
+.admin-alert-detail {
+  display: block;
+  margin-top: calc(2 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-alert-action {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-alert-action:hover,
+.admin-alert-action:focus-visible {
+  text-decoration: underline;
+}
+
+.admin-alert-action-red {
+  color: #c0392b;
+}
+
+.admin-alert-action-amber,
+.admin-alert-action-orange,
+.admin-alert-action-blue {
+  color: #1f4d2e;
+}
+
+/* Numbers: two rows of four */
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(14 * var(--admin-pixel));
+}
+
+.admin-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(112 * var(--admin-pixel));
+  padding: calc(18 * var(--admin-pixel)) calc(20 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(14 * var(--admin-pixel));
+  background: #ffffff;
+}
+
+.admin-stat-label {
+  font-size: calc(13 * var(--admin-pixel));
+  color: #5c655e;
+}
+
+.admin-stat-value {
+  font-family: var(--font-ubuntu), sans-serif;
+  margin-top: calc(8 * var(--admin-pixel));
+  font-size: calc(28 * var(--admin-pixel));
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: #13251b;
+}
+
+.admin-stat-note {
+  margin-top: calc(8 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 700;
+}
+
+.admin-stat-note-up {
+  color: #2f6b3a;
+}
+
+.admin-stat-note-plain {
+  font-weight: 400;
+  color: #6b736c;
+}
+
+/* Warnings (failed payments to recover) in red */
+.admin-stat-note-bad {
+  color: #d23b3b;
+}
+
+.admin-stat-icon {
+  position: absolute;
+  top: calc(16 * var(--admin-pixel));
+  right: calc(18 * var(--admin-pixel));
+  display: grid;
+  place-items: center;
+  width: calc(40 * var(--admin-pixel));
+  height: calc(40 * var(--admin-pixel));
+  border-radius: calc(10 * var(--admin-pixel));
+}
+
+.admin-stat-icon svg {
+  width: calc(19 * var(--admin-pixel));
+  height: calc(19 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Every number card icon: light yellow box with a gold icon */
+.admin-stat-icon-green,
+.admin-stat-icon-blue,
+.admin-stat-icon-tan,
+.admin-stat-icon-purple,
+.admin-stat-icon-orange,
+.admin-stat-icon-red {
+  background: #fbf3e1;
+  color: #c99a1e;
+}
+
+/* Cards (charts, recent orders) */
+
+.admin-card {
+  min-width: 0;
+  padding: calc(18 * var(--admin-pixel)) calc(22 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(14 * var(--admin-pixel));
+  background: #ffffff;
+}
+
+.admin-card-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+.admin-card-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1b2a20;
+}
+
+.admin-card-subtitle {
+  margin-top: calc(3 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-charts-row {
+  display: grid;
+  grid-template-columns: 1.85fr 1fr;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+/* Revenue chart */
+
+.admin-chart-legend {
+  display: flex;
+  gap: calc(16 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #5c655e;
+}
+
+.admin-chart-legend-this-week,
+.admin-chart-legend-last-week {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-chart-legend-this-week::before,
+.admin-chart-legend-last-week::before {
+  content: "";
+  width: calc(18 * var(--admin-pixel));
+  border-top: 2.5px solid #1f4d2e;
+}
+
+.admin-chart-legend-last-week::before {
+  border-top: 2px dashed #f5bf2c;
+}
+
+/* The chart's box: full card width, 210 tall; the drawing inside is measured to fit it exactly */
+.admin-revenue-chart-area {
+  height: calc(210 * var(--admin-pixel));
+  margin-top: calc(6 * var(--admin-pixel));
+}
+
+.admin-revenue-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.admin-chart-grid {
+  stroke: #eeefea;
+  stroke-width: 1;
+}
+
+.admin-chart-axis {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(11 * var(--admin-pixel));
+  fill: #8a918b;
+}
+
+.admin-chart-this-week {
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+}
+
+.admin-chart-last-week {
+  fill: none;
+  stroke: #f5bf2c;
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+
+.admin-chart-point {
+  fill: #ffffff;
+  stroke: #1f4d2e;
+  stroke-width: 2;
+}
+
+.admin-chart-point-today {
+  fill: #1f4d2e;
+}
+
+.admin-chart-tooltip {
+  fill: #13251b;
+}
+
+.admin-chart-tooltip-text {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(11.5 * var(--admin-pixel));
+  font-weight: 700;
+  fill: #ffffff;
+}
+
+/* Today's deliveries */
+
+.admin-deliveries {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-deliveries-body {
+  display: flex;
+  align-items: center;
+  gap: calc(22 * var(--admin-pixel));
+  margin: calc(16 * var(--admin-pixel)) 0;
+}
+
+.admin-ring {
+  position: relative;
+  flex-shrink: 0;
+  width: calc(140 * var(--admin-pixel));
+  height: calc(140 * var(--admin-pixel));
+}
+
+.admin-ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.admin-ring circle {
+  fill: none;
+  stroke-width: 13;
+}
+
+.admin-ring-track {
+  stroke: #ecece6;
+}
+
+.admin-ring-delivered {
+  stroke: #2f6b3a;
+}
+
+.admin-ring-ticks {
+  stroke: #f5bf2c;
+}
+
+.admin-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-ring-percent {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(19 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-ring-caption {
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-deliveries-legend {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+.admin-deliveries-legend div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: calc(13 * var(--admin-pixel));
+}
+
+.admin-deliveries-legend dt {
+  display: flex;
+  align-items: center;
+  gap: calc(9 * var(--admin-pixel));
+  color: #1b2a20;
+}
+
+.admin-deliveries-legend dd {
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-legend-dot {
+  width: calc(9 * var(--admin-pixel));
+  height: calc(9 * var(--admin-pixel));
+  border-radius: 50%;
+}
+
+.admin-legend-dot-green {
+  background: #2f6b3a;
+}
+
+.admin-legend-dot-orange {
+  background: #f5bf2c;
+}
+
+.admin-legend-dot-red {
+  background: #d23b3b;
+}
+
+.admin-deliveries-footer {
+  margin-top: auto;
+  padding-top: calc(12 * var(--admin-pixel));
+  border-top: 1px solid #efefea;
+  font-size: calc(12 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-deliveries-link,
+.admin-view-all {
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-deliveries-link:hover,
+.admin-view-all:hover {
+  text-decoration: underline;
+}
+
+.admin-view-all {
+  font-size: calc(13 * var(--admin-pixel));
+}
+
+/* Recent orders */
+
+.admin-table-scroll {
+  overflow-x: auto;
+  margin-top: calc(10 * var(--admin-pixel));
+}
+
+.admin-orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(13 * var(--admin-pixel));
+}
+
+.admin-orders-table th {
+  padding: calc(10 * var(--admin-pixel)) calc(8 * var(--admin-pixel));
+  border-bottom: 1px solid #ecece6;
+  font-size: calc(11 * var(--admin-pixel));
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-align: left;
+  text-transform: uppercase;
+  color: #6b736c;
+  white-space: nowrap;
+}
+
+.admin-orders-table td {
+  padding: calc(9 * var(--admin-pixel)) calc(8 * var(--admin-pixel));
+  border-bottom: 1px solid #f1f1ec;
+  color: #1b2a20;
+  vertical-align: middle;
+}
+
+.admin-orders-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-orders-muted {
+  color: #5c655e !important;
+  white-space: nowrap;
+}
+
+.admin-orders-customer {
+  display: block;
+  font-weight: 700;
+}
+
+.admin-orders-area {
+  display: block;
+  margin-top: calc(1 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-orders-amount {
+  font-weight: 700;
+}
+
+.admin-orders-actions {
+  width: calc(40 * var(--admin-pixel));
+  text-align: right;
+}
+
+.admin-orders-empty {
+  padding: calc(20 * var(--admin-pixel)) !important;
+  text-align: center;
+  color: #6b736c !important;
+}
+
+/* Status pills */
+.admin-status {
+  display: inline-block;
+  padding: calc(4 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  border-radius: 9999px;
+  font-size: calc(11.5 * var(--admin-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Delivered: light green; Out for delivery: white with a green line; Pending: white with a yellow line;
+   Cancelled: light yellow (admin-shared.module.css); Missed: red */
+.admin-status-delivered {
+  background: #e6f0e1;
+  color: #1f4d2e;
+}
+
+.admin-status-out-for-delivery {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #2f6b3a;
+  color: #2f6b3a;
+}
+
+.admin-status-pending {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #c99a1e;
+  color: #a37a12;
+}
+
+.admin-status-missed {
+  background: #fbe3e3;
+  color: #c0392b;
+}
+
+.admin-more-button {
+  padding: calc(2 * var(--admin-pixel)) calc(6 * var(--admin-pixel));
+  border: none;
+  border-radius: calc(6 * var(--admin-pixel));
+  background: none;
+  font-size: calc(12 * var(--admin-pixel));
+  letter-spacing: 0.05em;
+  color: #5c655e;
+  cursor: pointer;
+}
+
+.admin-more-button:hover {
+  background: #f1f1ec;
+}
+
+.admin-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Short message at the bottom (e.g. "Reminder sent to 18 customers") */
+.admin-toast {
+  position: fixed;
+  z-index: 20;
+  bottom: 24px;
+  left: 50%;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  background: #1f4d2e;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 10px);
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+.admin-toast[data-visible="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Narrow screens */
+@media (max-width: 1100px) {
+  .admin-alerts,
+  .admin-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard-header {
+    flex-direction: column;
+  }
+
+  .admin-search {
+    width: auto;
+    flex: 1;
+  }
+
+  .admin-dashboard-header-tools {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-alerts,
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard-range-row {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .admin-new-order-button {
+    padding: 0 14px;
+  }
+}

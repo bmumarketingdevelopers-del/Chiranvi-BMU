@@ -88,7 +88,7 @@ export default function LoginPanel({
   function verifyOtpAndLogIn() {
     if (!isOtpComplete) return;
     // Connect to the OTP service: check otpDigits.join("") for fullMobileNumber and log the user in here.
-    rememberLogin();
+    rememberLogin(mobileNumberDigits);
     // Login started from "Add to cart": the product goes into the cart and the visitor stays on the
     // landing page (the phone sheet just closes; the login page goes back to the landing page).
     if (addPendingProductToCart()) {

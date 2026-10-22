@@ -311,6 +311,122 @@
 }
 
 /*
+  Sold out (set in the Chiranvi Panel): red "Sold out" tag on the faded picture, a short line and a
+  "Notify me" button (outlined, so it does not look like Add to cart).
+*/
+.best-seller-card-sold-out .best-seller-image-area {
+  position: relative;
+}
+
+.best-seller-card-sold-out .best-seller-image {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+}
+
+.best-seller-sold-out-tag {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  padding: calc(4 * var(--best-sellers-design-pixel)) calc(11 * var(--best-sellers-design-pixel));
+  border-radius: 9999px;
+  background: #c0392b;
+  color: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(11.5 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.best-seller-notify-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: calc(10 * var(--best-sellers-design-pixel));
+}
+
+.best-seller-notify-text {
+  font-size: calc(12 * var(--best-sellers-design-pixel));
+  line-height: calc(16 * var(--best-sellers-design-pixel));
+  color: #6b6b6b;
+  text-align: center;
+}
+
+.best-seller-notify-button,
+.best-seller-notify-done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--best-sellers-design-pixel));
+  min-width: min(100%, max(66%, calc(128 * var(--best-sellers-design-pixel))));
+  padding: 0 calc(16 * var(--best-sellers-design-pixel));
+  white-space: nowrap;
+  height: calc(44 * var(--best-sellers-design-pixel));
+  margin-top: calc(8 * var(--best-sellers-design-pixel));
+  border-radius: 9999px;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15.5 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+}
+
+.best-seller-notify-button {
+  border: 1.5px solid #285c3a;
+  background: #ffffff;
+  color: #285c3a;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.best-seller-notify-button:hover,
+.best-seller-notify-button:focus-visible {
+  background: #285c3a;
+  color: #ffffff;
+}
+
+/* Already asked: a quiet confirmation in place of the button */
+.best-seller-notify-done {
+  background: #eef5ea;
+  color: #285c3a;
+}
+
+.best-seller-notify-done svg {
+  width: calc(16 * var(--best-sellers-design-pixel));
+  height: calc(16 * var(--best-sellers-design-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .best-seller-sold-out-tag {
+    padding: 3px 9px;
+    font-size: 10.5px;
+  }
+
+  .best-seller-notify-text {
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  .best-seller-notify-button,
+  .best-seller-notify-done {
+    width: 100%;
+    height: 36px;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+
+  .best-seller-notify-done svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/*
   Mobile layout (chosen by the script in app/page.tsx): two cards per row, three rows.
 */
 :global(html:has(style[data-landing-layout="mobile"])) {

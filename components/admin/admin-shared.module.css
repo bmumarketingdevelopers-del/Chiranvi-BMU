@@ -1,0 +1,376 @@
+/*
+  Shared pieces of the Chiranvi Panel pages (admin-shared.tsx): filter tabs, page numbers, pop-up form.
+  Same rules as the dashboard: --admin-pixel sizes, Ubuntu headings + Poppins text, Chiranvi green /
+  yellow / white (red only for serious actions).
+*/
+
+/* Second row of the top bar when it also has tabs on the left (Products) */
+.admin-top-row-with-tabs {
+  justify-content: space-between;
+}
+
+.admin-top-row-left {
+  margin-right: auto;
+}
+
+/* Filter tabs: round buttons, the chosen one dark green */
+.admin-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--admin-pixel));
+}
+
+.admin-filter-tab {
+  height: calc(34 * var(--admin-pixel));
+  padding: 0 calc(16 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 500;
+  color: #1b2a20;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.admin-filter-tab:hover,
+.admin-filter-tab:focus-visible {
+  border-color: #2f6b3a;
+}
+
+.admin-filter-tab-selected,
+.admin-filter-tab-selected:hover {
+  border-color: #1f4d2e;
+  background: #1f4d2e;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Page numbers under a table */
+.admin-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--admin-pixel));
+  margin-top: calc(16 * var(--admin-pixel));
+}
+
+.admin-pagination-summary {
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+.admin-pagination-buttons,
+.admin-pagination-group {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-pagination-button {
+  display: grid;
+  place-items: center;
+  min-width: calc(30 * var(--admin-pixel));
+  height: calc(30 * var(--admin-pixel));
+  padding: 0 calc(6 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: calc(8 * var(--admin-pixel));
+  background: #ffffff;
+  font-family: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1b2a20;
+  cursor: pointer;
+}
+
+.admin-pagination-button:hover:not(:disabled) {
+  border-color: #2f6b3a;
+}
+
+.admin-pagination-button:disabled {
+  color: #c4c8c1;
+  cursor: default;
+}
+
+.admin-pagination-button-current,
+.admin-pagination-button-current:hover {
+  border-color: #1f4d2e;
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+.admin-pagination-gap {
+  font-size: calc(13 * var(--admin-pixel));
+  color: #6b736c;
+}
+
+/* Pop-up form */
+.admin-dialog-backdrop {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(19, 37, 27, 0.35);
+}
+
+.admin-dialog {
+  width: min(calc(520 * var(--admin-pixel)), 100%);
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  padding: calc(24 * var(--admin-pixel));
+  border-radius: calc(16 * var(--admin-pixel));
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(19, 37, 27, 0.25);
+}
+
+.admin-dialog-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(20 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1b2a20;
+}
+
+.admin-dialog-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(14 * var(--admin-pixel));
+  margin-top: calc(18 * var(--admin-pixel));
+}
+
+.admin-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-dialog-field-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-dialog-label {
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1b2a20;
+}
+
+.admin-dialog-input {
+  width: 100%;
+  height: calc(40 * var(--admin-pixel));
+  padding: 0 calc(12 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #ffffff;
+  font-family: inherit;
+  font-size: calc(13.5 * var(--admin-pixel));
+  color: #1b2a20;
+}
+
+.admin-dialog-input:focus {
+  border-color: #2f6b3a;
+  outline: none;
+}
+
+.admin-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(10 * var(--admin-pixel));
+  margin-top: calc(22 * var(--admin-pixel));
+}
+
+.admin-dialog-cancel,
+.admin-dialog-submit {
+  height: calc(40 * var(--admin-pixel));
+  padding: 0 calc(20 * var(--admin-pixel));
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: calc(13.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-dialog-cancel {
+  border: 1.5px solid #1f4d2e;
+  background: #ffffff;
+  color: #1f4d2e;
+}
+
+.admin-dialog-submit {
+  border: none;
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+.admin-dialog-submit:hover {
+  background: #173d24;
+}
+
+.admin-row-menu-danger {
+  color: #d23b3b !important;
+}
+
+@media (max-width: 600px) {
+  .admin-dialog-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cancelled: filled light yellow, like Delivered is filled light green (not serious, so not red) */
+.admin-status-cancelled {
+  background: #fbf3e1;
+  color: #a37a12;
+}
+
+/* Needs attention (Failed, High priority, Absent): light red */
+.admin-status-warning {
+  background: #fbe3e3;
+  color: #c0392b;
+}
+
+/* Money columns: green when fine, red when too low */
+.admin-money-ok {
+  color: #2f6b3a !important;
+}
+
+.admin-money-low {
+  color: #d23b3b !important;
+}
+
+/* Subscription length (3 months / 6 months / 1 year): small green label */
+.admin-plan-length {
+  display: inline-block;
+  padding: calc(3 * var(--admin-pixel)) calc(10 * var(--admin-pixel));
+  border-radius: calc(6 * var(--admin-pixel));
+  background: #e6f0e1;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1f4d2e;
+  white-space: nowrap;
+}
+
+/* Small buttons inside a table row (Approve / Reject) */
+.admin-row-buttons {
+  display: inline-flex;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-small-button,
+.admin-small-button-danger {
+  height: calc(28 * var(--admin-pixel));
+  padding: 0 calc(12 * var(--admin-pixel));
+  border-radius: calc(6 * var(--admin-pixel));
+  font-family: inherit;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-small-button {
+  border: none;
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+.admin-small-button:hover {
+  background: #173d24;
+}
+
+/* Reject: red, it turns the request down */
+.admin-small-button-danger {
+  border: 1px solid #e8a5a5;
+  background: #ffffff;
+  color: #d23b3b;
+}
+
+.admin-small-button-danger:hover {
+  background: #fdf0f0;
+}
+
+/* A person in a table: round initials, then name and line under it */
+.admin-person-cell {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-initials {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(32 * var(--admin-pixel));
+  height: calc(32 * var(--admin-pixel));
+  border-radius: 50%;
+  background: #e6f0e1;
+  font-size: calc(11 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-initials-yellow {
+  background: #fbf3e1;
+  color: #a37a12;
+}
+
+.admin-phone-link {
+  color: inherit;
+}
+
+.admin-phone-link:hover {
+  color: #1f4d2e;
+  text-decoration: underline;
+}
+
+/* Low priority: plain grey */
+.admin-priority-low {
+  background: #efefea;
+  color: #5c655e;
+}
+
+/* A number card whose value is words (Products: the best seller's name): smaller, same line height as
+   the numbers so the note below stays level with the other cards */
+.admin-stat-value-text {
+  font-size: calc(20 * var(--admin-pixel));
+  line-height: calc(32 * var(--admin-pixel));
+}
+
+/* A number card that can be clicked (Products: Low stock / Out of stock): the whole card is the button */
+.admin-stat-clickable {
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-stat-clickable:hover {
+  border-color: #cfd8c9;
+  box-shadow: 0 calc(6 * var(--admin-pixel)) calc(18 * var(--admin-pixel)) rgba(31, 77, 46, 0.07);
+}
+
+.admin-stat-button {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: pointer;
+}
+
+.admin-stat-button:focus-visible {
+  outline: 2px solid #1f4d2e;
+  outline-offset: 2px;
+}
+
+/* Turned on: yellow edge, like the panel's active items */
+.admin-stat-selected,
+.admin-stat-selected:hover {
+  border-color: #f5bf2c;
+  box-shadow: 0 0 0 1px #f5bf2c;
+}

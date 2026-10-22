@@ -23,12 +23,6 @@ const navigationLinks = [
     iconPaths: ["M4 4h7v7H4z", "M13 4h7v7h-7z", "M4 13h7v7H4z", "M13 13h7v7h-7z"],
   },
   {
-    href: "#",
-    label: "Offers",
-    mobileLabel: "Offers",
-    iconPaths: ["M3 12V4h8l10 10-8 8L3 12Z", "M7.5 7.5h.01"],
-  },
-  {
     href: "/community",
     label: "Join Community",
     mobileLabel: "Community",

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-layout-runner";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
-import { logOut, rememberPageAfterLogin, useIsLoggedIn } from "@/components/login/login-status";
+import { logOut, rememberPageAfterLogin, useIsLoggedIn, useIsLoginStatusKnown } from "@/components/login/login-status";
+import { useCurrentStaffAccess } from "@/store/staff-access-store";
 import { emptyTheCart } from "@/store/cart-store";
 import { countActiveOrders, forgetAllOrders, useOrders } from "@/store/orders-store";
 import { getNameInitials, useAccountProfile } from "./account-profile";
@@ -19,6 +20,7 @@ import styles from "./account-dashboard-layout.module.css";
   Only for logged-in visitors: anyone else is sent to the login, which then comes back to this page.
   Logout first asks "Log out?" (design); confirming forgets the login, empties the cart and forgets the
   orders, then opens the home page.
+  The owner, admins and managers also see "Chiranvi Panel", which opens the admin panel (/admin).
 */
 
 const accountPages = [
@@ -56,6 +58,9 @@ function getGreeting() {
 
 export default function AccountDashboardLayout({ children }: { children: ReactNode }) {
   const isLoggedIn = useIsLoggedIn();
+  const isLoginStatusKnown = useIsLoginStatusKnown();
+  // Owner, admin or manager: they get the "Chiranvi Panel" button
+  const staffAccess = useCurrentStaffAccess();
   const accountProfile = useAccountProfile();
   // Orders still on their way: the yellow badge next to "Orders" (design); hidden when there are none.
   const activeOrderCount = countActiveOrders(useOrders());
@@ -65,12 +70,12 @@ export default function AccountDashboardLayout({ children }: { children: ReactNo
   const isLoggingOutRef = useRef(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
-  // Not logged in (for example after a refresh): log in first, then come back to this page.
+  // Not logged in: log in first, then come back to this page. Waits until the saved login has been read.
   useEffect(() => {
-    if (isLoggedIn || isLoggingOutRef.current) return;
+    if (!isLoginStatusKnown || isLoggedIn || isLoggingOutRef.current) return;
     rememberPageAfterLogin(pathname);
     router.replace("/login");
-  }, [isLoggedIn, pathname, router]);
+  }, [isLoginStatusKnown, isLoggedIn, pathname, router]);
 
   // Phone layout: the sidebar is a row that scrolls sideways; bring the open page's button into view.
   const sidebarRef = useRef<HTMLElement>(null);
@@ -136,6 +141,19 @@ export default function AccountDashboardLayout({ children }: { children: ReactNo
                 );
               })}
             </nav>
+
+            {/* Owner, admins and managers: open the admin panel */}
+            {staffAccess && (
+              <Link href="/admin" className={styles["account-sidebar-panel-link"]}>
+                <svg viewBox="0 0 24 24" className={styles["account-sidebar-link-icon"]} aria-hidden="true">
+                  <path d="M4 4h7v7H4z" />
+                  <path d="M13 4h7v4h-7z" />
+                  <path d="M13 10h7v10h-7z" />
+                  <path d="M4 13h7v7H4z" />
+                </svg>
+                Chiranvi Panel
+              </Link>
+            )}
 
             {/* Light red while the "Log out?" box is open (design) */}
             <button

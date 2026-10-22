@@ -1,0 +1,267 @@
+/*
+  Routes & agents page (admin-routes-page.tsx), from the design 11-routes-agents: route map and routes
+  table on the left, delivery agents on the right. Chiranvi colours only (route colours are greens and
+  yellows). Sizes use --admin-pixel.
+*/
+
+.admin-routes-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: start;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+.admin-routes-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--admin-pixel));
+  min-width: 0;
+}
+
+/* "Edit routes →" and "+ Add agent" */
+.admin-routes-text-button {
+  padding: calc(4 * var(--admin-pixel)) 0;
+  border: 0;
+  background: none;
+  color: #1f4d2e;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-routes-text-button:hover,
+.admin-routes-text-button:focus-visible {
+  text-decoration: underline;
+}
+
+/* ---------- Route map ---------- */
+
+.admin-route-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: calc(14 * var(--admin-pixel));
+}
+
+.admin-route-map-ground {
+  fill: #ffffff;
+}
+
+.admin-route-map-block {
+  fill: #eef1e8;
+}
+
+.admin-route-map-route {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.admin-route-map-tag {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.admin-route-map-hub-label {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 7.5px;
+  font-weight: 600;
+  fill: #ffffff;
+}
+
+/* ---------- Routes table ---------- */
+
+.admin-route-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-route-dot {
+  flex-shrink: 0;
+  width: calc(9 * var(--admin-pixel));
+  height: calc(9 * var(--admin-pixel));
+  border-radius: 50%;
+}
+
+.admin-route-row-highlighted td {
+  background: #f7f9f3;
+}
+
+.admin-route-progress-cell {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-route-progress-bar {
+  flex: 1;
+  min-width: calc(60 * var(--admin-pixel));
+  height: calc(6 * var(--admin-pixel));
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #efeee6;
+}
+
+.admin-route-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1f4d2e;
+}
+
+.admin-route-percent {
+  min-width: calc(34 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #5c655e;
+  text-align: right;
+}
+
+/* ---------- Delivery agents ---------- */
+
+.admin-agent-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: calc(10 * var(--admin-pixel));
+}
+
+.admin-agent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(12 * var(--admin-pixel));
+  padding: calc(13 * var(--admin-pixel)) 0;
+  border-bottom: 1px solid #f1f1ec;
+}
+
+.admin-agent-row:last-child {
+  border-bottom: none;
+}
+
+.admin-agent-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-agent-top-row {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-agent-top-row > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-agent-name {
+  display: block;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+}
+
+.admin-agent-route {
+  display: block;
+  margin-top: calc(1 * var(--admin-pixel));
+  overflow: hidden;
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #7a837c;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.admin-agent-call {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(30 * var(--admin-pixel));
+  height: calc(30 * var(--admin-pixel));
+  border-radius: calc(8 * var(--admin-pixel));
+  background: #e6f0e1;
+  color: #1f4d2e;
+  transition: background-color 0.15s ease;
+}
+
+.admin-agent-call:hover,
+.admin-agent-call:focus-visible {
+  background: #d4e6cc;
+}
+
+.admin-agent-call svg {
+  width: calc(15 * var(--admin-pixel));
+  height: calc(15 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.admin-agent-progress-row {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--admin-pixel));
+  margin-top: calc(8 * var(--admin-pixel));
+}
+
+.admin-agent-progress-bar {
+  flex: 1;
+  height: calc(5 * var(--admin-pixel));
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #efeee6;
+}
+
+.admin-agent-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1f4d2e;
+}
+
+.admin-agent-stops {
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #5c655e;
+  white-space: nowrap;
+}
+
+.admin-agent-empty {
+  padding: calc(24 * var(--admin-pixel)) 0;
+  font-size: calc(13 * var(--admin-pixel));
+  color: #7a837c;
+  text-align: center;
+}
+
+/* ---------- Pop-ups ---------- */
+
+.admin-routes-dialog-note {
+  grid-column: 1 / -1;
+  font-size: calc(12.5 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #5c655e;
+}
+
+/* Edit routes: one line per route (name, area, agent) */
+.admin-routes-edit-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: calc(90 * var(--admin-pixel)) 1fr 1fr;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+  font-size: calc(13 * var(--admin-pixel));
+}
+
+@media (max-width: 1100px) {
+  .admin-routes-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-routes-edit-row {
+    grid-template-columns: 1fr;
+  }
+}

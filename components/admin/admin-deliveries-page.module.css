@@ -1,0 +1,199 @@
+/*
+  Deliveries page (admin-deliveries-page.tsx), from the design 10-deliveries: today's deliveries on the
+  left, route progress on the right. Chiranvi colours only (route colours are greens and yellows; red
+  only for missed). Sizes use --admin-pixel.
+*/
+
+.admin-deliveries-columns {
+  display: grid;
+  grid-template-columns: 1fr calc(330 * var(--admin-pixel));
+  align-items: start;
+  gap: calc(14 * var(--admin-pixel));
+}
+
+/* Route: coloured dot and R1 */
+.admin-route-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(7 * var(--admin-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-route-dot {
+  flex-shrink: 0;
+  width: calc(9 * var(--admin-pixel));
+  height: calc(9 * var(--admin-pixel));
+  border-radius: 50%;
+}
+
+/* Call: a phone icon that dials the customer */
+.admin-call-button {
+  display: inline-grid;
+  place-items: center;
+  width: calc(30 * var(--admin-pixel));
+  height: calc(30 * var(--admin-pixel));
+  border-radius: 50%;
+  color: #1f4d2e;
+  transition: background-color 0.15s ease;
+}
+
+.admin-call-button:hover,
+.admin-call-button:focus-visible {
+  background: #e6f0e1;
+}
+
+.admin-call-button svg {
+  width: calc(16 * var(--admin-pixel));
+  height: calc(16 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+/* "Only missed (3) x": shown while a number card is clicked */
+.admin-deliveries-filter-chip {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--admin-pixel));
+  padding: calc(6 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  border: 1px solid #f0dca4;
+  border-radius: 9999px;
+  background: #fbf3e1;
+  color: #5c4a12;
+  font: inherit;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-deliveries-filter-chip:hover,
+.admin-deliveries-filter-chip:focus-visible {
+  border-color: #f5bf2c;
+}
+
+.admin-deliveries-filter-chip svg {
+  width: calc(12 * var(--admin-pixel));
+  height: calc(12 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+/* Route progress card */
+.admin-route-progress-card {
+  position: sticky;
+  top: calc(16 * var(--admin-pixel));
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-route-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(20 * var(--admin-pixel));
+  margin-top: calc(20 * var(--admin-pixel));
+}
+
+.admin-route-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-route-progress-name {
+  display: flex;
+  align-items: center;
+  gap: calc(7 * var(--admin-pixel));
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 600;
+  color: #13251b;
+}
+
+.admin-route-progress-count {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  color: #13251b;
+  white-space: nowrap;
+}
+
+.admin-route-progress-agent {
+  margin-top: calc(3 * var(--admin-pixel));
+  padding-left: calc(16 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-route-progress-bar {
+  height: calc(6 * var(--admin-pixel));
+  margin-top: calc(8 * var(--admin-pixel));
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #efeee6;
+}
+
+.admin-route-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+
+.admin-route-progress-empty {
+  font-size: calc(13 * var(--admin-pixel));
+  color: #7a837c;
+}
+
+.admin-reassign-button {
+  height: calc(40 * var(--admin-pixel));
+  margin-top: calc(26 * var(--admin-pixel));
+  border: 0;
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #1f4d2e;
+  color: #ffffff;
+  font: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.admin-reassign-button:hover:not(:disabled),
+.admin-reassign-button:focus-visible {
+  background: #163a22;
+}
+
+.admin-reassign-button:disabled {
+  background: #e6f0e1;
+  color: #5c655e;
+  cursor: default;
+}
+
+/* Reassign pop-up: the line above the agent list */
+.admin-reassign-text {
+  grid-column: 1 / -1;
+  font-size: calc(13 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #5c655e;
+}
+
+@media (max-width: 1100px) {
+  .admin-deliveries-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-route-progress-card {
+    position: static;
+  }
+}
+
+/* "· 3 missed" after the agent's line (serious, so red) */
+.admin-route-progress-missed {
+  font-weight: 600;
+  color: #c0392b;
+}

@@ -1,0 +1,234 @@
+/*
+  Leads board (admin-leads-page.tsx), from the design 06-leads: five light columns side by side, white
+  cards inside. Chiranvi colours only: the column dots and source tags are greens, yellows and grey
+  (each source also has its name written on the tag). Sizes use --admin-pixel.
+*/
+
+.admin-leads-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(calc(190 * var(--admin-pixel)), 1fr));
+  align-items: start;
+  gap: calc(14 * var(--admin-pixel));
+  overflow-x: auto;
+  padding-bottom: calc(4 * var(--admin-pixel));
+}
+
+.admin-leads-column {
+  min-height: calc(200 * var(--admin-pixel));
+  padding: calc(12 * var(--admin-pixel));
+  border: 2px solid transparent;
+  border-radius: calc(14 * var(--admin-pixel));
+  background: #eef0e9;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+/* While a card is dragged over a column */
+.admin-leads-column-drop {
+  border-color: #c99a1e;
+  background: #fbf3e1;
+}
+
+.admin-leads-column-title {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  margin: calc(2 * var(--admin-pixel)) calc(2 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1b2a20;
+}
+
+.admin-leads-column-dot {
+  width: calc(9 * var(--admin-pixel));
+  height: calc(9 * var(--admin-pixel));
+  border-radius: 50%;
+}
+
+.admin-leads-column-dot-new {
+  background: #f5bf2c;
+}
+
+.admin-leads-column-dot-contacted {
+  background: #c99a1e;
+}
+
+.admin-leads-column-dot-trial {
+  background: #8fb98a;
+}
+
+.admin-leads-column-dot-converted {
+  background: #1f4d2e;
+}
+
+.admin-leads-column-dot-lost {
+  background: #9aa19b;
+}
+
+.admin-leads-column-count {
+  margin-left: auto;
+  padding: calc(1 * var(--admin-pixel)) calc(8 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1b2a20;
+}
+
+.admin-leads-cards {
+  display: flex;
+  flex-direction: column;
+  gap: calc(9 * var(--admin-pixel));
+}
+
+.admin-lead-card {
+  padding: calc(11 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #ffffff;
+  cursor: grab;
+}
+
+.admin-lead-card:active {
+  cursor: grabbing;
+}
+
+.admin-lead-card-dragging {
+  opacity: 0.45;
+}
+
+.admin-lead-card-top {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+}
+
+.admin-lead-initials {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(26 * var(--admin-pixel));
+  height: calc(26 * var(--admin-pixel));
+  border-radius: 50%;
+  background: #fbf3e1;
+  font-size: calc(10 * var(--admin-pixel));
+  font-weight: 700;
+  color: #a37a12;
+}
+
+.admin-lead-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1b2a20;
+}
+
+.admin-lead-phone {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--admin-pixel));
+  width: fit-content;
+  margin-top: calc(6 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #5c655e;
+}
+
+.admin-lead-phone:hover {
+  color: #1f4d2e;
+  text-decoration: underline;
+}
+
+.admin-lead-phone svg {
+  width: calc(13 * var(--admin-pixel));
+  height: calc(13 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-lead-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(8 * var(--admin-pixel));
+  margin-top: calc(10 * var(--admin-pixel));
+}
+
+/* Source tags: two greens, two yellows and grey, so they stay easy to tell apart */
+.admin-lead-source {
+  padding: calc(2 * var(--admin-pixel)) calc(10 * var(--admin-pixel));
+  border-radius: 9999px;
+  font-size: calc(11 * var(--admin-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-lead-source-instagram {
+  background: #fbf3e1;
+  color: #a37a12;
+}
+
+.admin-lead-source-website {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #2f6b3a;
+  color: #2f6b3a;
+}
+
+.admin-lead-source-referral {
+  background: #e6f0e1;
+  color: #1f4d2e;
+}
+
+.admin-lead-source-google {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #c99a1e;
+  color: #a37a12;
+}
+
+.admin-lead-source-walkin {
+  background: #efefea;
+  color: #5c655e;
+}
+
+.admin-lead-note {
+  font-size: calc(11.5 * var(--admin-pixel));
+  white-space: nowrap;
+  color: #6b736c;
+}
+
+.admin-leads-more {
+  display: block;
+  width: 100%;
+  margin-top: calc(10 * var(--admin-pixel));
+  padding: calc(6 * var(--admin-pixel));
+  border: none;
+  border-radius: calc(8 * var(--admin-pixel));
+  background: none;
+  font-family: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+  cursor: pointer;
+}
+
+.admin-leads-more:hover {
+  background: #e6f0e1;
+}
+
+.admin-leads-empty {
+  padding: calc(18 * var(--admin-pixel)) 0;
+  border: 1.5px dashed #d3d8cf;
+  border-radius: calc(10 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  text-align: center;
+  color: #8a918b;
+}

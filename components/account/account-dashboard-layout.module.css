@@ -153,6 +153,29 @@
   stroke-linejoin: round;
 }
 
+/* "Chiranvi Panel" (owner, admins, managers): green bold text under the page buttons, no border */
+.account-sidebar-panel-link {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--account-design-pixel));
+  height: calc(44 * var(--account-design-pixel));
+  margin-top: calc(14 * var(--account-design-pixel));
+  padding: 0 calc(16 * var(--account-design-pixel));
+  border-radius: calc(10 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.account-sidebar-panel-link:hover,
+.account-sidebar-panel-link:focus-visible {
+  background: #eef4ea;
+}
+
 /* Logout near the bottom of the card, in red */
 .account-sidebar-logout-button {
   margin-top: auto;
@@ -241,6 +264,7 @@
   }
 
   .account-sidebar-link,
+  .account-sidebar-panel-link,
   .account-sidebar-logout-button {
     flex-shrink: 0;
     gap: 7px;
@@ -254,7 +278,8 @@
     height: 16px;
   }
 
-  .account-sidebar-logout-button {
+  .account-sidebar-logout-button,
+  .account-sidebar-panel-link {
     margin-top: 0;
   }
 
