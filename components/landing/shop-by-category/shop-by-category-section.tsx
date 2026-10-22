@@ -62,7 +62,7 @@ export default function ShopByCategorySection() {
       <h2 id="shop-by-category-heading" className={styles["shop-by-category-heading"]}>
         {/* Decorative line and dash on both sides of the heading */}
         <span className={styles["shop-by-category-heading-decoration"]} aria-hidden="true" />
-        Shop By Category
+        Shop by Category
         <span
           className={`${styles["shop-by-category-heading-decoration"]} ${styles["shop-by-category-heading-decoration-right"]}`}
           aria-hidden="true"
