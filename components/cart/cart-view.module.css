@@ -1583,6 +1583,11 @@
     font-size: 12px;
   }
 
+  /* The current step's name stays on one line (small phones) */
+  .checkout-step-label {
+    white-space: nowrap;
+  }
+
   .checkout-step-line {
     width: 14px;
     margin: 0 5px;

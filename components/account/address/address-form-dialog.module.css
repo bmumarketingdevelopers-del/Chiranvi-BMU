@@ -276,6 +276,11 @@
     font-size: 16px;
   }
 
+  /* The example text (placeholder) smaller than typed text, so it doesn't look oversized */
+  .address-form-input::placeholder {
+    font-size: 14px;
+  }
+
   .address-dialog-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;

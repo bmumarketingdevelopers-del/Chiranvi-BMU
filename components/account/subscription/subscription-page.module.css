@@ -524,6 +524,12 @@
     order: 1;
   }
 
+  /* "Delivering to …" across the full card width, under the facts */
+  .subscription-address-line {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
   .subscription-actions {
     grid-column: 1 / -1;
     flex-direction: row;

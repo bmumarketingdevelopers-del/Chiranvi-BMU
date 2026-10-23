@@ -11,6 +11,7 @@ import {
   changeCartItemQuantity,
   rememberPendingCartProduct,
   setCartSubscription,
+  startSwitchToSubscription,
   useCartItems,
   type CartProduct,
 } from "@/store/cart-store";
@@ -160,7 +161,16 @@ function FiveStars({ className }: { className: string }) {
   - logged in: adds one bottle; then the button becomes "- quantity +" (at 0 it is Add Quantity again);
   - not logged in: goes to the login with the milk remembered, and the login adds it and comes back here.
 */
-function MilkCartControl({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; quantityInCart: number }) {
+function MilkCartControl({
+  isLoggedIn,
+  quantityInCart,
+  hintCount,
+}: {
+  isLoggedIn: boolean;
+  quantityInCart: number;
+  hintCount: number; // how many times "choose a quantity first" was shown; above 0 = Add Quantity draws attention
+}) {
+  const attentionClass = hintCount > 0 ? styles["milk-add-quantity-attention"] : "";
   if (quantityInCart > 0) {
     return (
       <div className={styles["milk-quantity-control"]} role="group" aria-label={`${milkProduct.name} quantity`}>
@@ -189,7 +199,12 @@ function MilkCartControl({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; 
 
   if (isLoggedIn) {
     return (
-      <button type="button" className={styles["milk-add-to-cart-button"]} onClick={() => addProductToCart(milkProduct)}>
+      <button
+        key={hintCount}
+        type="button"
+        className={`${styles["milk-add-to-cart-button"]} ${attentionClass}`}
+        onClick={() => addProductToCart(milkProduct)}
+      >
         Add Quantity
       </button>
     );
@@ -197,8 +212,9 @@ function MilkCartControl({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; 
 
   return (
     <Link
+      key={hintCount}
       href="/login"
-      className={styles["milk-add-to-cart-button"]}
+      className={`${styles["milk-add-to-cart-button"]} ${attentionClass}`}
       onPointerDown={() => rememberPendingCartProduct(milkProduct)}
       onKeyDown={(event) => {
         if (event.key === "Enter") rememberPendingCartProduct(milkProduct);
@@ -214,8 +230,33 @@ function MilkCartControl({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; 
   - logged in: adds one bottle first if milk is not in the cart yet, then opens the cart;
   - not logged in: goes to the login with the milk remembered (the login adds it and comes back here).
 */
-function CheckoutToCartButton({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; quantityInCart: number }) {
+function CheckoutToCartButton({
+  isLoggedIn,
+  quantityInCart,
+  onNeedQuantity,
+}: {
+  isLoggedIn: boolean;
+  quantityInCart: number;
+  onNeedQuantity: () => void;
+}) {
   const router = useRouter();
+
+  // No quantity chosen yet: greyed, and a click points to Add Quantity
+  if (quantityInCart === 0) {
+    return (
+      <>
+        <button
+          type="button"
+          aria-disabled="true"
+          className={`${styles["milk-checkout-to-cart-button"]} ${styles["milk-button-waiting"]}`}
+          onClick={onNeedQuantity}
+        >
+          Checkout to Cart
+        </button>
+        <p className={styles["milk-payment-note"]}>Choose how many bottles with Add Quantity above first.</p>
+      </>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
@@ -237,7 +278,6 @@ function CheckoutToCartButton({ isLoggedIn, quantityInCart }: { isLoggedIn: bool
       type="button"
       className={styles["milk-checkout-to-cart-button"]}
       onClick={() => {
-        if (quantityInCart === 0) addProductToCart(milkProduct);
         // A one-time purchase now: a plan left waiting in the cart from "Start subscription" goes
         // (otherwise the cart would show that plan instead of the one-time milk)
         setCartSubscription(null);
@@ -281,8 +321,28 @@ export default function MilkProductPage() {
   const currentMinute = useSyncExternalStore(subscribeToClock, getCurrentMinute, () => null);
   const orderCutoff = currentMinute === null ? null : describeOrderCutoff(currentMinute);
 
-  // Start subscription: the chosen plan goes to the cart, which checks it out (address, then Pay now)
+  /*
+    Start subscription or Checkout to Cart before choosing a quantity: Add Quantity comes into view,
+    shakes and glows, and a tip says to choose the bottles first (each click starts it again).
+  */
+  const [quantityHintCount, setQuantityHintCount] = useState(0);
+  const addQuantityAreaRef = useRef<HTMLDivElement>(null);
+  function showQuantityHint() {
+    setQuantityHintCount((count) => count + 1);
+    addQuantityAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  /*
+    Start subscription (after Add Quantity): the chosen plan goes to the cart, which checks it out
+    (address, then Pay now). The bottles chosen with Add Quantity were only for the plan, so they leave
+    the one-time cart (not bought twice).
+  */
   function startSubscription() {
+    if (quantityInCart === 0) {
+      showQuantityHint();
+      return;
+    }
+    startSwitchToSubscription(milkProduct.productId);
     setCartSubscription({
       product: milkProduct,
       planId: chosenPlan.planId,
@@ -410,7 +470,18 @@ export default function MilkProductPage() {
               <strong>Quantity</strong> · 1 litre glass bottle each
             </p>
 
-            <MilkCartControl isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
+            <div ref={addQuantityAreaRef} className={styles["milk-add-quantity-area"]}>
+              <MilkCartControl
+                isLoggedIn={isLoggedIn}
+                quantityInCart={quantityInCart}
+                hintCount={quantityInCart === 0 ? quantityHintCount : 0}
+              />
+              {quantityInCart === 0 && quantityHintCount > 0 && (
+                <span key={quantityHintCount} className={styles["milk-add-quantity-tip"]} role="status">
+                  Choose how many bottles first
+                </span>
+              )}
+            </div>
 
             {/* Choose your plan */}
             <section className={styles["milk-plan-panel"]} aria-labelledby="milk-plan-heading">
@@ -481,7 +552,7 @@ export default function MilkProductPage() {
                     Delivered {orderCutoff?.deliveryDay ?? "tomorrow"} by 7 AM
                   </p>
 
-                  <CheckoutToCartButton isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
+                  <CheckoutToCartButton isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} onNeedQuantity={showQuantityHint} />
                   <p className={styles["milk-plan-footnote"]}>100% safe · Free Delivery</p>
                 </>
               ) : (
@@ -559,9 +630,17 @@ export default function MilkProductPage() {
                     </span>
                   </div>
 
-                  <button type="button" className={styles["milk-start-subscription-button"]} onClick={startSubscription}>
+                  <button
+                    type="button"
+                    aria-disabled={quantityInCart === 0 ? true : undefined}
+                    className={`${styles["milk-start-subscription-button"]} ${quantityInCart === 0 ? styles["milk-button-waiting"] : ""}`}
+                    onClick={startSubscription}
+                  >
                     Start subscription @ {formatRupees(chosenPlanTotals.planTotal)}
                   </button>
+                  {quantityInCart === 0 && (
+                    <p className={styles["milk-payment-note"]}>Choose how many bottles with Add Quantity above first.</p>
+                  )}
                   <p className={styles["milk-plan-footnote"]}>Pause anytime · Free Delivery</p>
                 </>
               )}
