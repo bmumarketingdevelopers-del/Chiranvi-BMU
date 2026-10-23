@@ -11,7 +11,6 @@ import {
   changeCartItemQuantity,
   rememberPendingCartProduct,
   setCartSubscription,
-  startSwitchToSubscription,
   useCartItems,
   type CartProduct,
 } from "@/store/cart-store";
@@ -334,15 +333,14 @@ export default function MilkProductPage() {
 
   /*
     Start subscription (after Add Quantity): the chosen plan goes to the cart, which checks it out
-    (address, then Pay now). The bottles chosen with Add Quantity were only for the plan, so they leave
-    the one-time cart (not bought twice).
+    (address, then Pay now). The quantity stays, so going back here still shows it; the cart takes the
+    milk out of the one-time cart once the plan is paid (not bought twice).
   */
   function startSubscription() {
     if (quantityInCart === 0) {
       showQuantityHint();
       return;
     }
-    startSwitchToSubscription(milkProduct.productId);
     setCartSubscription({
       product: milkProduct,
       planId: chosenPlan.planId,

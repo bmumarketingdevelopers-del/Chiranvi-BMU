@@ -24,7 +24,7 @@ import {
   emptyTheCart,
   setAppliedCouponCode,
   setCartSubscription,
-  startSwitchToSubscription,
+  removeCartItem,
   useAppliedCouponCode,
   useCartItems,
   useCartSubscription,
@@ -461,6 +461,8 @@ export default function CartView() {
       });
       setAppliedCode(null);
     }
+    // The milk's quantity (kept from Add Quantity while the plan waited) is paid for by the plan now
+    removeCartItem(cartSubscription.product.productId);
     setCartSubscription(null);
     setPlanAtPickedAddress(null);
     setIsAddressPickerOpen(false);
@@ -811,11 +813,7 @@ export default function CartView() {
                           <strong>Want this milk every morning?</strong> Switch to a subscription to save on every bottle, with free
                           delivery.
                         </p>
-                        <Link
-                          href={`/products/${MILK_PRODUCT_ID}`}
-                          className={styles["subscription-cart-switch-button"]}
-                          onClick={() => startSwitchToSubscription(MILK_PRODUCT_ID)}
-                        >
+                        <Link href={`/products/${MILK_PRODUCT_ID}`} className={styles["subscription-cart-switch-button"]}>
                           Switch to subscription
                         </Link>
                       </div>

@@ -93,6 +93,11 @@ export function addProductToCart(product: CartProduct) {
   );
 }
 
+// Takes the product out of the cart (all its packs), e.g. the milk once its plan is paid.
+export function removeCartItem(productId: string) {
+  saveCartItems(getCartItems().filter((cartItem) => cartItem.productId !== productId));
+}
+
 // + adds one pack, - removes one; at 0 the product leaves the cart.
 export function changeCartItemQuantity(productId: string, quantityChange: 1 | -1) {
   saveCartItems(
@@ -172,22 +177,11 @@ function getCartSubscription() {
 }
 
 /*
-  "Switch to subscription" in the one-time cart opens the milk page to choose a plan. The milk stays in
-  the cart until then (the plans count its bottles); Start subscription then takes it out of the cart,
-  so it is not bought twice.
+  Start subscription puts the plan here; null takes it out (paid, switched or removed).
+  The milk's quantity (Add Quantity) stays in the cart while the plan waits, so going back to the milk
+  page keeps it; once the plan is paid, the cart page takes that milk out (removeCartItem).
 */
-let productSwitchingToSubscription: string | null = null;
-
-export function startSwitchToSubscription(productId: string) {
-  productSwitchingToSubscription = productId;
-}
-
-// Start subscription puts the plan here; null takes it out (paid, switched or removed).
 export function setCartSubscription(subscription: CartSubscription | null) {
-  if (subscription && subscription.product.productId === productSwitchingToSubscription) {
-    saveCartItems(getCartItems().filter((cartItem) => cartItem.productId !== productSwitchingToSubscription));
-  }
-  productSwitchingToSubscription = null;
   cartSubscription = subscription;
   hasReadSavedSubscription = true;
   try {
