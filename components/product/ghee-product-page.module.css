@@ -21,10 +21,10 @@
   color: #1a1a1a;
 }
 
-/* The gap under the navigation bar matches the gap above it (27 of the same unit) */
+/* The gap under the navigation bar matches the gap above it (27 of the same unit); sides: 58 + 20px */
 .ghee-product-page-content {
   width: 100%;
-  padding: calc(27 * var(--ghee-product-vertical-design-pixel)) calc(58 * var(--ghee-product-horizontal-design-pixel))
+  padding: calc(27 * var(--ghee-product-vertical-design-pixel)) calc(58 * var(--ghee-product-horizontal-design-pixel) + 20px)
     calc(64 * var(--ghee-product-design-pixel));
 }
 
@@ -84,6 +84,8 @@
   flex: 1;
   align-items: center;
   justify-content: center;
+  /* Content centred on the green card's edge (52%), between the ring and the card */
+  padding-left: 4%;
   min-height: calc(220 * var(--ghee-product-design-pixel));
   overflow: hidden;
   border-radius: calc(16 * var(--ghee-product-design-pixel));
@@ -111,13 +113,12 @@
   background: #285c3a;
 }
 
-/* The jar is wider than the milk bottle: a little smaller, still across the green panel's edge */
+/* The jar is wider than the milk bottle: a little smaller, centred on the green panel's edge */
 .ghee-jar-image {
   position: relative;
   z-index: 1;
   width: auto;
   height: 80%;
-  margin-right: 8%;
   object-fit: contain;
 }
 

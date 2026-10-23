@@ -33,10 +33,10 @@
   color: #ffffff;
 }
 
-/* The gap under the navigation bar matches the gap above it (27 of the same unit) */
+/* The gap under the navigation bar matches the gap above it (27 of the same unit); sides: 58 + 20px */
 .milk-product-page-content {
   width: 100%;
-  padding: calc(27 * var(--milk-product-vertical-design-pixel)) calc(58 * var(--milk-product-horizontal-design-pixel))
+  padding: calc(27 * var(--milk-product-vertical-design-pixel)) calc(58 * var(--milk-product-horizontal-design-pixel) + 20px)
     calc(64 * var(--milk-product-design-pixel));
 }
 
@@ -96,6 +96,8 @@
   flex: 1;
   align-items: center;
   justify-content: center;
+  /* Content centred on the green card's edge (52%), between the ring and the card */
+  padding-left: 4%;
   /* Never squeezed below this on very short screens (the column may then run a little past the bottom) */
   min-height: calc(220 * var(--milk-product-design-pixel));
   overflow: hidden;
@@ -130,13 +132,12 @@
   background: #285c3a;
 }
 
-/* Nearly the full height, and a little left of centre so it sits across the green panel's edge (hero) */
+/* Nearly the full height, centred on the green panel's edge (between the ring and the card) */
 .milk-bottle-image {
   position: relative;
   z-index: 1;
   width: auto;
   height: 94%;
-  margin-right: 12%;
   object-fit: contain;
 }
 

@@ -21,10 +21,10 @@
   color: #1a1a1a;
 }
 
-/* The gap under the navigation bar matches the gap above it (27 of the same unit) */
+/* The gap under the navigation bar matches the gap above it (27 of the same unit); sides: 58 + 20px */
 .butter-product-page-content {
   width: 100%;
-  padding: calc(27 * var(--butter-product-vertical-design-pixel)) calc(58 * var(--butter-product-horizontal-design-pixel))
+  padding: calc(27 * var(--butter-product-vertical-design-pixel)) calc(58 * var(--butter-product-horizontal-design-pixel) + 20px)
     calc(64 * var(--butter-product-design-pixel));
 }
 
@@ -84,6 +84,8 @@
   flex: 1;
   align-items: center;
   justify-content: center;
+  /* Content centred on the green card's edge (52%), between the ring and the card */
+  padding-left: 4%;
   min-height: calc(220 * var(--butter-product-design-pixel));
   overflow: hidden;
   border-radius: calc(16 * var(--butter-product-design-pixel));
