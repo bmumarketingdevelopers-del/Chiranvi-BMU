@@ -117,11 +117,13 @@ function NotifyMeControl({ product }: { product: BestSellingProduct }) {
   placement "account-orders" - under "My Orders" on the account dashboard (design): heading on the left
                                with "View all Products" on the right (the way to see more) and one row of
                                five cards (four on phones, two per row). No scroll reveal there.
+  placement "cart"           - under the empty cart: same cards as the landing page, but the heading is
+                               "Fast Selling Products" on the left (lined up with the first card).
 */
 export default function BestSellersSection({
   placement = "landing-page",
 }: {
-  placement?: "landing-page" | "account-orders";
+  placement?: "landing-page" | "account-orders" | "cart";
 }) {
   const bestSellingProducts = useBestSellingProducts();
   const isOnAccountOrdersPage = placement === "account-orders";
@@ -168,6 +170,10 @@ export default function BestSellersSection({
             View all Products
           </Link>
         </div>
+      ) : placement === "cart" ? (
+        <h2 id="best-sellers-heading" className={styles["best-sellers-cart-heading"]}>
+          Fast Selling Products
+        </h2>
       ) : (
         <h2 id="best-sellers-heading" className={styles["best-sellers-heading"]}>
           {/* Decorative line and dash on both sides of the heading */}

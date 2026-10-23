@@ -608,7 +608,11 @@ export default function CartView() {
         </main>
 
         {/* Below the empty cart: the landing page's Best Sellers, so shopping can start right here */}
-        {isCartLoaded && <BestSellersSection />}
+        {isCartLoaded && (
+          <div className={styles["cart-page-best-sellers"]}>
+            <BestSellersSection placement="cart" />
+          </div>
+        )}
       </div>
     );
   }

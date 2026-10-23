@@ -29,6 +29,19 @@
   color: #1a1a1a;
 }
 
+/* Under the empty cart: "Fast Selling Products" on the left, over the first card (same width as the row) */
+.best-sellers-cart-heading {
+  width: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * 0.776 + 4px);
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(21 * var(--best-sellers-design-pixel));
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1e2a22;
+}
+
 /* The long line, drawn as the element itself; the short dash is its ::after. */
 .best-sellers-heading-decoration {
   position: relative;
@@ -62,11 +75,21 @@
   right: calc(100% + 7 * var(--best-sellers-design-pixel));
 }
 
-/* Six equal product cards in one row */
+/*
+  Six equal product cards in one row, lined up with the review cards below ("Where Goodness Gets a
+  Voice"): the row is as wide as their three cards (3 x 24.67% + 2 x 1.8% of the screen, + 4px) and
+  centred, the first card starts and the last ends at their edges. Each card is at most its design
+  width (200 of 1440), so cards don't stretch around their content; the gaps take the rest.
+*/
 
 .best-sellers-product-list {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(6, minmax(0, calc(200 * var(--best-sellers-design-pixel))));
+  justify-content: space-between;
+  width: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * 0.776 + 4px);
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
   gap: calc(16 * var(--best-sellers-design-pixel));
   margin-top: calc(36 * var(--best-sellers-design-pixel));
 }
@@ -464,6 +487,7 @@
 
   .best-sellers-product-list {
     grid-template-columns: repeat(2, 1fr);
+    width: auto;
     gap: 12px;
     margin-top: 22px;
   }
@@ -688,6 +712,11 @@
 
   .best-sellers-account-heading {
     font-size: 22px;
+  }
+
+  .best-sellers-cart-heading {
+    width: auto;
+    font-size: 18px;
   }
 
   .best-sellers-view-all-link {

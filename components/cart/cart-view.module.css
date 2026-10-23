@@ -1766,7 +1766,7 @@
   margin: 0 auto;
   /* Sides: the back arrow lines up with the navigation bar's logo (left edge of the page) */
   padding: calc(28 * var(--cart-design-pixel)) calc(73 * var(--landing-page-horizontal-design-pixel))
-    calc(64 * var(--cart-design-pixel));
+    calc(8 * var(--cart-design-pixel));
 }
 
 /* Back button and title, on the left of the page */
@@ -1820,6 +1820,16 @@
 
 /* Empty-cart message in a bordered card, centred across and up/down in the space below the title */
 
+/* Best Sellers under the empty cart: closer to the message, so the whole page fits the first screen */
+.cart-page-best-sellers > section {
+  padding-top: calc(34 * var(--cart-design-pixel));
+  padding-bottom: calc(32 * var(--cart-design-pixel));
+}
+
+.cart-page-best-sellers ul {
+  margin-top: calc(14 * var(--cart-design-pixel));
+}
+
 .empty-cart-card {
   display: flex;
   flex-direction: column;
@@ -1827,7 +1837,7 @@
   width: 100%;
   max-width: calc(500 * var(--cart-design-pixel));
   margin: auto;
-  padding: calc(60 * var(--cart-design-pixel)) calc(36 * var(--cart-design-pixel));
+  padding: calc(14 * var(--cart-design-pixel)) calc(36 * var(--cart-design-pixel)) calc(6 * var(--cart-design-pixel));
   /* No outline or box: the message sits on the page (its green-to-white background shows through) */
   border: none;
   border-radius: calc(16 * var(--cart-design-pixel));
@@ -1839,15 +1849,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(128 * var(--cart-design-pixel));
-  height: calc(128 * var(--cart-design-pixel));
+  width: calc(104 * var(--cart-design-pixel));
+  height: calc(104 * var(--cart-design-pixel));
   border-radius: 50%;
   background: #e9f2e2;
 }
 
 .empty-cart-icon {
-  width: calc(68 * var(--cart-design-pixel));
-  height: calc(68 * var(--cart-design-pixel));
+  width: calc(56 * var(--cart-design-pixel));
+  height: calc(56 * var(--cart-design-pixel));
   fill: none;
   stroke: #bdbdbd;
   stroke-width: 2;
@@ -1888,7 +1898,7 @@
 }
 
 .empty-cart-heading {
-  margin-top: calc(22 * var(--cart-design-pixel));
+  margin-top: calc(16 * var(--cart-design-pixel));
   font-size: calc(23 * var(--cart-design-pixel));
   font-weight: 500;
   line-height: 1.4;
@@ -1907,7 +1917,7 @@
   align-items: center;
   justify-content: center;
   height: calc(48 * var(--cart-design-pixel));
-  margin-top: calc(20 * var(--cart-design-pixel));
+  margin-top: calc(16 * var(--cart-design-pixel));
   padding: 0 calc(24 * var(--cart-design-pixel));
   border-radius: calc(6 * var(--cart-design-pixel));
   background: #337e4e;
