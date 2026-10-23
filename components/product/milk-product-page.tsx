@@ -14,7 +14,7 @@ import {
   useCartItems,
   type CartProduct,
 } from "@/store/cart-store";
-import { useShopProducts, getDiscountPercent } from "@/store/products-store";
+import { getDiscountPercent } from "@/store/products-store";
 import styles from "./milk-product-page.module.css";
 
 /*
@@ -27,13 +27,9 @@ import styles from "./milk-product-page.module.css";
   "One-time purchase" swaps the plans for a bill (milk + delivery charge = total) and Checkout to Cart.
 */
 
-/*
-  The milk as designed for this page. Its price, old price, pack and subscription price come from the
-  Chiranvi Panel (Products & pricing, product "a2-desi-milk"), so the admin decides the amounts; these
-  design values are only used if the product is missing there. The name and picture stay as designed.
-*/
-const DESIGN_SUBSCRIPTION_PRICE = 90;
-const milkPageDesign: CartProduct = {
+// Prices from the design, for this page only (the landing page keeps the panel's prices).
+// Later the Chiranvi Panel will set these, so the admin can change them.
+const milkProduct: CartProduct = {
   productId: "a2-desi-milk",
   name: "A2 Desi Cow Milk",
   // Same bottle as the landing hero, with a see-through background so the ring and green show around it
@@ -50,47 +46,34 @@ type SubscriptionPlan = {
   label: string;
   months: number;
   days: number; // one bottle per chosen quantity is delivered every one of these days
+  percentOff: number; // off the one-time price per litre
   pricePerLitre: number;
   tag?: "Most popular" | "Best value";
   // The design shows "2L daily" for 3 months and "you save ₹…" for the longer plans
   showsSavingInDetails: boolean;
 };
 
-const subscriptionPlans: SubscriptionPlan[] = [
-  { planId: "3-months", label: "3 Months", months: 3, days: 90, pricePerLitre: 90, showsSavingInDetails: false },
-  { planId: "6-months", label: "6 Months", months: 6, days: 180, pricePerLitre: 87, tag: "Most popular", showsSavingInDetails: true },
-  { planId: "12-months", label: "12 Months", months: 12, days: 365, pricePerLitre: 82, tag: "Best value", showsSavingInDetails: true },
-];
+/*
+  Each plan is a percentage off the one-time price (₹95), rounded to whole rupees per litre so every
+  total is in whole rupees: 5% → ₹90, 8% → ₹87, 13% → ₹83. If the one-time price changes, the plans follow.
+*/
+function priceAfterPercentOff(percentOff: number) {
+  return Math.round(milkProduct.price * (1 - percentOff / 100));
+}
+
+const subscriptionPlans: SubscriptionPlan[] = (
+  [
+    { planId: "3-months", label: "3 Months", months: 3, days: 90, percentOff: 5, showsSavingInDetails: false },
+    { planId: "6-months", label: "6 Months", months: 6, days: 180, percentOff: 8, tag: "Most popular", showsSavingInDetails: true },
+    { planId: "12-months", label: "12 Months", months: 12, days: 365, percentOff: 13, tag: "Best value", showsSavingInDetails: true },
+  ] satisfies Omit<SubscriptionPlan, "pricePerLitre">[]
+).map((plan) => ({ ...plan, pricePerLitre: priceAfterPercentOff(plan.percentOff) }));
 
 // One-time purchase delivery charge from the design (once per order, whatever the quantity)
 const oneTimeDeliveryCharge = 30;
 
-/*
-  The admin's milk (Products & pricing) on top of the page's design. The plans keep the design's steps
-  from the admin's subscription price: 3 months = that price, 6 months 87/90 of it, 12 months 82/90.
-*/
-function useMilkFromPanel() {
-  const panelMilk = useShopProducts().find((product) => product.productId === milkPageDesign.productId);
-  const milkProduct: CartProduct = panelMilk
-    ? {
-        ...milkPageDesign,
-        price: panelMilk.price,
-        originalPrice: panelMilk.originalPrice ?? panelMilk.price,
-        packSize: panelMilk.packSize,
-      }
-    : milkPageDesign;
-  const subscriptionPrice = panelMilk?.subscriptionPrice ?? DESIGN_SUBSCRIPTION_PRICE;
-  const plans = subscriptionPlans.map((plan) => ({
-    ...plan,
-    pricePerLitre: Math.round((subscriptionPrice * plan.pricePerLitre) / DESIGN_SUBSCRIPTION_PRICE),
-  }));
-  // Biggest saving of any plan against the one-time price, e.g. "up to 13%" (rounded down, never overstated)
-  const biggestPlanSavingPercent = Math.max(
-    0,
-    Math.floor(Math.max(...plans.map((plan) => (1 - plan.pricePerLitre / milkProduct.price) * 100))),
-  );
-  return { milkProduct, plans, biggestPlanSavingPercent };
-}
+// Biggest plan discount, e.g. "Subscribe & save up to 13%"
+const biggestPlanSavingPercent = Math.max(...subscriptionPlans.map((plan) => plan.percentOff));
 
 /*
   Fast selling products: five items with the pictures the site already uses; the row changes with the tab.
@@ -101,7 +84,7 @@ function useMilkFromPanel() {
 const subscriptionFastSellingProducts = [
   { productId: "a2-desi-milk", name: "A2 Desi Milk", imageSource: "/images/products/a2-cow-milk-1-litre-bottle.webp", imageWidth: 232, imageHeight: 500, ratingCount: "7,105" },
   { productId: "a2-desi-ghee", name: "A2 Desi Ghee", imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, ratingCount: "7,105" },
-  { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-200g-box.webp", imageWidth: 604, imageHeight: 444, ratingCount: "7,105" },
+  { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-box-chiranvi-farm.webp", imageWidth: 3712, imageHeight: 2728, ratingCount: "7,105" },
   { productId: "moringa-powder", name: "Moringa Powder", imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516, ratingCount: "7,105" },
   { productId: "turmeric-powder", name: "Turmeric Powder", imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548, ratingCount: "7,105" },
 ];
@@ -109,9 +92,9 @@ const subscriptionFastSellingProducts = [
 // One-time purchase: the design's five items
 const oneTimeFastSellingProducts = [
   { productId: "a2-desi-ghee", name: "A2 Desi Ghee", imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, ratingCount: "1,069" },
-  { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-200g-box.webp", imageWidth: 604, imageHeight: 444, ratingCount: "982" },
+  { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-box-chiranvi-farm.webp", imageWidth: 3712, imageHeight: 2728, ratingCount: "982" },
   { productId: "batter-powder", name: "Batter Powder", imageSource: "/images/categories/batter-category-chiranvi-farm.webp", imageWidth: 372, imageHeight: 248, ratingCount: "764" },
-  { productId: "flours", name: "Flours", imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, ratingCount: "1,106" },
+  { productId: "whole-wheat-atta", name: "Flours", imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, ratingCount: "1,106" },
   { productId: "desi-white-butter", name: "Desi White Butter", imageSource: "/images/categories/butter-category.webp", imageWidth: 412, imageHeight: 272, ratingCount: "646" },
 ];
 
@@ -123,7 +106,7 @@ function formatRupees(amount: number) {
 }
 
 // Totals for one plan: bottles, the plan price, the same bottles at the one-time price, and the saving.
-function calculatePlan(plan: SubscriptionPlan, bottlesPerDay: number, milkProduct: CartProduct) {
+function calculatePlan(plan: SubscriptionPlan, bottlesPerDay: number) {
   const bottleCount = plan.days * bottlesPerDay;
   const planTotal = bottleCount * plan.pricePerLitre;
   const oneTimeTotal = bottleCount * milkProduct.price;
@@ -173,19 +156,11 @@ function FiveStars({ className }: { className: string }) {
 }
 
 /*
-  Add to Cart, the same way as on the landing page:
-  - logged in: adds one bottle; then the button becomes "- quantity +" (at 0 it is Add to Cart again);
+  "Add Quantity" (adds to the cart, the same way the landing page used to):
+  - logged in: adds one bottle; then the button becomes "- quantity +" (at 0 it is Add Quantity again);
   - not logged in: goes to the login with the milk remembered, and the login adds it and comes back here.
 */
-function MilkCartControl({
-  milkProduct,
-  isLoggedIn,
-  quantityInCart,
-}: {
-  milkProduct: CartProduct;
-  isLoggedIn: boolean;
-  quantityInCart: number;
-}) {
+function MilkCartControl({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; quantityInCart: number }) {
   if (quantityInCart > 0) {
     return (
       <div className={styles["milk-quantity-control"]} role="group" aria-label={`${milkProduct.name} quantity`}>
@@ -215,7 +190,7 @@ function MilkCartControl({
   if (isLoggedIn) {
     return (
       <button type="button" className={styles["milk-add-to-cart-button"]} onClick={() => addProductToCart(milkProduct)}>
-        Add to Cart
+        Add Quantity
       </button>
     );
   }
@@ -229,7 +204,7 @@ function MilkCartControl({
         if (event.key === "Enter") rememberPendingCartProduct(milkProduct);
       }}
     >
-      Add to Cart
+      Add Quantity
     </Link>
   );
 }
@@ -239,15 +214,7 @@ function MilkCartControl({
   - logged in: adds one bottle first if milk is not in the cart yet, then opens the cart;
   - not logged in: goes to the login with the milk remembered (the login adds it and comes back here).
 */
-function CheckoutToCartButton({
-  milkProduct,
-  isLoggedIn,
-  quantityInCart,
-}: {
-  milkProduct: CartProduct;
-  isLoggedIn: boolean;
-  quantityInCart: number;
-}) {
+function CheckoutToCartButton({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; quantityInCart: number }) {
   const router = useRouter();
 
   if (!isLoggedIn) {
@@ -280,25 +247,24 @@ function CheckoutToCartButton({
 }
 
 export default function MilkProductPage() {
-  const { milkProduct, plans, biggestPlanSavingPercent } = useMilkFromPanel();
   const isLoggedIn = useIsLoggedIn();
   const cartItems = useCartItems();
   const quantityInCart = cartItems.find((cartItem) => cartItem.productId === milkProduct.productId)?.quantity ?? 0;
   // Bottles every morning for the plans: the cart quantity, or 1 before milk is in the cart
   const bottlesPerDay = Math.max(1, quantityInCart);
   /*
-    Left column (bottle, review, delivery steps) stays still once its bottom is on screen, while the plan
-    side keeps scrolling; when the plan side ends, the whole page scrolls on to Fast selling products.
-    The CSS sticks it at "screen height - its own height", so it needs its height, kept up to date here.
+    The left column (bottle, review, delivery steps) is fixed under the navigation bar and fits the screen
+    height, so only the plan side scrolls; the bottle area takes whatever height is left (see the CSS).
+    Its gold ring is sized from that height, so the bottle area's height is kept up to date here.
   */
-  const leftColumnRef = useRef<HTMLDivElement>(null);
+  const bottleAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const leftColumn = leftColumnRef.current;
-    if (!leftColumn) return;
+    const bottleArea = bottleAreaRef.current;
+    if (!bottleArea) return;
     const heightObserver = new ResizeObserver(() => {
-      leftColumn.style.setProperty("--milk-left-column-height", `${leftColumn.offsetHeight}px`);
+      bottleArea.style.setProperty("--milk-bottle-stage-height", `${bottleArea.offsetHeight}px`);
     });
-    heightObserver.observe(leftColumn);
+    heightObserver.observe(bottleArea);
     return () => heightObserver.disconnect();
   }, []);
 
@@ -306,13 +272,13 @@ export default function MilkProductPage() {
   // One-time purchase bill: the bottles at the one-time price, plus the delivery charge
   const oneTimeMilkTotal = bottlesPerDay * milkProduct.price;
   const [chosenPlanId, setChosenPlanId] = useState("6-months");
-  const chosenPlan = plans.find((plan) => plan.planId === chosenPlanId) ?? plans[1];
-  const chosenPlanTotals = calculatePlan(chosenPlan, bottlesPerDay, milkProduct);
+  const chosenPlan = subscriptionPlans.find((plan) => plan.planId === chosenPlanId) ?? subscriptionPlans[1];
+  const chosenPlanTotals = calculatePlan(chosenPlan, bottlesPerDay);
   const router = useRouter();
   const currentMinute = useSyncExternalStore(subscribeToClock, getCurrentMinute, () => null);
   const orderCutoff = currentMinute === null ? null : describeOrderCutoff(currentMinute);
 
-  // Start subscription: the chosen plan goes to the cart, which checks it out (Cart -> Select address -> Pay now)
+  // Start subscription: the chosen plan goes to the cart, which checks it out (address, then Pay now)
   function startSubscription() {
     setCartSubscription({
       product: milkProduct,
@@ -342,8 +308,8 @@ export default function MilkProductPage() {
       <main className={styles["milk-product-page-content"]}>
         <div className={styles["milk-product-columns"]}>
           {/* Left: bottle, review and delivery steps */}
-          <div ref={leftColumnRef} className={styles["milk-product-left-column"]}>
-            <div className={styles["milk-bottle-image-area"]}>
+          <div className={styles["milk-product-left-column"]}>
+            <div ref={bottleAreaRef} className={styles["milk-bottle-image-area"]}>
               <Image
                 src={milkProduct.imageSource}
                 alt="Chiranvi Farms Desi Cow Milk in a glass bottle"
@@ -441,7 +407,7 @@ export default function MilkProductPage() {
               <strong>Quantity</strong> · 1 litre glass bottle each
             </p>
 
-            <MilkCartControl milkProduct={milkProduct} isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
+            <MilkCartControl isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
 
             {/* Choose your plan */}
             <section className={styles["milk-plan-panel"]} aria-labelledby="milk-plan-heading">
@@ -512,15 +478,15 @@ export default function MilkProductPage() {
                     Delivered {orderCutoff?.deliveryDay ?? "tomorrow"} by 7 AM
                   </p>
 
-                  <CheckoutToCartButton milkProduct={milkProduct} isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
+                  <CheckoutToCartButton isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
                   <p className={styles["milk-plan-footnote"]}>100% safe · Free Delivery</p>
                 </>
               ) : (
                 <>
                   <fieldset className={styles["milk-plan-options"]}>
                     <legend className={styles["milk-visually-hidden"]}>Subscription length</legend>
-                    {plans.map((plan) => {
-                      const planTotals = calculatePlan(plan, bottlesPerDay, milkProduct);
+                    {subscriptionPlans.map((plan) => {
+                      const planTotals = calculatePlan(plan, bottlesPerDay);
                       const isChosen = plan.planId === chosenPlan.planId;
                       return (
                         <label
@@ -547,7 +513,7 @@ export default function MilkProductPage() {
                           <span className={styles["milk-plan-text"]}>
                             <span className={styles["milk-plan-label"]}>{plan.label}</span>
                             <span className={styles["milk-plan-details"]}>
-                              ₹{plan.pricePerLitre} / litre ·{" "}
+                              ₹{plan.pricePerLitre} / litre · <strong>{plan.percentOff}% off</strong> ·{" "}
                               {plan.showsSavingInDetails ? (
                                 <>
                                   <strong>{planTotals.bottleCount.toLocaleString("en-IN")} bottles</strong> · you save{" "}

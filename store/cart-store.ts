@@ -198,17 +198,6 @@ export function useCartSubscription() {
   return useSyncExternalStore(subscribeToCart, getCartSubscription, () => null);
 }
 
-// "Switch to one-time" in the cart: the subscription goes, the milk stays as a one-time item
-export function switchCartSubscriptionToOneTime() {
-  const subscription = getCartSubscription();
-  if (!subscription) return;
-  const isMilkInCart = getCartItems().some((cartItem) => cartItem.productId === subscription.product.productId);
-  if (!isMilkInCart) {
-    saveCartItems([...getCartItems(), { ...subscription.product, quantity: subscription.bottlesPerDay }]);
-  }
-  setCartSubscription(null);
-}
-
 // Logging out, or an order placed: the cart (its coupon and any subscription) starts empty.
 export function emptyTheCart() {
   pendingCartProduct = null;

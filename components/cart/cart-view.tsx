@@ -24,7 +24,6 @@ import {
   setAppliedCouponCode,
   setCartSubscription,
   startSwitchToSubscription,
-  switchCartSubscriptionToOneTime,
   useAppliedCouponCode,
   useCartItems,
   useCartSubscription,
@@ -52,7 +51,7 @@ import styles from "./cart-view.module.css";
     "Pay now · ₹…". Razorpay is not connected yet, so Pay now places the order straight away (nothing is
     charged), ticks Payment and shows "Your order has been placed" with Track your order.
   Milk subscription ("Start subscription" on the milk page): the same page, but the cart shows only the
-  plan ("Your subscription", with "Switch to one-time" for anyone who came for a single purchase) and the
+  plan ("Your subscription"; only the one-time cart offers a switch, to a subscription) and the
   summary shows the plan at the one-time price, the subscription saving and free delivery (no coupons).
   The one-time items wait in the cart until then. The paid plan shows on My Subscription.
   A coupon used here counts as a use in the panel. Not logged in: Pay goes to the login first, then back.
@@ -501,7 +500,7 @@ export default function CartView() {
           <span className={styles["delivery-address-top-row"]}>
             <span className={styles["delivery-address-label"]}>{chosenAddress.label}</span>
             {chosenAddress.id === defaultAddressId && <span className={styles["address-pick-default-badge"]}>Default</span>}
-            <span className={styles["delivery-address-change"]}>{hasPickedAddress ? "Change" : "Select"}</span>
+            {hasPickedAddress && <span className={styles["delivery-address-change"]}>Change</span>}
           </span>
           <span className={styles["delivery-address-name"]}>{chosenAddress.name}</span>
           <span className={styles["delivery-address-line"]}>{formatAddressLine(chosenAddress)}</span>
@@ -660,7 +659,7 @@ export default function CartView() {
 
             <div className={styles["checkout-columns"]}>
               {cartSubscription ? (
-                /* Step 1 for a subscription: the plan, and the switch for a one-time purchase */
+                /* Step 1 for a subscription: the plan */
                 <div className={styles["checkout-left-column"]}>
                   <section className={styles["checkout-card"]} aria-labelledby="checkout-subscription-heading">
                     <div className={styles["checkout-card-heading-row"]}>
@@ -717,17 +716,6 @@ export default function CartView() {
                         : "Delivered every morning by 7 AM · Pause anytime · Free delivery"}
                     </p>
 
-                    {/* For anyone who came for a single purchase (not when extending a plan) */}
-                    {!planBeingExtended && (
-                    <div className={styles["subscription-cart-switch-row"]}>
-                      <p className={styles["subscription-cart-switch-text"]}>
-                        <strong>Came here for a one-time purchase?</strong> Switch, and the milk moves to your cart as a single order.
-                      </p>
-                      <button type="button" className={styles["subscription-cart-switch-button"]} onClick={switchCartSubscriptionToOneTime}>
-                        Switch to one-time
-                      </button>
-                    </div>
-                    )}
                   </section>
                   {deliveryAddressCard}
                 </div>
