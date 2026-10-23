@@ -3,8 +3,8 @@ import { useSyncExternalStore } from "react";
 /*
   The customer's saved delivery addresses and which one is the default, shared by My Addresses
   (account dashboard) and the address step of the cart checkout.
-  The first two are placeholders from the design. Kept only in the open page's memory, like the
-  cart and orders: changes last until the page is refreshed.
+  The first two are placeholders from the design. Saved in this browser (localStorage), like the
+  cart and orders, so changes stay after a refresh.
 */
 
 export type SavedAddress = {
@@ -48,11 +48,32 @@ const placeholderAddressBook: AddressBook = {
   defaultAddressId: "home",
 };
 
+const ADDRESS_STORAGE_KEY = "chiranvi-addresses";
 let addressBook = placeholderAddressBook;
+let hasReadSavedAddresses = false;
 const addressBookListeners = new Set<() => void>();
+
+function getAddressBook() {
+  if (!hasReadSavedAddresses && typeof window !== "undefined") {
+    hasReadSavedAddresses = true;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(ADDRESS_STORAGE_KEY) ?? "null");
+      if (saved && Array.isArray(saved.addresses)) addressBook = saved;
+    } catch {
+      // Nothing saved, or storage blocked: the placeholder addresses.
+    }
+  }
+  return addressBook;
+}
 
 function saveAddressBook(newAddressBook: AddressBook) {
   addressBook = newAddressBook;
+  hasReadSavedAddresses = true;
+  try {
+    window.localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(newAddressBook));
+  } catch {
+    // Storage blocked: changes last until the page is refreshed.
+  }
   addressBookListeners.forEach((onChange) => onChange());
 }
 
@@ -67,7 +88,7 @@ function subscribeToAddressBook(onChange: () => void) {
 export function useAddressBook() {
   return useSyncExternalStore(
     subscribeToAddressBook,
-    () => addressBook,
+    getAddressBook,
     () => placeholderAddressBook,
   );
 }
@@ -85,6 +106,7 @@ export function formatAddressLine(address: AddressDetails) {
 
 // Adds an address and returns its id. The first address, or shouldBeDefault, becomes the default.
 export function addAddress(details: AddressDetails, shouldBeDefault: boolean) {
+  const addressBook = getAddressBook();
   const newAddressId = `address-${Date.now()}`;
   const newAddress = { ...details, mobileNumber: formatMobileNumber(details.mobileNumber), id: newAddressId };
   saveAddressBook({
@@ -96,6 +118,7 @@ export function addAddress(details: AddressDetails, shouldBeDefault: boolean) {
 }
 
 export function updateAddress(addressId: string, details: AddressDetails, shouldBeDefault: boolean) {
+  const addressBook = getAddressBook();
   saveAddressBook({
     addresses: addressBook.addresses.map((address) =>
       address.id === addressId
@@ -108,6 +131,7 @@ export function updateAddress(addressId: string, details: AddressDetails, should
 
 // Removing the default address makes the next one the default.
 export function removeAddress(addressId: string) {
+  const addressBook = getAddressBook();
   const remainingAddresses = addressBook.addresses.filter((address) => address.id !== addressId);
   saveAddressBook({
     addresses: remainingAddresses,
@@ -117,5 +141,5 @@ export function removeAddress(addressId: string) {
 }
 
 export function setDefaultAddress(addressId: string) {
-  saveAddressBook({ ...addressBook, defaultAddressId: addressId });
+  saveAddressBook({ ...getAddressBook(), defaultAddressId: addressId });
 }

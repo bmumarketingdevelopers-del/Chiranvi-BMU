@@ -89,6 +89,13 @@
   font-weight: 700;
 }
 
+/* "Delivering to Priya Sharma · #1312, …" under the facts */
+.subscription-address-line {
+  margin-top: calc(12 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
 .subscription-actions {
   display: flex;
   flex-shrink: 0;

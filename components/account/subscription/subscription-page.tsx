@@ -2,6 +2,9 @@
 
 import { useCallback, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { setCartSubscription } from "@/store/cart-store";
+import { findRunningPlans, formatPlanDate, useOrders, type RunningPlan } from "@/store/orders-store";
 import { AccountPageHeading } from "../account-dashboard-layout";
 import DeliveryWeekPicker, { addDays, formatWeekRange, getMondayOfWeek } from "./delivery-week-picker";
 import styles from "./subscription-page.module.css";
@@ -13,6 +16,9 @@ import styles from "./subscription-page.module.css";
   tap an upcoming day to skip it, tap again to undo) and the plans
   to switch between. Prices, quantity and the bill are placeholders from the design; nothing is sent
   anywhere yet, and Extend Plan does nothing until payments exist.
+  Once a plan is paid in the cart ("Start subscription" on the milk page), the card shows that plan
+  (the first running plan bought): its name, bottles a day, price per litre and its last day.
+  Extend Plan then puts the same plan length in the cart as an extension of it (paid on the cart page).
 */
 
 const subscriptionPlans = [
@@ -62,7 +68,8 @@ function getWeekDays(monday: Date, today: Date) {
 
 export default function SubscriptionPage() {
   const [currentPlanId, setCurrentPlanId] = useState("weekly");
-  const [isPaused, setIsPaused] = useState(false);
+  // Paused plans, by the order that started them ("sample" for the design's sample card)
+  const [pausedPlanIds, setPausedPlanIds] = useState<Set<string>>(() => new Set());
   const [skippedDays, setSkippedDays] = useState<Set<string>>(() => new Set());
   const [today] = useState(getToday);
   // Monday of the week shown in the delivery calendar (this week at first).
@@ -74,6 +81,39 @@ export default function SubscriptionPage() {
   const isThisWeekShown = shownMonday.getTime() === getMondayOfWeek(today).getTime();
 
   const currentPlan = subscriptionPlans.find((plan) => plan.id === currentPlanId) ?? subscriptionPlans[0];
+  // Every running plan (one card each: their own and any bought for others); none yet = the sample card
+  const runningPlans = findRunningPlans(useOrders());
+  const router = useRouter();
+
+  function togglePausedPlan(planId: string) {
+    setPausedPlanIds((previousIds) => {
+      const newIds = new Set(previousIds);
+      if (newIds.has(planId)) newIds.delete(planId);
+      else newIds.add(planId);
+      return newIds;
+    });
+  }
+
+  // Extend Plan: the same plan length again, as an extension of this plan, checked out on the cart page
+  function extendPaidPlan(paidPlan: RunningPlan | null) {
+    if (!paidPlan) return;
+    const oneTimePrice = paidPlan.product.originalPrice;
+    const bottleCount = paidPlan.days * paidPlan.bottlesPerDay;
+    setCartSubscription({
+      product: { ...paidPlan.product, price: oneTimePrice, originalPrice: oneTimePrice },
+      planId: `extend-${paidPlan.orderId}`,
+      planName: paidPlan.planName,
+      months: paidPlan.months,
+      days: paidPlan.days,
+      bottlesPerDay: paidPlan.bottlesPerDay,
+      pricePerLitre: paidPlan.pricePerLitre,
+      bottleCount,
+      planTotal: bottleCount * paidPlan.pricePerLitre,
+      oneTimeTotal: bottleCount * oneTimePrice,
+      extendsOrderId: paidPlan.orderId,
+    });
+    router.push("/cart");
+  }
 
   function toggleSkippedDay(dateKey: string) {
     setSkippedDays((previousDays) => {
@@ -91,63 +131,77 @@ export default function SubscriptionPage() {
         description="Fresh milk at your door every morning. Skip or pause any day before 8 PM."
       />
 
-      {/* Subscription card */}
-      <section className={styles["subscription-card"]} aria-label="Your milk subscription">
-        <span className={styles["subscription-product-image-area"]}>
-          <Image
-            src="/images/products/a2-cow-milk-1-litre-bottle.webp"
-            alt="A2 Desi Milk"
-            width={232}
-            height={500}
-            sizes="100px"
-            className={styles["subscription-product-image"]}
-          />
-        </span>
-
-        <div className={styles["subscription-details"]}>
-          <div className={styles["subscription-name-row"]}>
-            <h2 className={styles["subscription-product-name"]}>A2 Desi Milk · {currentPlan.shortName}</h2>
-            <span
-              className={`${styles["subscription-status-badge"]} ${
-                isPaused ? styles["subscription-status-badge-paused"] : ""
-              }`}
-            >
-              {isPaused ? "Paused" : "Active"}
-            </span>
-          </div>
-          <dl className={styles["subscription-facts"]}>
-            <div>
-              <dt>Quantity</dt>
-              <dd>1 L / day</dd>
-            </div>
-            <div>
-              <dt>Price</dt>
-              <dd>₹98 / L</dd>
-            </div>
-            <div>
-              <dt>Next delivery</dt>
-              <dd>{isPaused ? "Paused" : "Tomorrow, 6:00 AM"}</dd>
-            </div>
-            <div>
-              <dt>Billed this month</dt>
-              <dd>₹2,940</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className={styles["subscription-actions"]}>
-          <button
-            type="button"
-            className={styles["subscription-pause-button"]}
-            onClick={() => setIsPaused((wasPaused) => !wasPaused)}
+      {/* Subscription cards: one per running plan (or the sample card before any plan is bought) */}
+      {(runningPlans.length > 0 ? runningPlans : [null]).map((paidPlan) => {
+        const planKey = paidPlan ? paidPlan.orderId : "sample";
+        const isPaused = pausedPlanIds.has(planKey);
+        return (
+          <section
+            key={planKey}
+            className={styles["subscription-card"]}
+            aria-label={paidPlan ? `Milk subscription for ${paidPlan.deliverTo}` : "Your milk subscription"}
           >
-            {isPaused ? "Resume subscription" : "Pause subscription"}
-          </button>
-          <button type="button" className={styles["subscription-extend-button"]}>
-            Extend Plan
-          </button>
-        </div>
-      </section>
+            <span className={styles["subscription-product-image-area"]}>
+              <Image
+                src="/images/products/a2-cow-milk-1-litre-bottle.webp"
+                alt="A2 Desi Milk"
+                width={232}
+                height={500}
+                sizes="100px"
+                className={styles["subscription-product-image"]}
+              />
+            </span>
+
+            <div className={styles["subscription-details"]}>
+              <div className={styles["subscription-name-row"]}>
+                <h2 className={styles["subscription-product-name"]}>
+                  A2 Desi Milk · {paidPlan ? paidPlan.planName : currentPlan.shortName}
+                </h2>
+                <span
+                  className={`${styles["subscription-status-badge"]} ${
+                    isPaused ? styles["subscription-status-badge-paused"] : ""
+                  }`}
+                >
+                  {isPaused ? "Paused" : "Active"}
+                </span>
+              </div>
+              <dl className={styles["subscription-facts"]}>
+                <div>
+                  <dt>Quantity</dt>
+                  <dd>{paidPlan ? paidPlan.bottlesPerDay : 1} L / day</dd>
+                </div>
+                <div>
+                  <dt>Price</dt>
+                  <dd>₹{paidPlan ? paidPlan.pricePerLitre : 98} / L</dd>
+                </div>
+                <div>
+                  <dt>Next delivery</dt>
+                  <dd>{isPaused ? "Paused" : "Tomorrow, 6:00 AM"}</dd>
+                </div>
+                <div>
+                  <dt>{paidPlan ? "Valid till" : "Billed this month"}</dt>
+                  <dd>{paidPlan ? formatPlanDate(paidPlan.endsOn) : "₹2,940"}</dd>
+                </div>
+              </dl>
+              {/* Which address this plan delivers to (tells the customer's plan from ones bought for others) */}
+              {paidPlan?.deliverTo && <p className={styles["subscription-address-line"]}>Delivering to {paidPlan.deliverTo}</p>}
+            </div>
+
+            <div className={styles["subscription-actions"]}>
+              <button
+                type="button"
+                className={styles["subscription-pause-button"]}
+                onClick={() => togglePausedPlan(planKey)}
+              >
+                {isPaused ? "Resume subscription" : "Pause subscription"}
+              </button>
+              <button type="button" className={styles["subscription-extend-button"]} onClick={() => extendPaidPlan(paidPlan)}>
+                Extend Plan
+              </button>
+            </div>
+          </section>
+        );
+      })}
 
       {/* Delivery calendar */}
       <section className={styles["subscription-section-card"]} aria-labelledby="delivery-calendar-heading">

@@ -10,10 +10,11 @@ import {
   addProductToCart,
   changeCartItemQuantity,
   rememberPendingCartProduct,
+  setCartSubscription,
   useCartItems,
   type CartProduct,
 } from "@/store/cart-store";
-import { getDiscountPercent } from "@/store/products-store";
+import { useShopProducts, getDiscountPercent } from "@/store/products-store";
 import styles from "./milk-product-page.module.css";
 
 /*
@@ -26,9 +27,13 @@ import styles from "./milk-product-page.module.css";
   "One-time purchase" swaps the plans for a bill (milk + delivery charge = total) and Checkout to Cart.
 */
 
-// Prices from the design, for this page only (the landing page keeps the panel's prices).
-// Later the Chiranvi Panel will set these, so the admin can change them.
-const milkProduct: CartProduct = {
+/*
+  The milk as designed for this page. Its price, old price, pack and subscription price come from the
+  Chiranvi Panel (Products & pricing, product "a2-desi-milk"), so the admin decides the amounts; these
+  design values are only used if the product is missing there. The name and picture stay as designed.
+*/
+const DESIGN_SUBSCRIPTION_PRICE = 90;
+const milkPageDesign: CartProduct = {
   productId: "a2-desi-milk",
   name: "A2 Desi Cow Milk",
   // Same bottle as the landing hero, with a see-through background so the ring and green show around it
@@ -60,10 +65,32 @@ const subscriptionPlans: SubscriptionPlan[] = [
 // One-time purchase delivery charge from the design (once per order, whatever the quantity)
 const oneTimeDeliveryCharge = 30;
 
-// Biggest saving of any plan against the one-time price, e.g. "up to 13%" (rounded down, never overstated)
-const biggestPlanSavingPercent = Math.floor(
-  Math.max(...subscriptionPlans.map((plan) => (1 - plan.pricePerLitre / milkProduct.price) * 100)),
-);
+/*
+  The admin's milk (Products & pricing) on top of the page's design. The plans keep the design's steps
+  from the admin's subscription price: 3 months = that price, 6 months 87/90 of it, 12 months 82/90.
+*/
+function useMilkFromPanel() {
+  const panelMilk = useShopProducts().find((product) => product.productId === milkPageDesign.productId);
+  const milkProduct: CartProduct = panelMilk
+    ? {
+        ...milkPageDesign,
+        price: panelMilk.price,
+        originalPrice: panelMilk.originalPrice ?? panelMilk.price,
+        packSize: panelMilk.packSize,
+      }
+    : milkPageDesign;
+  const subscriptionPrice = panelMilk?.subscriptionPrice ?? DESIGN_SUBSCRIPTION_PRICE;
+  const plans = subscriptionPlans.map((plan) => ({
+    ...plan,
+    pricePerLitre: Math.round((subscriptionPrice * plan.pricePerLitre) / DESIGN_SUBSCRIPTION_PRICE),
+  }));
+  // Biggest saving of any plan against the one-time price, e.g. "up to 13%" (rounded down, never overstated)
+  const biggestPlanSavingPercent = Math.max(
+    0,
+    Math.floor(Math.max(...plans.map((plan) => (1 - plan.pricePerLitre / milkProduct.price) * 100))),
+  );
+  return { milkProduct, plans, biggestPlanSavingPercent };
+}
 
 /*
   Fast selling products: five items with the pictures the site already uses; the row changes with the tab.
@@ -96,7 +123,7 @@ function formatRupees(amount: number) {
 }
 
 // Totals for one plan: bottles, the plan price, the same bottles at the one-time price, and the saving.
-function calculatePlan(plan: SubscriptionPlan, bottlesPerDay: number) {
+function calculatePlan(plan: SubscriptionPlan, bottlesPerDay: number, milkProduct: CartProduct) {
   const bottleCount = plan.days * bottlesPerDay;
   const planTotal = bottleCount * plan.pricePerLitre;
   const oneTimeTotal = bottleCount * milkProduct.price;
@@ -150,7 +177,15 @@ function FiveStars({ className }: { className: string }) {
   - logged in: adds one bottle; then the button becomes "- quantity +" (at 0 it is Add to Cart again);
   - not logged in: goes to the login with the milk remembered, and the login adds it and comes back here.
 */
-function MilkCartControl({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; quantityInCart: number }) {
+function MilkCartControl({
+  milkProduct,
+  isLoggedIn,
+  quantityInCart,
+}: {
+  milkProduct: CartProduct;
+  isLoggedIn: boolean;
+  quantityInCart: number;
+}) {
   if (quantityInCart > 0) {
     return (
       <div className={styles["milk-quantity-control"]} role="group" aria-label={`${milkProduct.name} quantity`}>
@@ -204,7 +239,15 @@ function MilkCartControl({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; 
   - logged in: adds one bottle first if milk is not in the cart yet, then opens the cart;
   - not logged in: goes to the login with the milk remembered (the login adds it and comes back here).
 */
-function CheckoutToCartButton({ isLoggedIn, quantityInCart }: { isLoggedIn: boolean; quantityInCart: number }) {
+function CheckoutToCartButton({
+  milkProduct,
+  isLoggedIn,
+  quantityInCart,
+}: {
+  milkProduct: CartProduct;
+  isLoggedIn: boolean;
+  quantityInCart: number;
+}) {
   const router = useRouter();
 
   if (!isLoggedIn) {
@@ -237,6 +280,7 @@ function CheckoutToCartButton({ isLoggedIn, quantityInCart }: { isLoggedIn: bool
 }
 
 export default function MilkProductPage() {
+  const { milkProduct, plans, biggestPlanSavingPercent } = useMilkFromPanel();
   const isLoggedIn = useIsLoggedIn();
   const cartItems = useCartItems();
   const quantityInCart = cartItems.find((cartItem) => cartItem.productId === milkProduct.productId)?.quantity ?? 0;
@@ -262,16 +306,27 @@ export default function MilkProductPage() {
   // One-time purchase bill: the bottles at the one-time price, plus the delivery charge
   const oneTimeMilkTotal = bottlesPerDay * milkProduct.price;
   const [chosenPlanId, setChosenPlanId] = useState("6-months");
-  const chosenPlan = subscriptionPlans.find((plan) => plan.planId === chosenPlanId) ?? subscriptionPlans[1];
-  const chosenPlanTotals = calculatePlan(chosenPlan, bottlesPerDay);
-  const [isPaymentNoteShown, setIsPaymentNoteShown] = useState(false);
+  const chosenPlan = plans.find((plan) => plan.planId === chosenPlanId) ?? plans[1];
+  const chosenPlanTotals = calculatePlan(chosenPlan, bottlesPerDay, milkProduct);
+  const router = useRouter();
   const currentMinute = useSyncExternalStore(subscribeToClock, getCurrentMinute, () => null);
   const orderCutoff = currentMinute === null ? null : describeOrderCutoff(currentMinute);
 
-  // Start subscription: opens Razorpay for the chosen plan's total.
+  // Start subscription: the chosen plan goes to the cart, which checks it out (Cart -> Select address -> Pay now)
   function startSubscription() {
-    // Connect Razorpay here: open the checkout for chosenPlanTotals.planTotal (chosenPlan, bottlesPerDay).
-    setIsPaymentNoteShown(true);
+    setCartSubscription({
+      product: milkProduct,
+      planId: chosenPlan.planId,
+      planName: chosenPlan.label,
+      months: chosenPlan.months,
+      days: chosenPlan.days,
+      bottlesPerDay,
+      pricePerLitre: chosenPlan.pricePerLitre,
+      bottleCount: chosenPlanTotals.bottleCount,
+      planTotal: chosenPlanTotals.planTotal,
+      oneTimeTotal: chosenPlanTotals.oneTimeTotal,
+    });
+    router.push("/cart");
   }
 
   return (
@@ -386,7 +441,7 @@ export default function MilkProductPage() {
               <strong>Quantity</strong> · 1 litre glass bottle each
             </p>
 
-            <MilkCartControl isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
+            <MilkCartControl milkProduct={milkProduct} isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
 
             {/* Choose your plan */}
             <section className={styles["milk-plan-panel"]} aria-labelledby="milk-plan-heading">
@@ -457,15 +512,15 @@ export default function MilkProductPage() {
                     Delivered {orderCutoff?.deliveryDay ?? "tomorrow"} by 7 AM
                   </p>
 
-                  <CheckoutToCartButton isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
+                  <CheckoutToCartButton milkProduct={milkProduct} isLoggedIn={isLoggedIn} quantityInCart={quantityInCart} />
                   <p className={styles["milk-plan-footnote"]}>100% safe · Free Delivery</p>
                 </>
               ) : (
                 <>
                   <fieldset className={styles["milk-plan-options"]}>
                     <legend className={styles["milk-visually-hidden"]}>Subscription length</legend>
-                    {subscriptionPlans.map((plan) => {
-                      const planTotals = calculatePlan(plan, bottlesPerDay);
+                    {plans.map((plan) => {
+                      const planTotals = calculatePlan(plan, bottlesPerDay, milkProduct);
                       const isChosen = plan.planId === chosenPlan.planId;
                       return (
                         <label
@@ -538,11 +593,6 @@ export default function MilkProductPage() {
                   <button type="button" className={styles["milk-start-subscription-button"]} onClick={startSubscription}>
                     Start subscription @ {formatRupees(chosenPlanTotals.planTotal)}
                   </button>
-                  {isPaymentNoteShown && (
-                    <p className={styles["milk-payment-note"]} role="status">
-                      Razorpay payment is not connected yet.
-                    </p>
-                  )}
                   <p className={styles["milk-plan-footnote"]}>Pause anytime · Free Delivery</p>
                 </>
               )}

@@ -195,6 +195,49 @@ export function removeCoupon(code: string) {
   save(getCoupons().filter((coupon) => coupon.code !== code));
 }
 
+/*
+  Website checkout: what a code takes off this cart, or why it can't be used.
+  cartLines: each item's amount (after its own discount) and its product category.
+  - Must be Active (not paused, not scheduled, not ended or used up) and reach its minimum order.
+  - "All products" counts the whole cart; a category counts only those items; "Milk plans" and free
+    days of milk are for subscriptions, not one-time orders.
+*/
+export function checkCouponForCart(
+  code: string,
+  allCoupons: Coupon[],
+  cartLines: { amount: number; category: string }[],
+): { coupon: Coupon; discount: number } | { error: string } {
+  const coupon = allCoupons.find((existing) => existing.code === code.trim().toUpperCase());
+  if (!coupon) return { error: "This code doesn't exist" };
+  const status = getCouponStatus(coupon);
+  if (status === "Expired") return { error: `${coupon.code} has ended` };
+  if (status === "Paused") return { error: `${coupon.code} can't be used right now` };
+  if (status === "Scheduled") return { error: `${coupon.code} starts on ${coupon.validFrom.split("-").reverse().join("/")}` };
+  if (coupon.appliesTo === "Milk plans" || coupon.kind === "free-days") {
+    return { error: `${coupon.code} is for milk subscriptions, not one-time orders` };
+  }
+  const cartTotal = cartLines.reduce((sum, line) => sum + line.amount, 0);
+  if (coupon.minOrder && cartTotal < coupon.minOrder) {
+    return { error: `Add ₹${coupon.minOrder - cartTotal} more to use ${coupon.code} (minimum ₹${coupon.minOrder})` };
+  }
+  const eligible =
+    coupon.appliesTo === "All products"
+      ? cartTotal
+      : cartLines.filter((line) => line.category === coupon.appliesTo).reduce((sum, line) => sum + line.amount, 0);
+  if (eligible <= 0) return { error: `${coupon.code} is only for ${coupon.appliesTo.toLowerCase()}` };
+  return { coupon, discount: getDiscount(coupon, eligible) };
+}
+
+// A customer used the coupon at checkout: one more use, and a redemption for the panel's table
+export function recordCouponUse(code: string, redemption: Omit<Redemption, "id" | "code" | "redeemedAt">) {
+  const highest = Math.max(0, ...getRedemptions().map((existing) => Number(existing.id.replace(/\D/g, ""))));
+  redemptions = [
+    { ...redemption, id: `RD-${highest + 1}`, code, redeemedAt: new Date().toISOString() },
+    ...getRedemptions(),
+  ];
+  save(getCoupons().map((coupon) => (coupon.code === code ? { ...coupon, used: coupon.used + 1 } : coupon)));
+}
+
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
   return () => {

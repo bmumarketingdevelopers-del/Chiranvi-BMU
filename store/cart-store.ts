@@ -2,9 +2,8 @@ import { useSyncExternalStore } from "react";
 
 /*
   Shopping cart, until a real cart service exists.
-  Kept only in the open page's memory, like the login (components/login/login-status.ts): it stays
-  while moving between pages of the site, and is emptied when the page is refreshed or the tab is
-  closed, so every refresh starts as a new visitor with an empty cart.
+  Saved in this browser (localStorage), so it stays after a refresh, like the login
+  (components/login/login-status.ts). Logging out empties it.
   Each item keeps the product details it needs for the cart page, plus its quantity.
 
   "Add to cart" before logging in: the product is remembered as pending; logging in then adds it
@@ -24,13 +23,34 @@ export type CartProduct = {
 
 export type CartItem = CartProduct & { quantity: number };
 
+const CART_STORAGE_KEY = "chiranvi-cart";
 const emptyCart: CartItem[] = [];
 let cartItems: CartItem[] = emptyCart;
+let hasReadSavedCart = false;
 let pendingCartProduct: CartProduct | null = null;
 const cartListeners = new Set<() => void>();
 
+function getCartItems() {
+  if (!hasReadSavedCart && typeof window !== "undefined") {
+    hasReadSavedCart = true;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) ?? "null");
+      if (Array.isArray(saved)) cartItems = saved;
+    } catch {
+      // Nothing saved, or storage blocked: start with an empty cart.
+    }
+  }
+  return cartItems;
+}
+
 function saveCartItems(newCartItems: CartItem[]) {
   cartItems = newCartItems;
+  hasReadSavedCart = true;
+  try {
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCartItems));
+  } catch {
+    // Storage blocked: the cart lasts until the page is refreshed.
+  }
   cartListeners.forEach((onChange) => onChange());
 }
 
@@ -45,7 +65,7 @@ function subscribeToCart(onChange: () => void) {
 export function useCartItems() {
   return useSyncExternalStore(
     subscribeToCart,
-    () => cartItems,
+    getCartItems,
     () => emptyCart,
   );
 }
@@ -57,6 +77,7 @@ export function countCartPacks(items: CartItem[]) {
 
 // Adds one pack of the product (or one more, if it is already in the cart).
 export function addProductToCart(product: CartProduct) {
+  const cartItems = getCartItems();
   const isAlreadyInCart = cartItems.some((cartItem) => cartItem.productId === product.productId);
   saveCartItems(
     isAlreadyInCart
@@ -70,7 +91,7 @@ export function addProductToCart(product: CartProduct) {
 // + adds one pack, - removes one; at 0 the product leaves the cart.
 export function changeCartItemQuantity(productId: string, quantityChange: 1 | -1) {
   saveCartItems(
-    cartItems
+    getCartItems()
       .map((cartItem) =>
         cartItem.productId === productId ? { ...cartItem, quantity: cartItem.quantity + quantityChange } : cartItem,
       )
@@ -78,9 +99,121 @@ export function changeCartItemQuantity(productId: string, quantityChange: 1 | -1
   );
 }
 
-// Logging out: the next visitor starts with an empty cart.
+// The coupon applied at checkout, kept with the cart so a refresh does not drop it
+const COUPON_STORAGE_KEY = "chiranvi-cart-coupon";
+let appliedCouponCode: string | null = null;
+let hasReadSavedCoupon = false;
+
+function getAppliedCouponCode() {
+  if (!hasReadSavedCoupon && typeof window !== "undefined") {
+    hasReadSavedCoupon = true;
+    try {
+      appliedCouponCode = window.localStorage.getItem(COUPON_STORAGE_KEY);
+    } catch {
+      appliedCouponCode = null;
+    }
+  }
+  return appliedCouponCode;
+}
+
+export function setAppliedCouponCode(code: string | null) {
+  appliedCouponCode = code;
+  hasReadSavedCoupon = true;
+  try {
+    if (code) window.localStorage.setItem(COUPON_STORAGE_KEY, code);
+    else window.localStorage.removeItem(COUPON_STORAGE_KEY);
+  } catch {
+    // Storage blocked: the coupon lasts until the page is refreshed.
+  }
+  cartListeners.forEach((onChange) => onChange());
+}
+
+export function useAppliedCouponCode() {
+  return useSyncExternalStore(subscribeToCart, getAppliedCouponCode, () => null);
+}
+
+/*
+  A milk subscription waiting to be paid ("Start subscription" on the milk page). While there is one,
+  the cart page checks out only the subscription; the one-time items stay in the cart for later.
+*/
+export type CartSubscription = {
+  product: CartProduct;
+  planId: string;
+  planName: string; // "6 Months"
+  months: number;
+  days: number;
+  bottlesPerDay: number;
+  pricePerLitre: number;
+  bottleCount: number;
+  planTotal: number; // what the customer pays
+  oneTimeTotal: number; // the same bottles at the one-time price
+  extendsOrderId?: string; // "Extend Plan" on My Subscription: adds these days to that running plan
+};
+
+const SUBSCRIPTION_STORAGE_KEY = "chiranvi-cart-subscription";
+let cartSubscription: CartSubscription | null = null;
+let hasReadSavedSubscription = false;
+
+function getCartSubscription() {
+  if (!hasReadSavedSubscription && typeof window !== "undefined") {
+    hasReadSavedSubscription = true;
+    try {
+      cartSubscription = JSON.parse(window.localStorage.getItem(SUBSCRIPTION_STORAGE_KEY) ?? "null");
+    } catch {
+      cartSubscription = null;
+    }
+  }
+  return cartSubscription;
+}
+
+/*
+  "Switch to subscription" in the one-time cart opens the milk page to choose a plan. The milk stays in
+  the cart until then (the plans count its bottles); Start subscription then takes it out of the cart,
+  so it is not bought twice.
+*/
+let productSwitchingToSubscription: string | null = null;
+
+export function startSwitchToSubscription(productId: string) {
+  productSwitchingToSubscription = productId;
+}
+
+// Start subscription puts the plan here; null takes it out (paid, switched or removed).
+export function setCartSubscription(subscription: CartSubscription | null) {
+  if (subscription && subscription.product.productId === productSwitchingToSubscription) {
+    saveCartItems(getCartItems().filter((cartItem) => cartItem.productId !== productSwitchingToSubscription));
+  }
+  productSwitchingToSubscription = null;
+  cartSubscription = subscription;
+  hasReadSavedSubscription = true;
+  try {
+    if (subscription) window.localStorage.setItem(SUBSCRIPTION_STORAGE_KEY, JSON.stringify(subscription));
+    else window.localStorage.removeItem(SUBSCRIPTION_STORAGE_KEY);
+  } catch {
+    // Storage blocked: the subscription lasts until the page is refreshed.
+  }
+  cartListeners.forEach((onChange) => onChange());
+}
+
+export function useCartSubscription() {
+  return useSyncExternalStore(subscribeToCart, getCartSubscription, () => null);
+}
+
+// "Switch to one-time" in the cart: the subscription goes, the milk stays as a one-time item
+export function switchCartSubscriptionToOneTime() {
+  const subscription = getCartSubscription();
+  if (!subscription) return;
+  const isMilkInCart = getCartItems().some((cartItem) => cartItem.productId === subscription.product.productId);
+  if (!isMilkInCart) {
+    saveCartItems([...getCartItems(), { ...subscription.product, quantity: subscription.bottlesPerDay }]);
+  }
+  setCartSubscription(null);
+}
+
+// Logging out, or an order placed: the cart (its coupon and any subscription) starts empty.
 export function emptyTheCart() {
   pendingCartProduct = null;
+  setAppliedCouponCode(null);
+  setCartSubscription(null);
   saveCartItems(emptyCart);
 }
 
