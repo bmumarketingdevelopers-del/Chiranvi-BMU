@@ -1,0 +1,341 @@
+/*
+  "No internet connection" screen, from the design (desktop and phone).
+  Numbers in calc() are design pixels multiplied by --offline-design-pixel: the window size against a
+  1440 x 860 frame, kept between 0.72px and 1.2px. Fonts: Ubuntu for the heading, button and tip
+  titles; Poppins for the rest. Colours from the design.
+*/
+
+.offline-screen {
+  --offline-design-pixel: clamp(0.72px, min(100vw / 1440, 100svh / 860), 1.2px);
+
+  position: fixed;
+  z-index: 3000;
+  inset: 0;
+  overflow: hidden auto;
+  background: #f7f7f4;
+  font-family: var(--font-poppins), sans-serif;
+  color: #1b2a20;
+}
+
+/* Pale circles: top right and bottom left, partly off the screen */
+.offline-corner-circle-top,
+.offline-corner-circle-bottom {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.offline-corner-circle-top {
+  top: calc(-250 * var(--offline-design-pixel));
+  right: calc(-170 * var(--offline-design-pixel));
+  width: calc(560 * var(--offline-design-pixel));
+  height: calc(560 * var(--offline-design-pixel));
+  background: #edf3ec;
+}
+
+.offline-corner-circle-bottom {
+  bottom: calc(-230 * var(--offline-design-pixel));
+  left: calc(-200 * var(--offline-design-pixel));
+  width: calc(460 * var(--offline-design-pixel));
+  height: calc(460 * var(--offline-design-pixel));
+  background: #f0f3ef;
+}
+
+.offline-logo {
+  position: absolute;
+  top: calc(28 * var(--offline-design-pixel));
+  left: calc(36 * var(--offline-design-pixel));
+  width: auto;
+  height: calc(46 * var(--offline-design-pixel));
+}
+
+.offline-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  padding: calc(70 * var(--offline-design-pixel)) 24px calc(26 * var(--offline-design-pixel));
+  text-align: center;
+}
+
+/* The picture: the pale circle 250 wide, the bottle 57 x 109 */
+.offline-picture {
+  width: calc(416 * var(--offline-design-pixel));
+  height: auto;
+}
+
+.offline-heading {
+  margin-top: calc(14 * var(--offline-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(34 * var(--offline-design-pixel));
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1b2a20;
+}
+
+.offline-description {
+  margin-top: calc(12 * var(--offline-design-pixel));
+  font-size: calc(16 * var(--offline-design-pixel));
+  line-height: 1.55;
+  color: #6b7a70;
+}
+
+.offline-description-second-line {
+  display: block;
+}
+
+/* Try again: 190 x 50 pill, gold refresh icon */
+.offline-try-again-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10 * var(--offline-design-pixel));
+  min-width: calc(190 * var(--offline-design-pixel));
+  height: calc(50 * var(--offline-design-pixel));
+  margin-top: calc(26 * var(--offline-design-pixel));
+  padding: 0 calc(26 * var(--offline-design-pixel));
+  border-radius: 9999px;
+  background: #1f4d2e;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--offline-design-pixel));
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.offline-try-again-button:hover,
+.offline-try-again-button:focus-visible {
+  background: #285c3a;
+}
+
+.offline-try-again-button:disabled {
+  cursor: progress;
+}
+
+.offline-try-again-button svg {
+  width: calc(18 * var(--offline-design-pixel));
+  height: calc(18 * var(--offline-design-pixel));
+  fill: none;
+  stroke: #f5bf2c;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.offline-try-again-icon-spinning {
+  animation: offline-spin 800ms linear infinite;
+}
+
+@keyframes offline-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* "Offline · checking again in 12 seconds", red dot (offline is a serious state) */
+.offline-status {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--offline-design-pixel));
+  margin-top: calc(16 * var(--offline-design-pixel));
+  font-size: calc(13 * var(--offline-design-pixel));
+  color: #8a958d;
+}
+
+.offline-status-dot {
+  flex-shrink: 0;
+  width: calc(7 * var(--offline-design-pixel));
+  height: calc(7 * var(--offline-design-pixel));
+  border-radius: 50%;
+  background: #d84b3c;
+}
+
+/* Tips: three white cards of 280 x 84 in a row */
+.offline-tips {
+  display: grid;
+  grid-template-columns: repeat(3, calc(280 * var(--offline-design-pixel)));
+  gap: calc(18 * var(--offline-design-pixel));
+  margin-top: calc(42 * var(--offline-design-pixel));
+}
+
+.offline-tip {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--offline-design-pixel));
+  height: calc(84 * var(--offline-design-pixel));
+  padding: 0 calc(18 * var(--offline-design-pixel));
+  border: 1px solid #e6eae5;
+  border-radius: calc(14 * var(--offline-design-pixel));
+  background: #ffffff;
+  text-align: left;
+}
+
+.offline-tip-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: calc(38 * var(--offline-design-pixel));
+  height: calc(38 * var(--offline-design-pixel));
+  border-radius: calc(10 * var(--offline-design-pixel));
+  background: #e6f0e1;
+}
+
+.offline-tip-icon svg {
+  width: calc(20 * var(--offline-design-pixel));
+  height: calc(20 * var(--offline-design-pixel));
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.offline-tip-title {
+  display: block;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14.5 * var(--offline-design-pixel));
+  font-weight: 700;
+  color: #1b2a20;
+}
+
+.offline-tip-text {
+  display: block;
+  margin-top: calc(3 * var(--offline-design-pixel));
+  font-size: calc(12.5 * var(--offline-design-pixel));
+  color: #6b7a70;
+}
+
+.offline-error-code {
+  margin-top: calc(28 * var(--offline-design-pixel));
+  font-size: calc(11.5 * var(--offline-design-pixel));
+  color: #a3aca5;
+}
+
+/* Wording that differs between the desktop and phone designs */
+.offline-phone-only {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offline-try-again-icon-spinning {
+    animation: none;
+  }
+}
+
+/*
+  Phones (design): no logo; one line of text; the tips stacked in one card; Try again full width at the
+  bottom with "Checking again in 12 seconds" under it; no error code.
+*/
+@media (max-width: 640px) {
+  .offline-logo,
+  .offline-description-second-line,
+  .offline-error-code,
+  .offline-desktop-only {
+    display: none;
+  }
+
+  .offline-phone-only {
+    display: inline;
+  }
+
+  .offline-tip-title .offline-phone-only,
+  .offline-tip-text .offline-phone-only {
+    display: block;
+  }
+
+  .offline-corner-circle-top {
+    top: -150px;
+    right: -120px;
+    width: 300px;
+    height: 300px;
+  }
+
+  .offline-corner-circle-bottom {
+    display: none;
+  }
+
+  .offline-content {
+    padding: 40px 20px 20px;
+  }
+
+  .offline-picture {
+    width: min(300px, 82vw);
+  }
+
+  .offline-heading {
+    margin-top: 10px;
+    font-size: 24px;
+  }
+
+  .offline-description {
+    max-width: 300px;
+    margin-top: 8px;
+    font-size: 14.5px;
+  }
+
+  .offline-tips {
+    order: 1;
+    grid-template-columns: 1fr;
+    gap: 0;
+    width: 100%;
+    margin-top: 22px;
+    /* Some space above Try again when the screen is short (Try again sits at the bottom otherwise) */
+    margin-bottom: 24px;
+    padding: 4px 16px;
+    border: 1px solid #e6eae5;
+    border-radius: 16px;
+    background: #ffffff;
+  }
+
+  .offline-tip {
+    height: auto;
+    padding: 12px 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .offline-tip + .offline-tip {
+    border-top: 1px solid #edf0ec;
+  }
+
+  .offline-tip-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .offline-tip-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .offline-tip-title {
+    font-size: 15px;
+  }
+
+  .offline-tip-text {
+    margin-top: 2px;
+    font-size: 12.5px;
+  }
+
+  .offline-try-again-button {
+    order: 2;
+    width: 100%;
+    height: 54px;
+    margin-top: auto;
+    font-size: 17px;
+  }
+
+  .offline-try-again-button svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .offline-status {
+    order: 3;
+    margin-top: 10px;
+    font-size: 12.5px;
+  }
+}
