@@ -228,6 +228,36 @@ export function checkCouponForCart(
   return { coupon, discount: getDiscount(coupon, eligible) };
 }
 
+/*
+  Website checkout of a milk subscription: what a code takes off the plan, or why it can't be used.
+  - Must be Active and reach its minimum order (the plan's total).
+  - "All products", "Milk" and "Milk plans" codes work on plans; other categories (paneer, ghee...) don't.
+  - Free days of milk: those days' bottles at the plan's price per litre.
+*/
+export function checkCouponForSubscription(
+  code: string,
+  allCoupons: Coupon[],
+  plan: { planTotal: number; pricePerLitre: number; bottlesPerDay: number },
+): { coupon: Coupon; discount: number } | { error: string } {
+  const coupon = allCoupons.find((existing) => existing.code === code.trim().toUpperCase());
+  if (!coupon) return { error: "This code doesn't exist" };
+  const status = getCouponStatus(coupon);
+  if (status === "Expired") return { error: `${coupon.code} has ended` };
+  if (status === "Paused") return { error: `${coupon.code} can't be used right now` };
+  if (status === "Scheduled") return { error: `${coupon.code} starts on ${coupon.validFrom.split("-").reverse().join("/")}` };
+  if (!["All products", "Milk", "Milk plans"].includes(coupon.appliesTo)) {
+    return { error: `${coupon.code} is only for ${coupon.appliesTo.toLowerCase()}, not milk plans` };
+  }
+  if (coupon.minOrder && plan.planTotal < coupon.minOrder) {
+    return { error: `${coupon.code} needs an order of at least ₹${coupon.minOrder}` };
+  }
+  const discount =
+    coupon.kind === "free-days"
+      ? coupon.value * plan.bottlesPerDay * plan.pricePerLitre
+      : getDiscount(coupon, plan.planTotal);
+  return { coupon, discount: Math.min(discount, plan.planTotal) };
+}
+
 // A customer used the coupon at checkout: one more use, and a redemption for the panel's table
 export function recordCouponUse(code: string, redemption: Omit<Redemption, "id" | "code" | "redeemedAt">) {
   const highest = Math.max(0, ...getRedemptions().map((existing) => Number(existing.id.replace(/\D/g, ""))));

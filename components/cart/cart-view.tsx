@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AddressFormDialog from "@/components/account/address/address-form-dialog";
 import { CART_ICON_CLICKED_ON_CART_PAGE_EVENT } from "@/components/navigation/site-navigation-bar";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
@@ -29,7 +30,7 @@ import {
   useCartSubscription,
   type CartSubscription,
 } from "@/store/cart-store";
-import { checkCouponForCart, recordCouponUse, useCoupons } from "@/store/coupons-store";
+import { checkCouponForCart, checkCouponForSubscription, recordCouponUse, useCoupons } from "@/store/coupons-store";
 import { findRunningPlans, formatPlanDate, placeOrder, useOrders, type Order, type RunningPlan } from "@/store/orders-store";
 import { useShopProducts } from "@/store/products-store";
 import styles from "./cart-view.module.css";
@@ -52,7 +53,8 @@ import styles from "./cart-view.module.css";
     charged), ticks Payment and shows "Your order has been placed" with Track your order.
   Milk subscription ("Start subscription" on the milk page): the same page, but the cart shows only the
   plan ("Your subscription"; only the one-time cart offers a switch, to a subscription) and the
-  summary shows the plan at the one-time price, the subscription saving and free delivery (no coupons).
+  summary shows the plan at the one-time price, the subscription saving, any coupon (All products, Milk or
+  Milk plans codes) and free delivery.
   The one-time items wait in the cart until then. The paid plan shows on My Subscription.
   A coupon used here counts as a use in the panel. Not logged in: Pay goes to the login first, then back.
   Phones: one column, with the total and the step's button kept at the bottom of the screen.
@@ -166,12 +168,14 @@ function CheckoutPopupFrame({
 function SameAddressPlanDialog({
   plan,
   newPlan,
+  amountToPay,
   isLoggedIn,
   onExtend,
   onClose,
 }: {
   plan: RunningPlan;
   newPlan: CartSubscription;
+  amountToPay: number; // the plan's total after any coupon
   isLoggedIn: boolean;
   onExtend: (plan: RunningPlan) => void;
   onClose: () => void;
@@ -239,7 +243,7 @@ function SameAddressPlanDialog({
         <div className={styles["plan-popup-buttons"]}>
           {isLoggedIn ? (
             <button ref={extendButtonRef} type="button" className={styles["plan-popup-primary-button"]} onClick={() => onExtend(plan)}>
-              Extend that plan · {rupees(newPlan.planTotal)}
+              Extend that plan · {rupees(amountToPay)}
             </button>
           ) : (
             <Link href="/login" className={styles["plan-popup-primary-button"]} onClick={() => rememberPageAfterLogin("/cart")}>
@@ -264,6 +268,7 @@ export default function CartView() {
   const isLoggedIn = useIsLoggedIn();
   const { addresses, defaultAddressId } = useAddressBook();
   const isCartLoaded = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+  const router = useRouter();
 
   const [chosenAddressId, setChosenAddressId] = useState<string | null>(null);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
@@ -325,10 +330,13 @@ export default function CartView() {
     amount: item.price * item.quantity,
     category: products.find((product) => product.productId === item.productId)?.category ?? "Others",
   }));
-  // The applied code is checked again whenever the cart changes (it may stop applying)
-  const couponCheck = appliedCode ? checkCouponForCart(appliedCode, coupons, cartLines) : null;
+  // A code is checked against the plan (subscription) or the items; again whenever the cart changes
+  function checkCoupon(code: string) {
+    return cartSubscription ? checkCouponForSubscription(code, coupons, cartSubscription) : checkCouponForCart(code, coupons, cartLines);
+  }
+  const couponCheck = appliedCode ? checkCoupon(appliedCode) : null;
   const appliedCoupon = couponCheck && "coupon" in couponCheck ? couponCheck : null;
-  const couponDiscount = appliedCoupon ? Math.min(appliedCoupon.discount, itemTotal) : 0;
+  const couponDiscount = appliedCoupon ? Math.min(appliedCoupon.discount, cartSubscription ? cartSubscription.planTotal : itemTotal) : 0;
   const afterDiscounts = itemTotal - couponDiscount;
   const isDeliveryFree = afterDiscounts >= FREE_DELIVERY_FROM;
   const deliveryFee = isDeliveryFree ? 0 : DELIVERY_FEE;
@@ -340,7 +348,7 @@ export default function CartView() {
       setCouponError("Enter a coupon code");
       return;
     }
-    const result = checkCouponForCart(couponInput, coupons, cartLines);
+    const result = checkCoupon(couponInput);
     if ("error" in result) {
       setCouponError(result.error);
       return;
@@ -382,6 +390,15 @@ export default function CartView() {
     pickAddress(savedAddressId, addressDetails);
   }
 
+  /*
+    Back arrow: to the page the customer came from (e.g. the product page with "Checkout to Cart" or
+    "Start subscription"); the home page when the cart was opened directly (nothing to go back to).
+  */
+  function goBack() {
+    if (window.history.length > 1) router.back();
+    else router.push("/");
+  }
+
   // "Select address" (or the address card) opens the address pop-up
   function openAddressPicker() {
     setIsAddressPickerOpen(true);
@@ -417,7 +434,9 @@ export default function CartView() {
         },
       ],
       {
-        total: cartSubscription.planTotal,
+        total: cartSubscription.planTotal - couponDiscount,
+        couponCode: appliedCoupon?.coupon.code,
+        couponDiscount: couponDiscount || undefined,
         deliveryFee: 0,
         deliverTo: planToExtend ? planToExtend.deliverTo : deliverTo,
         subscription: {
@@ -431,6 +450,17 @@ export default function CartView() {
         },
       },
     );
+    if (appliedCoupon) {
+      const deliverToName = (planToExtend ? planToExtend.deliverTo : deliverTo).split(" · ")[0];
+      recordCouponUse(appliedCoupon.coupon.code, {
+        customerName: deliverToName,
+        area: chosenAddress?.area ?? "",
+        orderNumber: `#${subscriptionOrder.orderId}`,
+        discount: couponDiscount,
+        orderValue: cartSubscription.planTotal,
+      });
+      setAppliedCode(null);
+    }
     setCartSubscription(null);
     setPlanAtPickedAddress(null);
     setIsAddressPickerOpen(false);
@@ -492,20 +522,29 @@ export default function CartView() {
       {planBeingExtended ? (
         <p className={styles["delivery-address-plan-line"]}>{planBeingExtended.deliverTo}</p>
       ) : chosenAddress ? (
-        <button
-          type="button"
-          className={`${styles["delivery-address-box"]} ${hasPickedAddress ? styles["delivery-address-box-confirmed"] : ""}`}
-          onClick={openAddressPicker}
-        >
-          <span className={styles["delivery-address-top-row"]}>
-            <span className={styles["delivery-address-label"]}>{chosenAddress.label}</span>
-            {chosenAddress.id === defaultAddressId && <span className={styles["address-pick-default-badge"]}>Default</span>}
-            {hasPickedAddress && <span className={styles["delivery-address-change"]}>Change</span>}
-          </span>
-          <span className={styles["delivery-address-name"]}>{chosenAddress.name}</span>
-          <span className={styles["delivery-address-line"]}>{formatAddressLine(chosenAddress)}</span>
-          <span className={styles["delivery-address-line"]}>{chosenAddress.mobileNumber}</span>
-        </button>
+        <div className={styles["delivery-address-row"]}>
+          <button
+            type="button"
+            className={`${styles["delivery-address-box"]} ${hasPickedAddress ? styles["delivery-address-box-confirmed"] : ""}`}
+            onClick={openAddressPicker}
+          >
+            <span className={styles["delivery-address-top-row"]}>
+              <span className={styles["delivery-address-label"]}>{chosenAddress.label}</span>
+              {chosenAddress.id === defaultAddressId && <span className={styles["address-pick-default-badge"]}>Default</span>}
+              {hasPickedAddress && <span className={styles["delivery-address-change"]}>Change</span>}
+            </span>
+            <span className={styles["delivery-address-name"]}>{chosenAddress.name}</span>
+            <span className={styles["delivery-address-line"]}>{formatAddressLine(chosenAddress)}</span>
+            <span className={styles["delivery-address-line"]}>{chosenAddress.mobileNumber}</span>
+          </button>
+          {/* Add new address: straight to the address form; the saved address becomes the delivery address */}
+          <button type="button" className={styles["checkout-address-add"]} onClick={() => openAddressForm(null)}>
+            <span className={styles["checkout-address-add-circle"]} aria-hidden="true">
+              +
+            </span>
+            Add new address
+          </button>
+        </div>
       ) : (
         <button type="button" className={styles["delivery-address-box"]} onClick={openAddressPicker}>
           <span className={styles["delivery-address-name"]}>+ Add a delivery address</span>
@@ -522,7 +561,7 @@ export default function CartView() {
     : null;
 
   // What Pay now charges: the plan's total for a subscription, otherwise the cart's
-  const amountToPay = cartSubscription ? cartSubscription.planTotal : toPay;
+  const amountToPay = cartSubscription ? cartSubscription.planTotal - couponDiscount : toPay;
 
   if (!placedOrder && (!isCartLoaded || (cartItems.length === 0 && !cartSubscription))) {
     return (
@@ -642,11 +681,11 @@ export default function CartView() {
           /* ---------- Checkout ---------- */
           <>
             <div className={styles["checkout-title-row"]}>
-              <Link href="/" className={styles["checkout-back-button"]} aria-label="Back to the home page">
+              <button type="button" className={styles["checkout-back-button"]} aria-label="Go back" onClick={goBack}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M19 12H5M11 6l-6 6 6 6" />
                 </svg>
-              </Link>
+              </button>
               <h1 className={styles["checkout-title"]}>Cart</h1>
             </div>
             <p className={styles["checkout-subtitle"]}>
@@ -792,8 +831,49 @@ export default function CartView() {
                   Order summary
                 </h2>
 
+                {/* Coupon code (from the Chiranvi Panel's Coupons & offers): for both one-time orders and plans */}
+                <form
+                  className={styles["checkout-coupon-form"]}
+                  onSubmit={(submitEvent) => {
+                    submitEvent.preventDefault();
+                    applyCoupon();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12V4h8l10 10-8 8L3 12Z" />
+                    <path d="M7.5 7.5h.01" />
+                  </svg>
+                  <input
+                    value={couponInput}
+                    placeholder="Enter coupon code"
+                    aria-label="Coupon code"
+                    onChange={(changeEvent) => {
+                      setCouponInput(changeEvent.target.value.toUpperCase());
+                      setCouponError("");
+                    }}
+                  />
+                  <button type="submit">Apply</button>
+                </form>
+                {appliedCoupon && (
+                    <p className={styles["checkout-coupon-applied"]}>
+                      <span className={styles["checkout-coupon-badge"]} aria-hidden="true">
+                        %
+                      </span>
+                      <span className={styles["checkout-coupon-applied-text"]}>
+                        <strong>{appliedCoupon.coupon.code}</strong> applied · {appliedCoupon.coupon.description}
+                      </span>
+                      <button type="button" className={styles["checkout-coupon-remove"]} onClick={() => setAppliedCode(null)}>
+                        Remove
+                      </button>
+                    </p>
+                )}
+                {couponError && <p className={styles["checkout-coupon-error"]}>{couponError}</p>}
+                {appliedCode && !appliedCoupon && couponCheck && "error" in couponCheck && (
+                  <p className={styles["checkout-coupon-error"]}>{couponCheck.error}</p>
+                )}
+
                 {cartSubscription ? (
-                  /* Subscription: the plan at the one-time price, the saving, free delivery (no coupons) */
+                  /* Subscription: the plan at the one-time price, the saving, the coupon, free delivery */
                   <dl className={styles["checkout-bill"]}>
                     <div>
                       <dt>
@@ -807,6 +887,12 @@ export default function CartView() {
                         <dd className={styles["checkout-bill-saving"]}>−{rupees(cartSubscription.oneTimeTotal - cartSubscription.planTotal)}</dd>
                       </div>
                     )}
+                    {appliedCoupon && (
+                      <div>
+                        <dt>Coupon {appliedCoupon.coupon.code}</dt>
+                        <dd className={styles["checkout-bill-saving"]}>−{rupees(couponDiscount)}</dd>
+                      </div>
+                    )}
                     <div>
                       <dt>Delivery fee</dt>
                       <dd>
@@ -817,47 +903,6 @@ export default function CartView() {
                   </dl>
                 ) : (
                 <>
-                {appliedCoupon ? (
-                  <p className={styles["checkout-coupon-applied"]}>
-                    <span className={styles["checkout-coupon-badge"]} aria-hidden="true">
-                      %
-                    </span>
-                    <span className={styles["checkout-coupon-applied-text"]}>
-                      <strong>{appliedCoupon.coupon.code}</strong> applied · {appliedCoupon.coupon.description}
-                    </span>
-                    <button type="button" className={styles["checkout-coupon-remove"]} onClick={() => setAppliedCode(null)}>
-                      Remove
-                    </button>
-                  </p>
-                ) : (
-                  <form
-                    className={styles["checkout-coupon-form"]}
-                    onSubmit={(submitEvent) => {
-                      submitEvent.preventDefault();
-                      applyCoupon();
-                    }}
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M3 12V4h8l10 10-8 8L3 12Z" />
-                      <path d="M7.5 7.5h.01" />
-                    </svg>
-                    <input
-                      value={couponInput}
-                      placeholder="Enter coupon code"
-                      aria-label="Coupon code"
-                      onChange={(changeEvent) => {
-                        setCouponInput(changeEvent.target.value.toUpperCase());
-                        setCouponError("");
-                      }}
-                    />
-                    <button type="submit">Apply</button>
-                  </form>
-                )}
-                {couponError && <p className={styles["checkout-coupon-error"]}>{couponError}</p>}
-                {appliedCode && !appliedCoupon && couponCheck && "error" in couponCheck && (
-                  <p className={styles["checkout-coupon-error"]}>{couponCheck.error}</p>
-                )}
-
                 <dl className={styles["checkout-bill"]}>
                   <div>
                     <dt>Item total (MRP)</dt>
@@ -902,9 +947,9 @@ export default function CartView() {
                   <span className={styles["checkout-to-pay-amount"]}>{rupees(amountToPay)}</span>
                 </p>
                 {cartSubscription
-                  ? cartSubscription.oneTimeTotal > cartSubscription.planTotal && (
+                  ? cartSubscription.oneTimeTotal - amountToPay > 0 && (
                       <p className={styles["checkout-you-save"]}>
-                        You save {rupees(cartSubscription.oneTimeTotal - cartSubscription.planTotal)} on this plan
+                        You save {rupees(cartSubscription.oneTimeTotal - amountToPay)} on this plan
                       </p>
                     )
                   : youSave > 0 && <p className={styles["checkout-you-save"]}>You save {rupees(youSave)} on this order</p>}
@@ -947,7 +992,7 @@ export default function CartView() {
                 <ul className={styles["checkout-promises"]}>
                   <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M6 11h12v9.5H6z" />
+                      <path className={styles["checkout-promise-icon-filled"]} d="M6 11h12v9.5H6z" />
                       <path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" />
                     </svg>
                     Secure payment
@@ -961,8 +1006,8 @@ export default function CartView() {
                   </li>
                   <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14Z" />
-                      <path d="M5 19l7-7" />
+                      <path className={styles["checkout-promise-icon-filled"]} d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14Z" />
+                      <path className={styles["checkout-promise-icon-vein"]} d="M5 19l7-7" />
                     </svg>
                     Freshness promise
                   </li>
@@ -1074,6 +1119,7 @@ export default function CartView() {
         <SameAddressPlanDialog
           plan={planAtPickedAddress}
           newPlan={cartSubscription}
+          amountToPay={amountToPay}
           isLoggedIn={isLoggedIn}
           onExtend={(plan) => placeSubscriptionOrder(plan.deliverTo, plan)}
           onClose={closeSameAddressDialog}

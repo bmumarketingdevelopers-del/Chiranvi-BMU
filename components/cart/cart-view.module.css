@@ -817,7 +817,7 @@
   display: flex;
   align-items: center;
   gap: calc(10 * var(--checkout-design-pixel));
-  margin-top: calc(16 * var(--checkout-design-pixel));
+  margin-top: calc(10 * var(--checkout-design-pixel));
   padding: calc(10 * var(--checkout-design-pixel)) calc(12 * var(--checkout-design-pixel));
   border-radius: calc(10 * var(--checkout-design-pixel));
   background: #fbf3e1;
@@ -902,7 +902,7 @@
   justify-content: space-between;
   margin-top: calc(12 * var(--checkout-design-pixel));
   padding-top: calc(12 * var(--checkout-design-pixel));
-  border-top: 1px solid #e7e8e2;
+  border-top: 1px dashed #d9e2d8;
   font-size: calc(16 * var(--checkout-design-pixel));
   font-weight: 700;
   color: #1e2a22;
@@ -991,13 +991,23 @@
 }
 
 .checkout-promises svg {
-  width: calc(14 * var(--checkout-design-pixel));
-  height: calc(14 * var(--checkout-design-pixel));
+  flex-shrink: 0;
+  width: calc(16 * var(--checkout-design-pixel));
+  height: calc(16 * var(--checkout-design-pixel));
   fill: none;
-  stroke: #1f4d2e;
+  stroke: #2f6b3a;
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* Lock body and leaf filled green (design); the leaf's vein shows white on it */
+.checkout-promises .checkout-promise-icon-filled {
+  fill: #2f6b3a;
+}
+
+.checkout-promises .checkout-promise-icon-vein {
+  stroke: #ffffff;
 }
 
 /* ---------- Buttons used by the order placed and empty cart cards ---------- */
@@ -1263,6 +1273,22 @@
 .delivery-address-box:focus-visible {
   border-color: #2f6b3f;
   outline: none;
+}
+
+/* The address box and the dashed "Add new address" tile next to it (design) */
+.delivery-address-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: calc(14 * var(--checkout-design-pixel));
+  margin-top: calc(14 * var(--checkout-design-pixel));
+}
+
+.delivery-address-row .delivery-address-box {
+  margin-top: 0;
+}
+
+.delivery-address-row .checkout-address-add {
+  min-height: 0;
 }
 
 /* Confirmed: solid green border, like the picked card in the pop-up */
@@ -1915,6 +1941,16 @@
   .plan-popup-secondary-button {
     flex: none;
     font-size: 14px;
+  }
+
+  /* Delivery address: Add new address under the address */
+  .delivery-address-row {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-address-row .checkout-address-add {
+    flex-direction: row;
+    padding: 12px;
   }
 
   /* Subscription: the switch button goes under its question */

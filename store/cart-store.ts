@@ -75,8 +75,13 @@ export function countCartPacks(items: CartItem[]) {
   return items.reduce((packCount, cartItem) => packCount + cartItem.quantity, 0);
 }
 
-// Adds one pack of the product (or one more, if it is already in the cart).
+/*
+  Adds one pack of the product (or one more, if it is already in the cart).
+  A plan left waiting from "Start subscription" goes: the customer is now buying one-time, and while a
+  plan waits the cart page shows only that plan (Add to cart / Buy now would seem to do nothing).
+*/
 export function addProductToCart(product: CartProduct) {
+  if (getCartSubscription()) setCartSubscription(null);
   const cartItems = getCartItems();
   const isAlreadyInCart = cartItems.some((cartItem) => cartItem.productId === product.productId);
   saveCartItems(

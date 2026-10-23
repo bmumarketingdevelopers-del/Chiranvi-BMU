@@ -238,6 +238,9 @@ function CheckoutToCartButton({ isLoggedIn, quantityInCart }: { isLoggedIn: bool
       className={styles["milk-checkout-to-cart-button"]}
       onClick={() => {
         if (quantityInCart === 0) addProductToCart(milkProduct);
+        // A one-time purchase now: a plan left waiting in the cart from "Start subscription" goes
+        // (otherwise the cart would show that plan instead of the one-time milk)
+        setCartSubscription(null);
         router.push("/cart");
       }}
     >
