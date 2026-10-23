@@ -14,6 +14,8 @@
     var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
   );
   --milk-product-horizontal-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440);
+  /* Same unit as the space above the navigation bar (site-navigation-placement.module.css) */
+  --milk-product-vertical-design-pixel: max(100svh / 916, var(--milk-product-design-pixel));
 
   min-height: 100svh;
   background: #ffffff;
@@ -31,9 +33,10 @@
   color: #ffffff;
 }
 
+/* The gap under the navigation bar matches the gap above it (27 of the same unit) */
 .milk-product-page-content {
   width: 100%;
-  padding: calc(4 * var(--milk-product-design-pixel)) calc(58 * var(--milk-product-horizontal-design-pixel))
+  padding: calc(27 * var(--milk-product-vertical-design-pixel)) calc(58 * var(--milk-product-horizontal-design-pixel))
     calc(64 * var(--milk-product-design-pixel));
 }
 
@@ -57,37 +60,44 @@
 }
 
 /*
-  Sticks once its bottom (the delivery steps) reaches the bottom of the screen, while the plan side keeps
-  scrolling: top = screen height - its height (sent by the component) - a small margin. When it is
-  shorter than the screen it sticks just below the navigation bar instead.
+  Fixed under the navigation bar on every screen size, so only the plan side scrolls; when the plan side
+  ends (after the "Order within …" strip) the whole page scrolls on to Fast selling products.
+  It is exactly as tall as the screen below the bar (less the green timings strip and a small margin), so
+  the bottle, review and delivery steps are always fully in view: the review and steps keep their size
+  and the bottle area takes the rest.
 */
 .milk-product-left-column {
-  --milk-navigation-space: calc(140 * max(100svh / 916, var(--milk-product-design-pixel)));
+  /* 27 above the bar + the bar (100) + the same 27 below it */
+  --milk-navigation-space: calc(
+    54 * var(--milk-product-vertical-design-pixel) + 100 * var(--milk-product-design-pixel)
+  );
 
   position: sticky;
-  top: min(
-    var(--milk-navigation-space),
-    calc(100svh - var(--milk-left-column-height, 0px) - 24 * var(--milk-product-design-pixel))
-  );
+  top: var(--milk-navigation-space);
   display: flex;
   flex-direction: column;
   gap: calc(24 * var(--milk-product-design-pixel));
+  /* Screen - bar space - green strip (34) - bottom margin (24) */
+  height: calc(100svh - var(--milk-navigation-space) - 58 * var(--milk-product-design-pixel));
 }
 
 /*
   Bottle area with the landing hero's shapes (hero-section.module.css): a gold ring and the green panel
   on the right half, on white. The green panel is drawn over the ring, so the ring only shows on the
   left, curving behind the bottle like in the hero.
-  Ring sizes are parts of the area's height, so the circle stays round at any width.
+  Ring sizes are parts of the area's height (measured by the component), so the circle stays round.
 */
 .milk-bottle-image-area {
-  --milk-bottle-stage-height: calc(520 * var(--milk-product-design-pixel));
+  /* Used until the component has measured the real height */
+  --milk-bottle-stage-height: calc(400 * var(--milk-product-design-pixel));
 
   position: relative;
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  height: var(--milk-bottle-stage-height);
+  /* Never squeezed below this on very short screens (the column may then run a little past the bottom) */
+  min-height: calc(220 * var(--milk-product-design-pixel));
   overflow: hidden;
   border-radius: calc(16 * var(--milk-product-design-pixel));
   background: #ffffff;
@@ -950,12 +960,15 @@
 
   .milk-product-page-content {
     max-width: none;
+    /* Phones: 12px under the bar, like the 12px above it */
     padding: 12px 16px 40px;
   }
 
+  /* Every block takes the full screen width (the desktop grid's "start" would shrink them to their content) */
   .milk-product-columns {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 20px;
   }
 
@@ -966,10 +979,13 @@
     display: contents;
   }
 
+  /* Phones and upright tablets: one column, so nothing is fixed; the bottle area has its own height */
   .milk-bottle-image-area {
     --milk-bottle-stage-height: 300px;
 
+    flex: none;
     order: 1;
+    height: 300px;
     border-radius: 14px;
   }
 
@@ -1050,6 +1066,7 @@
   }
 
   .milk-product-description {
+    max-width: none;
     margin-top: 10px;
     font-size: 14px;
     line-height: 22px;

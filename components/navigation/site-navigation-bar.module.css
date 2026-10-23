@@ -17,8 +17,11 @@
   height: calc(100 * var(--navigation-design-pixel));
   padding-left: calc(40 * var(--navigation-design-pixel));
   padding-right: calc(51 * var(--navigation-design-pixel));
+  /* Light border and soft shadow so the white bar stands out from white or light pages behind it */
+  border: 1px solid #e8ece6;
   border-radius: calc(20 * var(--navigation-design-pixel));
   background: #ffffff;
+  box-shadow: 0 4px 18px rgba(22, 26, 23, 0.1);
 }
 
 /* Logo */
