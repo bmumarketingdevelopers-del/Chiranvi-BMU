@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useIsLoggedIn } from "@/components/login/login-status";
 import styles from "./shop-by-category-section.module.css";
 
 /*
   Landing page section below the purity promises: "Shop By Category" heading
   with six round category pictures (Milk, Paneer, Ghee, Butter, Flours, Batter).
-  Every category leads to the login page (logging in comes before shopping).
+  Logged out, every category leads to the login page (logging in comes before shopping). Logged in, the
+  categories do not open anything yet (they will open the product pages once those are finished).
   Scroll reveal: when the section scrolls into view, the heading and the six
   categories fade and slide up together.
 */
@@ -26,6 +28,7 @@ const productCategories = [
 
 export default function ShopByCategorySection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const isLoggedIn = useIsLoggedIn();
   // "visible": shown normally (also the server-rendered state, so nothing is hidden without JavaScript).
   // "waiting": hidden, ready to animate. "revealed": animated into view.
   const [revealState, setRevealState] = useState<"visible" | "waiting" | "revealed">("visible");
@@ -70,9 +73,9 @@ export default function ShopByCategorySection() {
       </h2>
 
       <ul className={styles["shop-by-category-list"]}>
-        {productCategories.map((productCategory) => (
-          <li key={productCategory.name}>
-            <Link href="/login" className={styles["shop-by-category-link"]}>
+        {productCategories.map((productCategory) => {
+          const categoryPictureAndName = (
+            <>
               <span className={styles["shop-by-category-image-circle"]}>
                 <Image
                   src={productCategory.imageSource}
@@ -84,9 +87,20 @@ export default function ShopByCategorySection() {
                 />
               </span>
               <span className={styles["shop-by-category-name"]}>{productCategory.name}</span>
-            </Link>
-          </li>
-        ))}
+            </>
+          );
+          return (
+            <li key={productCategory.name}>
+              {isLoggedIn ? (
+                <span className={styles["shop-by-category-link"]}>{categoryPictureAndName}</span>
+              ) : (
+                <Link href="/login" className={styles["shop-by-category-link"]}>
+                  {categoryPictureAndName}
+                </Link>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
