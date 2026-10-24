@@ -574,7 +574,99 @@ const batterPage: OneTimeProductPage = {
   fastSellingCards: defaultFastSellingCards,
 };
 
-// Order on the All products page: the three milks, then the ghees, paneer, the butters, atta, batter
+/*
+  The powders with their own pages: coriander (a spice for cooking) and red sandal (for skin care, so no
+  nutrition facts). Pictures: the admin's uploads, cut out (see-through, shadow below). No reviews yet.
+*/
+const corianderPage: OneTimeProductPage = {
+  kind: "one-time",
+  slug: "coriander-powder",
+  shopCategory: "Powders",
+  cardNote: "stone-ground",
+  status: "published",
+  name: "Coriander Powder",
+  tagline: "Freshly Ground, Fragrant Dhaniya",
+  description:
+    "Made from sun-dried coriander seeds, gently roasted and stone-ground in small batches to keep their warm, citrusy aroma. A spoonful lifts curries, sambar, dals and everyday masalas.",
+  badge: { text: "Kitchen essential", colour: "cream" },
+  rating: { score: "4.6", count: "(new)" },
+  ratingNote: "Small-batch ground",
+  highlights: ["Sun-dried seeds", "Stone-ground", "No added colour", "No preservatives"],
+  pictures: [
+    { imageSource: "/images/products/coriander-powder-bowl.webp", imageWidth: 948, imageHeight: 804, alt: "Chiranvi Farm coriander powder in a wooden bowl" },
+  ],
+  // The panel's automatic size for this shape (fitForPicture), like the other products
+  pictureFit: { widthPercent: 61, heightPercent: 78 },
+  packs: [
+    { packId: "100-g", label: "100 g", size: 100, price: 59 },
+    { packId: "250-g", label: "250 g", size: 250, price: 139 },
+    { packId: "500-g", label: "500 g", size: 500, price: 250, originalPrice: 299, tag: "Best value" },
+  ],
+  defaultPackId: "500-g",
+  priceBreakdown: { kind: "per-unit", unitLabel: "100 g", unitSize: 100, headlineDecimals: 2, cardRounding: "half", taxNote: "Inclusive of all taxes" },
+  cartPackWord: "pouch",
+  quantityWord: { one: "pack", many: "packs" },
+  note: { text: "Ground in small batches · resealable zip pouch", tone: "fresh" },
+  freeDelivery: { kind: "from", amount: 499 },
+  review: { quote: "", name: "", area: "" },
+  deliverySteps: [orderByNineStep, { icon: "box", title: "Packed fresh", detail: "Small batches" }, { icon: "home", title: "At your door", detail: "By tomorrow" }],
+  productInformation: [
+    { label: "Ingredients", value: "100% coriander seeds" },
+    { label: "Net quantity", value: "100 g / 250 g / 500 g" },
+    { label: "Shelf life", value: "Best within 6 months" },
+    { label: "Storage", value: "Cool, dry place; close the pouch after use" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+    { label: "FSSAI Lic. No.", value: "[add number]" },
+  ],
+  nutritionFacts: [
+    { label: "Energy", value: "298 kcal" },
+    { label: "Protein", value: "12 g" },
+    { label: "Total fat", value: "18 g" },
+    { label: "Carbohydrate", value: "55 g" },
+    { label: "Dietary fibre", value: "42 g" },
+  ],
+  nutritionBasis: "per 100 g (approx.)",
+  fastSellingCards: defaultFastSellingCards,
+};
+
+const redSandalPage: OneTimeProductPage = {
+  ...corianderPage,
+  slug: "red-sandalwood-powder",
+  cardNote: "finely sieved",
+  name: "Red Sandal Powder",
+  tagline: "Pure Rakta Chandan for Skin Care",
+  description:
+    "Finely ground from red sandalwood (rakta chandan) and sieved for a smooth paste. Mix with rose water, milk or curd for a traditional face pack that leaves skin feeling fresh and even-toned.",
+  badge: { text: "For skin care", colour: "gold" },
+  rating: { score: "4.5", count: "(new)" },
+  ratingNote: "Traditional beauty care",
+  highlights: ["100% red sandalwood", "Finely sieved", "No added colour", "For external use"],
+  pictures: [
+    { imageSource: "/images/products/red-sandalwood-powder-bowl.webp", imageWidth: 984, imageHeight: 883, alt: "Chiranvi Farm red sandal powder in a wooden bowl with a scoop" },
+  ],
+  pictureFit: { widthPercent: 59, heightPercent: 78 },
+  packs: [
+    { packId: "100-g", label: "100 g", size: 100, price: 199 },
+    { packId: "250-g", label: "250 g", size: 250, price: 449 },
+    { packId: "500-g", label: "500 g", size: 500, price: 850, originalPrice: 999, tag: "Best value" },
+  ],
+  note: { text: "Finely sieved · for external use only", tone: "fresh" },
+  productInformation: [
+    { label: "Ingredients", value: "100% red sandalwood powder" },
+    { label: "Net quantity", value: "100 g / 250 g / 500 g" },
+    { label: "How to use", value: "Mix into a paste, apply for 10–15 minutes, rinse" },
+    { label: "Caution", value: "For external use only; do a patch test first" },
+    { label: "Shelf life", value: "Best within 12 months" },
+    { label: "Storage", value: "Cool, dry place; close the pouch after use" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+  ],
+  nutritionFacts: [],
+  nutritionBasis: "",
+};
+
+// Order on the All products page: the three milks, then the ghees, paneer, the butters, atta, batter, powders
 export const startingProductPages: ProductPage[] = [
   milkPage,
   jerseyMilkPage,
@@ -586,6 +678,8 @@ export const startingProductPages: ProductPage[] = [
   jerseyButterPage,
   attaPage,
   batterPage,
+  corianderPage,
+  redSandalPage,
 ];
 
 // Page address from a product name: "Ragi Flour" → "ragi-flour"

@@ -18,11 +18,21 @@ import {
 } from "@/store/products-store";
 import { useCurrentStaffAccess, useStaffMembers } from "@/store/staff-access-store";
 import { AdminFeatureGate } from "./admin-panel-layout";
-import AddProductPageForm, { AdminProductPagesSection } from "./admin-product-page-form";
+import type { ProductPage, ShopCategory } from "@/components/product/product-page-data";
+import { POWDER_PRODUCT_IDS } from "@/components/product/all-products-page";
+import { deleteProductPage, isStartingProductPage, useProductPages } from "@/store/product-pages-store";
+import AddProductPageForm, {
+  PICTURE_TOO_BIG_MESSAGE,
+  ProductPageCardActions,
+  ProductPageForm,
+  processPictureFile,
+  useDeletedStartingProductPages,
+} from "./admin-product-page-form";
 import {
   AdminFilterTabs,
   AdminPageTop,
   AdminStatCards,
+  AdminDialog,
   adminInputClassName,
   downloadCsv,
   toDateFileName,
@@ -51,6 +61,76 @@ import styles from "./admin-products-page.module.css";
 */
 
 type CategoryTab = "all" | ProductCategory;
+
+// A product page's All products filter → the category tab its card goes under here
+const CATEGORY_FROM_SHOP_CATEGORY: Record<ShopCategory, ProductCategory> = {
+  Milk: "Milk",
+  Paneer: "Paneer",
+  Ghee: "Ghee & butter",
+  Butter: "Ghee & butter",
+  Flours: "Others",
+  Batter: "Others",
+  Powders: "Others",
+  Others: "Others",
+};
+
+// The product page a card belongs to: made with the page in the panel, or the same address (a2-desi-ghee)
+function findPageOfCard(pages: ProductPage[], productId: string) {
+  return pages.find((page) => page.panelCardIds?.includes(productId) || page.slug === productId);
+}
+
+// The photo a card shows: its website page's first picture (what customers see), else the card's own
+function photoOfCard(product: Pick<ShopProduct, "imageSource" | "imageWidth" | "imageHeight">, page?: ProductPage) {
+  const picture = page?.pictures[0];
+  return picture ? { imageSource: picture.imageSource, imageWidth: picture.imageWidth, imageHeight: picture.imageHeight } : product;
+}
+
+/*
+  A card like the rest (stock, switch, prices) for a product page that has none, e.g. one added in the code.
+  It is made with the page address as its name first, so its id is the address (addProduct makes the id from
+  name + pack) and the card and the page find each other without changing the page.
+*/
+function makeCardForPage(page: ProductPage) {
+  const picture = page.pictures[0] && !page.pictures[0].imageSource.startsWith("data:") ? page.pictures[0] : undefined;
+  const photo = picture ? { imageSource: picture.imageSource, imageWidth: picture.imageWidth, imageHeight: picture.imageHeight } : {};
+  const status = { stock: "in" as const, isVisible: page.status === "published" };
+  if (page.kind === "subscription") {
+    // Subscription: all milk
+    const defaultPlan = page.plans.find((plan) => plan.planId === page.defaultPlanId) ?? page.plans[0];
+    const card = addProduct({
+      name: page.slug,
+      packSize: "",
+      category: "Milk",
+      price: page.price,
+      originalPrice: page.originalPrice,
+      subscriptionPrice: defaultPlan ? Math.round(page.price * (1 - defaultPlan.percentOff / 100)) : undefined,
+      ...status,
+      ...photo,
+    });
+    updateProduct(card.productId, { name: page.name, packSize: page.packSize });
+    return;
+  }
+  // One-time purchase: every other product, priced by the pack its page opens on
+  const pack = page.packs.find((onePack) => onePack.packId === page.defaultPackId) ?? page.packs[0];
+  const category = CATEGORY_FROM_SHOP_CATEGORY[page.shopCategory ?? "Others"];
+  const card = addProduct({
+    name: page.slug,
+    packSize: "",
+    category: category === "Milk" ? "Others" : category,
+    price: pack?.price ?? 0,
+    originalPrice: pack?.originalPrice,
+    ...status,
+    ...photo,
+  });
+  updateProduct(card.productId, { name: page.name, packSize: pack ? `${pack.label} ${page.cartPackWord}` : "" });
+}
+
+// Deleting a product: its website page and every card of it go together
+function deleteProductAndPage(productId: string | null, page?: ProductPage) {
+  if (productId) removeProduct(productId);
+  page?.panelCardIds?.forEach((cardId) => cardId !== productId && removeProduct(cardId));
+  if (page) deleteProductPage(page.slug);
+}
 
 const STOCK_LABELS: Record<StockLevel, string> = { in: "In stock", low: "Low stock", out: "Out of stock" };
 
@@ -118,28 +198,6 @@ function formatWhen(isoDate: string) {
   return new Date(isoDate).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 }
 
-// A chosen photo, made smaller (longest side 600 px) so it can be saved in this browser
-function shrinkPhoto(file: File): Promise<{ imageSource: string; imageWidth: number; imageHeight: number }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error);
-    reader.onload = () => {
-      const picture = new window.Image();
-      picture.onerror = () => reject(new Error("Not a picture"));
-      picture.onload = () => {
-        const scale = Math.min(1, 600 / Math.max(picture.width, picture.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(picture.width * scale);
-        canvas.height = Math.round(picture.height * scale);
-        canvas.getContext("2d")?.drawImage(picture, 0, 0, canvas.width, canvas.height);
-        resolve({ imageSource: canvas.toDataURL("image/webp", 0.85), imageWidth: canvas.width, imageHeight: canvas.height });
-      };
-      picture.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function AdminProductsPage() {
   return (
     <AdminFeatureGate feature="products">
@@ -149,7 +207,20 @@ export default function AdminProductsPage() {
 }
 
 function ProductsPage() {
-  const products = useShopProducts();
+  /*
+    Only the products the website shows: a card with its own product page (one card per page, named as on
+    the website) and the powders. Old sample cards the website doesn't have stay saved but are not shown.
+  */
+  const allCards = useShopProducts();
+  const productPages = useProductPages();
+  const pageSlugsShown = new Set<string>();
+  const products = allCards.flatMap((product) => {
+    const page = findPageOfCard(productPages, product.productId);
+    if (!page) return POWDER_PRODUCT_IDS.includes(product.productId) ? [product] : [];
+    if (pageSlugsShown.has(page.slug)) return [];
+    pageSlugsShown.add(page.slug);
+    return [{ ...product, name: page.name }];
+  });
   const [today] = useState(() => new Date());
   const [searchText, setSearchText] = useState("");
   const [tab, setTab] = useState<CategoryTab>("all");
@@ -170,6 +241,41 @@ function ProductsPage() {
     (product) => (tab === "all" || product.category === tab) && (!stockFilter || product.stock === stockFilter),
   );
 
+  /*
+    Product pages: their Open / Edit page / Delete buttons sit on their card. A page with no card here (for
+    example a product added in the code) gets a card of its own in the same grid, and a page from the code
+    deleted in the panel keeps a faded card with "Restore page". These follow the search and the tabs.
+  */
+  const deletedStartingPages = useDeletedStartingProductPages();
+  const pagesWithoutCard = productPages.filter((page) => !products.some((product) => findPageOfCard([page], product.productId)));
+  // The tabs and the Products number count these too
+  const pagesWithoutCardMatching = pagesWithoutCard.filter((page) => !words || page.name.toLowerCase().includes(words));
+  const pageCategory = (page: ProductPage) => CATEGORY_FROM_SHOP_CATEGORY[page.shopCategory ?? "Others"];
+  // Every product is treated the same: a page without a card gets one (once; the ref stops a second copy)
+  const cardsMadeForSlugs = useRef(new Set<string>());
+  useEffect(() => {
+    pagesWithoutCard.forEach((page) => {
+      if (cardsMadeForSlugs.current.has(page.slug)) return;
+      cardsMadeForSlugs.current.add(page.slug);
+      makeCardForPage(page);
+    });
+  });
+  const pageOnlyCards = [
+    ...pagesWithoutCard.map((page) => ({ page, isDeleted: false })),
+    ...deletedStartingPages.map((page) => ({ page, isDeleted: true })),
+  ].filter(
+    ({ page }) =>
+      !stockFilter &&
+      (!words || page.name.toLowerCase().includes(words)) &&
+      (tab === "all" || CATEGORY_FROM_SHOP_CATEGORY[page.shopCategory ?? "Others"] === tab),
+  );
+  const [openPageSlug, setOpenPageSlug] = useState<string | null>(null);
+  const [isPageDeleteAsked, setIsPageDeleteAsked] = useState(false);
+  const canDelete = useAdminCan("delete");
+  const openPageCard =
+    productPages.map((page) => ({ page, isDeleted: false })).find(({ page }) => page.slug === openPageSlug) ??
+    deletedStartingPages.map((page) => ({ page, isDeleted: true })).find(({ page }) => page.slug === openPageSlug);
+
   function showStock(stock: "low" | "out") {
     const isTurningOn = stockFilter !== stock;
     setStockFilter(isTurningOn ? stock : null);
@@ -180,9 +286,13 @@ function ProductsPage() {
       window.setTimeout(() => gridRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
     }
   }
-  const countIn = (category: ProductCategory) => matching.filter((product) => product.category === category).length;
+  const countIn = (category: ProductCategory) =>
+    matching.filter((product) => product.category === category).length +
+    pagesWithoutCardMatching.filter((page) => pageCategory(page) === category).length;
 
-  const available = products.filter(isAvailableToOrder).length;
+  const productCount = products.length + pagesWithoutCard.length;
+  const available =
+    products.filter(isAvailableToOrder).length + pagesWithoutCard.filter((page) => page.status === "published").length;
   const lowStock = products.filter((product) => product.stock === "low").length;
   const outOfStock = products.filter((product) => product.stock === "out").length;
   const bestSeller = products.reduce<ShopProduct | null>(
@@ -235,7 +345,7 @@ function ProductsPage() {
             selected={tab}
             onSelect={setTab}
             tabs={[
-              { key: "all", label: `All ${matching.length}` },
+              { key: "all", label: `All ${matching.length + pagesWithoutCardMatching.length}` },
               ...PRODUCT_CATEGORIES.map((category) => ({ key: category, label: `${category} ${countIn(category)}` })),
             ]}
           />
@@ -246,8 +356,8 @@ function ProductsPage() {
         stats={[
           {
             label: "Products",
-            value: String(products.length),
-            note: `${available} available · ${products.length - available} sold out`,
+            value: String(productCount),
+            note: `${available} available · ${productCount - available} sold out`,
             trend: "plain",
             icon: ["M4 8l8-4 8 4-8 4-8-4Z", "M4 8v8l8 4 8-4V8", "M12 12v8"],
           },
@@ -300,6 +410,7 @@ function ProductsPage() {
         {shown.map((product) => {
           const canBeOrdered = isAvailableToOrder(product);
           const discount = getDiscountPercent(product);
+          const cardPage = findPageOfCard(productPages, product.productId);
           return (
             <li
               key={product.productId}
@@ -317,11 +428,19 @@ function ProductsPage() {
                   </span>
                   {product.showOnBestSellers && <span className={styles["admin-product-best-seller-tag"]}>Best Seller</span>}
                   {discount > 0 && <span className={styles["admin-product-discount-tag"]}>{discount}% off</span>}
-                  <ProductPhoto product={product} className={styles["admin-product-image"]} sizes="120px" />
+                  <ProductPhoto product={photoOfCard(product, cardPage)} className={styles["admin-product-image"]} sizes="120px" />
                 </span>
                 <span className={styles["admin-product-name"]}>{product.name}</span>
                 <span className={styles["admin-product-pack"]}>
                   {product.packSize} · {product.category}
+                </span>
+                {/* Where its website page comes from (a small note; every card works the same) */}
+                <span className={styles["admin-product-origin-note"]}>
+                  {!cardPage
+                    ? "No product page yet"
+                    : isStartingProductPage(cardPage.slug)
+                      ? "Built-in page"
+                      : "Page added in the panel"}
                 </span>
                 {!canBeOrdered && <span className={styles["admin-product-sold-out-note"]}>Shows as Sold out on the website</span>}
               </button>
@@ -351,22 +470,102 @@ function ProductsPage() {
             </li>
           );
         })}
-        {shown.length === 0 && <li className={styles["admin-product-empty"]}>{stockFilter ? (stockFilter === "low" ? "No products are low on stock." : "No products are out of stock.") : "No products match this search."}</li>}
+        {pageOnlyCards.map(({ page, isDeleted }) => {
+          const picture = page.pictures[0];
+          const priceText =
+            page.kind === "subscription"
+              ? `₹${page.price} / ${page.unitName}`
+              : (() => {
+                  const pack = page.packs.find((onePack) => onePack.packId === page.defaultPackId) ?? page.packs[0];
+                  return pack ? `₹${pack.price} / ${pack.label}` : "";
+                })();
+          return (
+            <li key={`page-${page.slug}`} className={`${styles["admin-product-card"]} ${isDeleted ? styles["admin-product-card-hidden"] : ""}`}>
+              {/* Clicking opens its page form to edit (or Restore page, when it was deleted) */}
+              <button
+                type="button"
+                className={styles["admin-product-open-button"]}
+                aria-label={`${page.name} website page`}
+                onClick={() => setOpenPageSlug(page.slug)}
+              >
+                <span className={styles["admin-product-image-area"]}>
+                  <span className={`${dashboardStyles["admin-status"]} ${styles["admin-product-stock"]} ${isDeleted ? sharedStyles["admin-status-warning"] : dashboardStyles["admin-status-delivered"]}`}>
+                    {isDeleted ? "Deleted" : page.status === "draft" ? "Draft" : "On website"}
+                  </span>
+                  {picture && (
+                    <ProductPhoto
+                      product={{ imageSource: picture.imageSource, imageWidth: picture.imageWidth, imageHeight: picture.imageHeight }}
+                      className={styles["admin-product-image"]}
+                      sizes="120px"
+                    />
+                  )}
+                </span>
+                <span className={styles["admin-product-name"]}>{page.name}</span>
+                <span className={styles["admin-product-pack"]}>
+                  {page.kind === "subscription" ? "Subscription" : "One-time"} · {CATEGORY_FROM_SHOP_CATEGORY[page.shopCategory ?? "Others"]}
+                </span>
+              </button>
+              <div className={styles["admin-product-bottom-row"]}>
+                <p className={styles["admin-product-prices"]}>
+                  <span className={styles["admin-product-price"]}>{priceText}</span>
+                  <span className={styles["admin-product-subscription"]}>Product page only</span>
+                </p>
+              </div>
+            </li>
+          );
+        })}
+        {shown.length === 0 && pageOnlyCards.length === 0 && <li className={styles["admin-product-empty"]}>{stockFilter ? (stockFilter === "low" ? "No products are low on stock." : "No products are out of stock.") : "No products match this search."}</li>}
       </ul>
 
       {editing && (
         <ProductPopup
           key={editingId}
           product={editing === "new" ? null : editing}
+          page={editing === "new" ? undefined : findPageOfCard(productPages, editing.productId)}
           onClose={() => setEditingId(null)}
           showToast={showToast}
         />
       )}
 
-      {isAddingProduct && <AddProductPageForm onClose={() => setIsAddingProduct(false)} showToast={showToast} />}
+      {/* A product page with no card of its own: edit it right away, with Delete product at the bottom */}
+      {openPageCard && !openPageCard.isDeleted && (
+        <ProductPageForm
+          key={openPageCard.page.slug}
+          editingPage={openPageCard.page}
+          onClose={() => setOpenPageSlug(null)}
+          showToast={showToast}
+          onDelete={canDelete ? () => setIsPageDeleteAsked(true) : undefined}
+        />
+      )}
+      {openPageCard && !openPageCard.isDeleted && isPageDeleteAsked && (
+        <AdminDialog
+          title={`Delete ${openPageCard.page.name}?`}
+          submitLabel="Yes, delete"
+          isDanger
+          onClose={() => setIsPageDeleteAsked(false)}
+          onSubmit={() => {
+            deleteProductAndPage(null, openPageCard.page);
+            showToast(`${openPageCard.page.name} deleted`);
+            setIsPageDeleteAsked(false);
+            setOpenPageSlug(null);
+          }}
+        >
+          <p className={styles["admin-product-page-only-dialog"]}>It will be removed from the panel and the website.</p>
+        </AdminDialog>
+      )}
+      {/* A product from the code that was deleted: Restore page brings it back */}
+      {openPageCard?.isDeleted && (
+        <AdminDialog title={openPageCard.page.name} submitLabel="Close" onClose={() => setOpenPageSlug(null)} onSubmit={() => setOpenPageSlug(null)}>
+          <div className={styles["admin-product-page-only-dialog"]}>
+            <p>
+              {openPageCard.page.kind === "subscription" ? "Subscription" : "One-time"} product · /products/{openPageCard.page.slug}
+            </p>
+            <ProductPageCardActions page={openPageCard.page} isDeleted={openPageCard.isDeleted} showToast={showToast} />
+          </div>
+        </AdminDialog>
+      )}
 
-      {/* Every product's website page: Open, Edit, Delete (and Restore original for the starting ones) */}
-      <AdminProductPagesSection showToast={showToast} />
+      {isAddingProduct && <AddProductPageForm onClose={() => setIsAddingProduct(false)} showToast={showToast} />}
 
       {toast}
     </div>
@@ -400,14 +599,20 @@ function ProductPhoto({ product, className, sizes }: { product: Pick<ShopProduct
 */
 function ProductPopup({
   product,
+  page,
   onClose,
   showToast,
 }: {
   product: ShopProduct | null;
+  page?: ProductPage; // its website page, when it has one (Open / Edit page / Delete page in the pop-up)
   onClose: () => void;
   showToast: (message: string) => void;
 }) {
-  const [form, setForm] = useState<ProductForm>(() => (product ? toForm(product) : EMPTY_FORM));
+  // The photo starts as the one the website shows (its page's first picture), so both always match
+  const [form, setForm] = useState<ProductForm>(() => (product ? { ...toForm(product), ...photoOfCard(product, page) } : EMPTY_FORM));
+  // Saves the website page fields below (one Save changes for the card and its page)
+  const pageSaveRef = useRef<(() => boolean) | null>(null);
+  const [isPageProblem, setIsPageProblem] = useState(false);
   const changedBy = useCurrentStaffAccess()?.name ?? "Chiranvi Panel";
   const team = useStaffMembers();
   // Prices are changed only by the owner; the Delete button needs Delete (Roles & permissions)
@@ -420,6 +625,7 @@ function ProductPopup({
   // Shown inside the pop-up (a toast would sit behind it): empty boxes turn red after Save is pressed
   const [hasTriedSaving, setHasTriedSaving] = useState(false);
   const [photoProblem, setPhotoProblem] = useState("");
+  const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
   const missingFields = [
     !form.name.trim() && "Product name",
     !form.packSize.trim() && "Pack",
@@ -462,16 +668,24 @@ function ProductPopup({
     setForm({ ...form, price, discountPercent: discount ? String(discount) : "" });
   }
 
+  // The same preparation as the page form: background removed, soft shadow below, see-through WebP (up to 25 MB)
   async function choosePhoto(file: File | undefined) {
     if (!file) return;
+    setIsPreparingPhoto(true);
+    setPhotoProblem("");
     try {
-      const photo = await shrinkPhoto(file);
+      // White products (milk) keep their light bottom; others lose the photo's grey floor shadow
+      const photo = await processPictureFile(file, form.category !== "Milk");
       // Keeps anything typed while the photo was loading
       setForm((latestForm) => ({ ...latestForm, ...photo }));
-      setPhotoProblem("");
-    } catch {
-      setPhotoProblem("That file is not a picture. Choose a JPG, PNG or WEBP.");
+    } catch (error) {
+      setPhotoProblem(
+        error instanceof Error && error.message === PICTURE_TOO_BIG_MESSAGE
+          ? PICTURE_TOO_BIG_MESSAGE
+          : "That file is not a picture. Choose a JPG, PNG or WEBP.",
+      );
     }
+    setIsPreparingPhoto(false);
   }
 
   function save() {
@@ -490,6 +704,12 @@ function ProductPopup({
       showToast(OWNER_ONLY_MESSAGE);
       return;
     }
+    // The page is saved first: if one of its fields is missing, nothing is saved yet
+    if (page && pageSaveRef.current && !pageSaveRef.current()) {
+      setIsPageProblem(true);
+      return;
+    }
+    setIsPageProblem(false);
     const details = {
       name: form.name.trim(),
       category: form.category,
@@ -499,9 +719,11 @@ function ProductPopup({
       // Only milk can be subscribed to
       subscriptionPrice: form.category === "Milk" ? Number(form.subscriptionPrice) || undefined : undefined,
       showOnBestSellers: form.showOnBestSellers,
-      imageSource: form.imageSource,
-      imageWidth: form.imageWidth,
-      imageHeight: form.imageHeight,
+      // An uploaded photo of a product with a page is kept on the page only (the card shows the page's
+      // photo), so the browser's small storage holds it once
+      ...(page && form.imageSource?.startsWith("data:")
+        ? {}
+        : { imageSource: form.imageSource, imageWidth: form.imageWidth, imageHeight: form.imageHeight }),
     };
 
     if (!product) {
@@ -597,9 +819,9 @@ function ProductPopup({
                 <path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4v-11Z" />
                 <path d="M12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
               </svg>
-              {form.imageSource ? "Change photo" : "Add photo"}
+              {isPreparingPhoto ? "Removing the background…" : form.imageSource ? "Change photo" : "Add photo"}
             </label>
-            {photoProblem && <p className={styles["admin-product-field-problem"]}>{photoProblem}</p>}
+            {photoProblem &&<p className={styles["admin-product-field-problem"]}>{photoProblem}</p>}
             {startingPhoto && form.imageSource !== startingPhoto.imageSource && (
               <button
                 type="button"
@@ -620,6 +842,21 @@ function ProductPopup({
               <p className={styles["admin-product-popup-waiting"]}>
                 {waitingCount} {waitingCount === 1 ? "customer is" : "customers are"} waiting to be notified
               </p>
+            )}
+
+            {/* Its website page (/products/…); its fields are below, saved with Save changes */}
+            {page && (
+              <div className={styles["admin-product-popup-page-section"]}>
+                <p className={styles["admin-product-popup-page-title"]}>Website page</p>
+                <a
+                  className={styles["admin-product-popup-page-link"]}
+                  href={`/products/${page.slug}${page.status === "draft" ? "?preview=1" : ""}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {page.status === "draft" ? "Preview" : "Open"} /products/{page.slug} ↗
+                </a>
+              </div>
             )}
           </div>
 
@@ -752,6 +989,29 @@ function ProductPopup({
           </div>
         </div>
 
+        {/* The website page's fields (description, packs, information …); name and photo come from above */}
+        {page && (
+          <ProductPageForm
+            editingPage={page}
+            onClose={onClose}
+            showToast={showToast}
+            embedded={{
+              registerSave: (savePage) => {
+                pageSaveRef.current = savePage;
+              },
+              name: form.name,
+              photo: form.imageSource
+                ? { imageSource: form.imageSource, imageWidth: form.imageWidth ?? 400, imageHeight: form.imageHeight ?? 400 }
+                : undefined,
+            }}
+          />
+        )}
+
+        {isPageProblem && (
+          <p className={styles["admin-product-save-problem"]} role="alert">
+            Fill in the missing website page details (listed in red under Website page) to save.
+          </p>
+        )}
         {hasTriedSaving && missingFields.length > 0 && (
           <p className={styles["admin-product-save-problem"]} role="alert">
             Fill in {missingFields.join(", ").replace(/, ([^,]*)$/, " and $1")} to {product ? "save" : "add the product"}.
@@ -762,8 +1022,8 @@ function ProductPopup({
           // Delete asks once more before the product is gone
           <div className={`${styles["admin-product-popup-buttons"]} ${styles["admin-product-delete-confirm"]}`} role="alert">
             <p className={styles["admin-product-delete-question"]}>
-              Delete {product.name} · {product.packSize}? It will be removed from the panel and the website. This cannot be
-              undone.
+              Delete {product.name} · {product.packSize}? It{page ? " and its website page" : ""} will be removed from the panel
+              and the website.{page && isStartingProductPage(page.slug) ? "" : " This cannot be undone."}
             </p>
             <button type="button" className={sharedStyles["admin-dialog-cancel"]} onClick={() => setIsDeleteAsked(false)}>
               Keep it
@@ -772,7 +1032,7 @@ function ProductPopup({
               type="button"
               className={styles["admin-product-delete-yes"]}
               onClick={() => {
-                removeProduct(product.productId);
+                deleteProductAndPage(product.productId, page);
                 showToast(`${product.name} · ${product.packSize} deleted`);
                 onClose();
               }}

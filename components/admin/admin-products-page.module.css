@@ -133,6 +133,13 @@
   color: #7a837c;
 }
 
+/* Where its website page comes from: small and quiet */
+.admin-product-origin-note {
+  margin-top: calc(2 * var(--admin-pixel));
+  font-size: calc(10.5 * var(--admin-pixel));
+  color: #9aa39c;
+}
+
 .admin-product-bottom-row {
   display: flex;
   align-items: flex-end;
@@ -799,4 +806,40 @@
   stroke: currentColor;
   stroke-width: 2.2;
   stroke-linecap: round;
+}
+
+/* The pop-up's "Website page" box under the photo: a link to open the page */
+.admin-product-popup-page-section {
+  margin-top: calc(14 * var(--admin-pixel));
+  padding: calc(12 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #fafaf7;
+}
+
+.admin-product-popup-page-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-product-popup-page-link {
+  display: block;
+  margin-top: calc(6 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  word-break: break-all;
+  color: #2f6b3a;
+}
+
+.admin-product-popup-page-link:hover {
+  text-decoration: underline;
+}
+
+/* Pop-up of a product page that has no card of its own */
+.admin-product-page-only-dialog {
+  grid-column: 1 / -1;
+  font-size: calc(13 * var(--admin-pixel));
+  color: #6e7a72;
 }

@@ -10,7 +10,7 @@ import styles from "./bulk-order-popup.module.css";
 /*
   "We take bulk orders!" pop-up, on every customer page (mounted once in app/layout.tsx):
   - every time the site is opened, refreshed or reopened: shows 5 seconds after the page loads; closing
-    it (×, Maybe later or Escape) brings it back once more, 30 seconds later, then not again until the next
+    it (×, Maybe later, Escape or a click outside it) brings it back once more, 30 seconds later, then not again until the next
     load (also after a quote is sent);
   - never on /admin, /login, /cart or /checkout;
   - floats over the page without darkening it: the page behind can still be scrolled and used;
@@ -69,14 +69,22 @@ export default function BulkOrderPopup() {
     setView("hidden");
   }
 
-  // Escape closes it
+  // Escape, or a click anywhere outside the pop-up, closes it
+  const popupRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (view === "hidden") return;
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") close();
     }
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) close();
+    }
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+    };
   });
 
   if (view === "hidden" || isHiddenPage) return null;
@@ -85,6 +93,7 @@ export default function BulkOrderPopup() {
     // A see-through layer only to centre the pop-up: clicks and scrolling go through to the page
     <div className={styles["bulk-order-backdrop"]}>
       <div
+        ref={popupRef}
         role="dialog"
         aria-modal="false"
         aria-labelledby="bulk-order-title"
@@ -183,6 +192,23 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [problems, setProblems] = useState<string[]>([]);
   const firstFieldRef = useRef<HTMLInputElement>(null);
+  // The list shows two products; "View more" scrolls to the next ones and goes once the end shows
+  const productListRef = useRef<HTMLUListElement>(null);
+  const [isListAtEnd, setIsListAtEnd] = useState(false);
+  const checkListEnd = () => {
+    const list = productListRef.current;
+    if (list) setIsListAtEnd(list.scrollTop + list.clientHeight >= list.scrollHeight - 4);
+  };
+  // Scrolls so the first product not fully showing is at the top (whole rows, never half a row)
+  const showMoreProducts = () => {
+    const list = productListRef.current;
+    if (!list) return;
+    // Row positions measured from the top of the list's content
+    const rowTop = (row: Element) => (row as HTMLElement).offsetTop - list.offsetTop;
+    const listBottom = list.scrollTop + list.clientHeight;
+    const nextRow = Array.from(list.children).find((row) => rowTop(row) + (row as HTMLElement).offsetHeight > listBottom + 1);
+    if (nextRow) list.scrollTo({ top: rowTop(nextRow), behavior: "smooth" });
+  };
 
   useEffect(() => {
     firstFieldRef.current?.focus();
@@ -269,7 +295,7 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
         <span>Products you need</span>
         <span className={styles["bulk-order-products-count"]}>{chosenCount > 0 ? `${chosenCount} chosen` : "Add the quantity"}</span>
       </div>
-      <ul className={styles["bulk-order-products"]} data-lenis-prevent>
+      <ul ref={productListRef} className={styles["bulk-order-products"]} data-lenis-prevent onScroll={checkListEnd}>
         {productCards.map((card) => {
           const quantity = quantities[card.cardId] ?? 0;
           return (
@@ -301,6 +327,14 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
           );
         })}
       </ul>
+      {!isListAtEnd && productCards.length > 2 && (
+        <button type="button" className={styles["bulk-order-view-more"]} onClick={showMoreProducts}>
+          View more products
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      )}
 
       <button type="submit" className={styles["bulk-order-main-button"]}>
         Submit request

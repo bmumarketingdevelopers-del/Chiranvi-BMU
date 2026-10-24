@@ -45,8 +45,8 @@ export type ProductCard = {
   isSubscription?: boolean; // milk: View product (subscription or one-time is chosen on its page)
 };
 
-// The powders shown before their own pages exist (ids in store/products-store.ts)
-const POWDER_PRODUCT_IDS = ["moringa-powder", "turmeric-powder", "red-chilli-powder"];
+// The powders shown before their own pages exist (ids in store/products-store.ts; the panel shows these too)
+export const POWDER_PRODUCT_IDS = ["moringa-powder", "turmeric-powder", "red-chilli-powder"];
 
 // Small picture on each filter button (pictures the site already has)
 const FILTER_PICTURES: Record<ShopCategory, { imageSource: string; imageWidth: number; imageHeight: number }> = {
@@ -68,11 +68,14 @@ function formatRupees(amount: number) {
   One card per product page: a one-time product shows its main pack (the one its page opens on, e.g.
   ghee 1 litre), a subscription product its one-time price per unit. The other sizes are chosen on the page.
 */
-function toPageCards(pages: ProductPage[]): ProductCard[] {
+function toPageCards(pages: ProductPage[], shopProducts: ShopProduct[]): ProductCard[] {
   return pages
     .filter((page) => page.status === "published")
     .flatMap((page): ProductCard[] => {
+      // Its card on the panel's Products & pricing: switched off or out of stock there shows Sold out here
+      const panelCard = shopProducts.find((product) => product.productId === page.slug || page.panelCardIds?.includes(product.productId));
       const shared = {
+        isSoldOut: panelCard ? !isAvailableToOrder(panelCard) : undefined,
         slug: page.slug,
         hasPage: true,
         name: page.name,
@@ -308,7 +311,7 @@ export function useProductCards() {
   const shopProducts = useShopProducts();
   return useMemo(() => {
     const pageSlugs = new Set(productPages.map((page) => page.slug));
-    const pageCards = toPageCards(productPages);
+    const pageCards = toPageCards(productPages, shopProducts);
     // The upcoming flours sit right after the other flours (atta)
     const lastFlourIndex = pageCards.map((card) => card.category).lastIndexOf("Flours");
     const flourCards = toUpcomingFlourCards(pageSlugs);

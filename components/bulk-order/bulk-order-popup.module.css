@@ -26,15 +26,17 @@
     on large screens (the smaller of width and height decides, so short screens get a smaller pop-up).
     zoom scales everything inside together, so it keeps its look on every screen.
   */
-  --bulk-order-scale: clamp(0.8, min(100vw / 480px, 100svh / 760px), 1.15);
+  --bulk-order-scale: clamp(0.8, min(100vw / 520px, 100svh / 760px), 1.15);
 
   position: relative;
   zoom: var(--bulk-order-scale);
   /* Never wider or taller than the screen (less a 16px margin), counting the zoom */
-  width: min(400px, (100vw - 32px) / var(--bulk-order-scale));
+  width: min(380px, (100vw - 32px) / var(--bulk-order-scale));
   max-height: calc((100svh - 32px) / var(--bulk-order-scale));
   pointer-events: auto;
   overflow-y: auto;
+  /* Still scrolls on a very short screen, but no scrollbar shows */
+  scrollbar-width: none;
   border-radius: 20px;
   background: #ffffff;
   /* A stronger shadow, as nothing darkens the page behind it */
@@ -43,6 +45,10 @@
     0 0 0 1px rgba(19, 37, 27, 0.06);
   /* Same reveal as the footer banner: fade in and slide up */
   animation: bulk-order-popup-reveal 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.bulk-order-popup::-webkit-scrollbar {
+  display: none;
 }
 
 /* The form needs more room */
@@ -85,7 +91,7 @@
 /* Green band with the products; the lines draw themselves like the footer banner's */
 .bulk-order-band {
   position: relative;
-  height: 150px;
+  height: 230px;
   overflow: hidden;
   background: linear-gradient(135deg, #1f4d2e 0%, #2f6b3a 100%);
 }
@@ -131,7 +137,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 92px;
+  height: 116px;
 }
 
 .bulk-order-band-picture {
@@ -145,7 +151,7 @@
 
 /* Each picture tucks a little under the one before it; sizes kept in proportion to the real packs */
 .bulk-order-band-picture + .bulk-order-band-picture {
-  margin-left: -10px;
+  margin-left: -26px;
 }
 
 .bulk-order-band-picture:nth-child(1) {
@@ -182,7 +188,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 18px 24px 20px;
+  padding: 26px 26px 28px;
   text-align: center;
 }
 
@@ -355,6 +361,8 @@
   align-items: baseline;
   justify-content: space-between;
   margin-top: 20px;
+  /* "Add the quantity" ends in line with the + buttons (row border 1.5px + row padding 10px) */
+  padding-right: 11.5px;
   font-family: var(--font-ubuntu), sans-serif;
   font-size: 16px;
   font-weight: 700;
@@ -367,16 +375,55 @@
   color: #285c3a;
 }
 
-/* The products: a scrollable list, one row each */
+/*
+  The products: one row each, two rows showing (63px rows + 8px gap), the rest scrolled to; no scrollbar.
+  Rows keep their height (no shrinking) so exactly two fit.
+*/
 .bulk-order-products {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 290px;
+  max-height: 134px;
   margin-top: 10px;
-  padding-right: 4px;
   overflow-y: auto;
+  scrollbar-width: none;
   list-style: none;
+}
+
+.bulk-order-products::-webkit-scrollbar {
+  display: none;
+}
+
+.bulk-order-products > li {
+  flex-shrink: 0;
+}
+
+/* Under the list: tells there are more products and scrolls to them */
+.bulk-order-view-more {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #285c3a;
+  cursor: pointer;
+}
+
+.bulk-order-view-more:hover {
+  text-decoration: underline;
+}
+
+.bulk-order-view-more svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .bulk-order-product {
@@ -469,9 +516,5 @@
 @media (max-width: 600px) {
   .bulk-order-fields {
     grid-template-columns: 1fr;
-  }
-
-  .bulk-order-products {
-    max-height: 240px;
   }
 }

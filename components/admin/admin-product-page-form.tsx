@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   atYourDoorStep,
   defaultFastSellingCards,
@@ -31,7 +31,6 @@ import {
   restoreStartingProductPage,
   updateProductPage,
   useHiddenStartingProductSlugs,
-  useProductPages,
 } from "@/store/product-pages-store";
 import { PRODUCT_CATEGORIES, addProduct, removeProduct, useShopProducts, type ProductCategory } from "@/store/products-store";
 import { AdminDialog, AdminDialogField, adminInputClassName } from "./admin-shared";
@@ -45,8 +44,8 @@ import styles from "./admin-product-page-form.module.css";
       2. details   the form for that kind: texts, pictures, prices, packs or plans, delivery steps, review,
                    product information and nutrition (one-time), draft or published
       3. saved     links to open (or preview) /products/<address>
-  - AdminProductPagesSection: every product page in a list with Open, Edit, Delete (and Restore original
-    for the starting pages from the code).
+  - ProductPageCardActions: the page's Open, Edit page, Delete page (and Restore) buttons, inside its card's
+    pop-up on Products & pricing (the cards themselves look as before).
   The pages are drawn by the template for their kind (components/product/*-product-page.tsx); nothing is
   coded per product. Saved by store/product-pages-store.ts: in this browser until Supabase is connected, so
   for now changes show only in this browser. A product added here also gets its card(s) on Products &
@@ -74,6 +73,7 @@ const PRICE_BREAKDOWN_CHOICES = [
   { value: "item-count", label: "about how many items (e.g. idlis)", unitSize: 0 },
 ];
 
+// "auto" (sized from the picture's shape, see fitForPicture) is the first choice; these force a size
 const PICTURE_SHAPES: { value: string; label: string; fit: PictureFit }[] = [
   { value: "tall", label: "Tall (bottle, jar, pouch)", fit: { heightPercent: 84 } },
   { value: "wide", label: "Wide (box, board)", fit: { widthPercent: 72, heightPercent: 80 } },
@@ -140,9 +140,15 @@ const textOf = (value: number | undefined) => (value === undefined ? "" : String
   5. saved as a transparent WebP (the same look as a PNG, many times smaller, so it fits the browser's storage).
 */
 const LONGEST_SIDE_LIMIT = 1600;
+// Biggest file the admin may upload (bigger ones are refused with a message)
+export const PICTURE_UPLOAD_LIMIT_MB = 25;
+export const PICTURE_TOO_BIG_MESSAGE = `That picture is bigger than ${PICTURE_UPLOAD_LIMIT_MB} MB. Choose a smaller one.`;
 // How far (in colour) from the background a pixel may be and still count as background: enough for JPG
 // noise, small enough not to eat light parts of the product (clear plastic, white labels) that touch it
 const BACKGROUND_TOLERANCE = 26;
+// How many rows of the outline may get the product's own colour where they are a pale blend (the white
+// rim): one row per 50 px of the picture's longest side, 6 to 24 (blurry or enlarged photos have wider rims)
+const edgeRecolourRows = (width: number, height: number) => Math.min(24, Math.max(6, Math.round(Math.max(width, height) / 50)));
 
 function loadPicture(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -246,11 +252,12 @@ function removeBackground(pixels: Uint8ClampedArray, width: number, height: numb
     const red = pixels[pixel * 4];
     const green = pixels[pixel * 4 + 1];
     const blue = pixels[pixel * 4 + 2];
+    // Grey enough (a little warmth from the product is fine) and not too dark (dark parts of the product stay)
     return (
       lowestColouredRow[x] >= 0 &&
       Math.floor(pixel / width) > lowestColouredRow[x] &&
-      Math.max(red, green, blue) - Math.min(red, green, blue) <= 12 &&
-      Math.min(red, green, blue) >= 110
+      Math.max(red, green, blue) - Math.min(red, green, blue) <= 18 &&
+      Math.min(red, green, blue) >= 85
     );
   };
   head = 0;
@@ -290,10 +297,12 @@ function removeBackground(pixels: Uint8ClampedArray, width: number, height: numb
   }
 
   // 3. The edge band (the 3 pixels of product next to the background): fade by closeness to the
-  //    background and take the background's tint out of the colour (no halo)
-  const bandDepth = new Uint8Array(pixelCount); // 0: background or deep inside; 1–3: rows of the band
+  //    background and take the background's tint out of the colour (no halo). The rows after the
+  //    third are only recoloured (step 4), as blurry or JPG photos carry the white into the product.
+  const recolourRows = edgeRecolourRows(width, height);
+  const bandDepth = new Uint8Array(pixelCount); // 0: background or deep inside; 1 and up: rows of the band
   let edge = background;
-  for (let depth = 1; depth <= 3; depth++) {
+  for (let depth = 1; depth <= recolourRows; depth++) {
     const next = edge.slice();
     for (let pixel = 0; pixel < pixelCount; pixel++) {
       if (!edge[pixel] && touches(edge, pixel, 1)) {
@@ -306,12 +315,14 @@ function removeBackground(pixels: Uint8ClampedArray, width: number, height: numb
   const alpha = new Float32Array(pixelCount);
   for (let pixel = 0; pixel < pixelCount; pixel++) {
     if (background[pixel]) continue;
-    if (!bandDepth[pixel]) {
+    if (!bandDepth[pixel] || bandDepth[pixel] > 3) {
       alpha[pixel] = 1;
       continue;
     }
     const closeness = (distance[pixel] - BACKGROUND_TOLERANCE * 0.6) / (BACKGROUND_TOLERANCE * 1.4);
     alpha[pixel] = Math.max(0, Math.min(1, closeness + (bandDepth[pixel] - 1) * 0.25));
+    // The outermost row is always mostly see-through, so no light rim shows on the gold and green
+    if (bandDepth[pixel] === 1) alpha[pixel] = Math.min(alpha[pixel], 0.4);
   }
 
   // Soften the outline: average the alpha of the band with its neighbours (3 × 3)
@@ -344,6 +355,97 @@ function removeBackground(pixels: Uint8ClampedArray, width: number, height: numb
     }
     pixels[pixel * 4 + 3] = Math.round(pixels[pixel * 4 + 3] * pixelAlpha);
   }
+
+  /*
+    4. Edge colour: the product's own colour (from just past the band) is carried outward, and a band pixel
+    that is a pale blend of it and the background (lighter, and lying between the two colours) takes it on:
+    fully at the outline, less further in, so the outline matches the product (no white line, no pale
+    gradient) while highlights inside stay. Darker edges and real light parts of the product (a white cap
+    or label is not a blend) are left as they are.
+  */
+  const isInside = (pixel: number) => !background[pixel] && !bandDepth[pixel];
+  const brightness = (pixel: number) => pixels[pixel * 4] * 0.299 + pixels[pixel * 4 + 1] * 0.587 + pixels[pixel * 4 + 2] * 0.114;
+  // The product's colour behind each band pixel (from the inside, passed outward row by row)
+  const productColour = new Float32Array(pixelCount * 3);
+  /*
+    A pixel as a blend of the inside colour and the background colour: how much background is in it
+    (0 to 1) and how far it is from being a pure blend (0: exactly one)
+  */
+  const asBlend = (pixel: number, insideRed: number, insideGreen: number, insideBlue: number) => {
+    const lineRed = backgroundRed - insideRed;
+    const lineGreen = backgroundGreen - insideGreen;
+    const lineBlue = backgroundBlue - insideBlue;
+    const lineLength = lineRed * lineRed + lineGreen * lineGreen + lineBlue * lineBlue || 1;
+    const red = pixels[pixel * 4] - insideRed;
+    const green = pixels[pixel * 4 + 1] - insideGreen;
+    const blue = pixels[pixel * 4 + 2] - insideBlue;
+    const share = Math.max(0, Math.min(1, (red * lineRed + green * lineGreen + blue * lineBlue) / lineLength));
+    return { share, offLine: Math.hypot(red - share * lineRed, green - share * lineGreen, blue - share * lineBlue) };
+  };
+  for (let depth = recolourRows; depth >= 1; depth--) {
+    for (let pixel = 0; pixel < pixelCount; pixel++) {
+      if (bandDepth[pixel] !== depth) continue;
+      const x = pixel % width;
+      const y = (pixel - x) / width;
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let count = 0;
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const neighbour = ny * width + nx;
+          // The inside's own colour, or the product colour already found for a deeper band row
+          if (isInside(neighbour)) {
+            red += pixels[neighbour * 4];
+            green += pixels[neighbour * 4 + 1];
+            blue += pixels[neighbour * 4 + 2];
+          } else if (bandDepth[neighbour] > depth) {
+            red += productColour[neighbour * 3];
+            green += productColour[neighbour * 3 + 1];
+            blue += productColour[neighbour * 3 + 2];
+          } else continue;
+          count++;
+        }
+      }
+      // No deeper neighbour (a thin part): its own colour carries on outward
+      const [insideRed, insideGreen, insideBlue] = count
+        ? [red / count, green / count, blue / count]
+        : [pixels[pixel * 4], pixels[pixel * 4 + 1], pixels[pixel * 4 + 2]];
+      const insideBrightness = insideRed * 0.299 + insideGreen * 0.587 + insideBlue * 0.114;
+      // A white rim fades out going inward; a light part of the product (a wooden rim beside dark
+      // powder) stays just as pale further in, so a pixel paler than the fade allows for its row stays
+      const blend = asBlend(pixel, insideRed, insideGreen, insideBlue);
+      const allowedShare = 0.95 * (1 - (depth - 1) / recolourRows);
+      const isLighter = brightness(pixel) > insideBrightness + 6;
+      const isPaleBlend = isLighter && blend.offLine <= 24 && blend.share <= allowedShare;
+      // A clearly lighter part of the product (not a blend) passes its own colour outward, so a wooden
+      // rim's outline gets wood, not powder; everything else passes on the product colour it was given
+      const isLightPartOfProduct = isLighter && !isPaleBlend;
+      productColour[pixel * 3] = isLightPartOfProduct ? pixels[pixel * 4] : insideRed;
+      productColour[pixel * 3 + 1] = isLightPartOfProduct ? pixels[pixel * 4 + 1] : insideGreen;
+      productColour[pixel * 3 + 2] = isLightPartOfProduct ? pixels[pixel * 4 + 2] : insideBlue;
+      if (!isPaleBlend) continue;
+      // Fully the product's colour at the outline, half of it at the band's inner end
+      const strength = 1 - ((depth - 1) / recolourRows) * 0.5;
+      pixels[pixel * 4] = Math.round(pixels[pixel * 4] + (insideRed - pixels[pixel * 4]) * strength);
+      pixels[pixel * 4 + 1] = Math.round(pixels[pixel * 4 + 1] + (insideGreen - pixels[pixel * 4 + 1]) * strength);
+      pixels[pixel * 4 + 2] = Math.round(pixels[pixel * 4 + 2] + (insideBlue - pixels[pixel * 4 + 2]) * strength);
+    }
+  }
+}
+
+/*
+  How big a picture shows on its product page, from its shape, so every product looks the same size as
+  the others: tall ones (bottle, jar, pouch) by height; wider ones (bowl, box, board) by width, wider
+  pictures a little wider, never taller than the tall ones.
+*/
+export function fitForPicture(imageWidth: number, imageHeight: number): PictureFit {
+  const shape = imageWidth / imageHeight;
+  if (shape < 0.85) return { heightPercent: 82 };
+  return { widthPercent: Math.round(Math.min(76, Math.max(52, 58 + (shape - 1.1) * 35))), heightPercent: 78 };
 }
 
 // The product's box (the area of pixels that are mostly solid), to place the shadow under it
@@ -363,7 +465,9 @@ function findSolidBox(pixels: Uint8ClampedArray, width: number, height: number) 
   return right < 0 ? null : { left, right, bottom };
 }
 
-async function processPictureFile(file: File, removesOldShadow: boolean): Promise<Omit<ProductPicture, "alt">> {
+// Also used by "Change photo" in the card pop-up on Products & pricing, so every photo is prepared the same way
+export async function processPictureFile(file: File, removesOldShadow: boolean): Promise<Omit<ProductPicture, "alt">> {
+  if (file.size > PICTURE_UPLOAD_LIMIT_MB * 1024 * 1024) throw new Error(PICTURE_TOO_BIG_MESSAGE);
   const picture = await loadPicture(file);
   const originalWidth = picture.naturalWidth;
   const originalHeight = picture.naturalHeight;
@@ -431,10 +535,23 @@ export function ProductPageForm({
   editingPage,
   onClose,
   showToast,
+  embedded,
+  onDelete,
 }: {
   editingPage?: ProductPage;
   onClose: () => void;
   showToast: (message: string) => void;
+  /*
+    Inside a product card's pop-up on Products & pricing: no dialog of its own; the card's name and photo
+    are the page's (no separate fields), its cards are left to the pop-up, and the pop-up's Save changes
+    calls the save given to registerSave (true when saved).
+  */
+  embedded?: {
+    registerSave: (save: () => boolean) => void;
+    name: string;
+    photo?: { imageSource: string; imageWidth: number; imageHeight: number };
+  };
+  onDelete?: () => void; // shows "Delete product" in the form (a page without a card of its own)
 }) {
   const isEditing = Boolean(editingPage);
   const oneTimeEditing = editingPage?.kind === "one-time" ? editingPage : undefined;
@@ -466,7 +583,7 @@ export function ProductPageForm({
   // Remove the photo's own grey floor shadow when preparing a picture (untick for white products)
   const [removesOldShadow, setRemovesOldShadow] = useState(true);
   // Editing: "keep" leaves the picture size exactly as it is
-  const [pictureShape, setPictureShape] = useState(isEditing ? "keep" : "tall");
+  const [pictureShape, setPictureShape] = useState(isEditing ? "keep" : "auto");
   const [hasPictureShadow, setHasPictureShadow] = useState(editingPage?.hasPictureShadow ?? false);
   const [middleStep, setMiddleStep] = useState({ title: editingPage?.deliverySteps[1]?.title ?? "", detail: editingPage?.deliverySteps[1]?.detail ?? "" });
   const [lastStepDetail, setLastStepDetail] = useState(editingPage?.deliverySteps[2]?.detail ?? "By 7 AM");
@@ -560,13 +677,14 @@ export function ProductPageForm({
       const chosen = await Promise.all(chosenFiles.map((file) => processPictureFile(file, removesOldShadow)));
       setPictures((current) => [...current, ...chosen].slice(0, 2));
       if (chosen.length + pictures.length > 1) setPictureShape("pair");
-      else if (pictureShape === "keep") setPictureShape("tall");
+      // A new picture is sized automatically, like the other products
+      else if (pictureShape === "keep") setPictureShape("auto");
       // The picture carries its own shadow below, so no extra shadow around it
       setHasPictureShadow(false);
       setPictureStatus("Ready: background removed, shadow below, saved as a see-through WebP. Check the preview below.");
-    } catch {
+    } catch (error) {
       setPictureStatus("");
-      showToast("That file is not a picture");
+      showToast(error instanceof Error && error.message === PICTURE_TOO_BIG_MESSAGE ? PICTURE_TOO_BIG_MESSAGE : "That file is not a picture");
     }
   }
 
@@ -585,7 +703,9 @@ export function ProductPageForm({
         ? editingPage.pictureFit
         : pictureList.length > 1 || pictureShape === "pair"
           ? { widthPercent: 34, heightPercent: 84 }
-          : (PICTURE_SHAPES.find((shape) => shape.value === pictureShape) ?? PICTURE_SHAPES[0]).fit;
+          : pictureShape === "auto" || !PICTURE_SHAPES.some((shape) => shape.value === pictureShape)
+            ? fitForPicture(pictureList[0]?.imageWidth ?? 1000, pictureList[0]?.imageHeight ?? 1000)
+            : (PICTURE_SHAPES.find((shape) => shape.value === pictureShape) ?? PICTURE_SHAPES[0]).fit;
     return { pictureList, fit };
   }
 
@@ -599,12 +719,25 @@ export function ProductPageForm({
   }
 
   // Everything the website needs, checked; problems are listed at the top of the form
-  function save() {
+  function save(): boolean {
+    // Inside a card's pop-up: the card's name and photo are the page's
+    const pageName = embedded ? embedded.name : name;
     const found: string[] = [];
-    if (!name.trim()) found.push("Product name");
+    if (!pageName.trim()) found.push("Product name");
     if (!slug) found.push("Page address");
     else if (!isEditing && isProductSlugTaken(slug)) found.push(`Page address: /products/${slug} is already used`);
-    const { pictureList, fit } = buildPicturesAndFit();
+    const built = buildPicturesAndFit();
+    const embeddedPhoto = embedded?.photo;
+    const isPhotoChangedInCard = Boolean(embeddedPhoto && embeddedPhoto.imageSource !== built.pictureList[0]?.imageSource);
+    const pictureList =
+      embeddedPhoto && isPhotoChangedInCard
+        ? [{ ...embeddedPhoto, alt: pageName.trim() }, ...built.pictureList.slice(1)]
+        : built.pictureList;
+    // A photo changed in the card's pop-up is sized automatically too
+    const fit =
+      embeddedPhoto && isPhotoChangedInCard && pictureList.length === 1
+        ? fitForPicture(embeddedPhoto.imageWidth, embeddedPhoto.imageHeight)
+        : built.fit;
     if (pictureList.length === 0) found.push("A picture (upload one or type its address)");
 
     const base = {
@@ -612,7 +745,7 @@ export function ProductPageForm({
       // The All products filter: kept on Edit; on Add, from the Products & pricing category
       shopCategory: editingPage?.shopCategory ?? SHOP_CATEGORY_FROM_PANEL_CATEGORY[category],
       status,
-      name: name.trim(),
+      name: pageName.trim(),
       tagline: tagline.trim(),
       description: description.trim(),
       badge: { text: badgeText.trim(), colour: badgeColour },
@@ -721,7 +854,7 @@ export function ProductPageForm({
 
     if (found.length > 0 || !page) {
       setProblems(found);
-      return;
+      return false;
     }
 
     /*
@@ -731,7 +864,8 @@ export function ProductPageForm({
     */
     const savedPage: ProductPage = page;
     let panelCardIds: string[] | undefined = editingPage?.panelCardIds;
-    if (!isStartingProductPage(savedPage.slug)) {
+    // Inside a card's pop-up the pop-up saves the card itself, so the cards are left as they are
+    if (!embedded && !isStartingProductPage(savedPage.slug)) {
       editingPage?.panelCardIds?.forEach((cardId) => removeProduct(cardId));
       const cardPicture = pictureList[0] && !pictureList[0].imageSource.startsWith("data:") ? pictureList[0] : undefined;
       const cardPictureFields = cardPicture
@@ -765,13 +899,23 @@ export function ProductPageForm({
     const isSaved = isEditing ? updateProductPage(pageToSave) : addProductPage(pageToSave);
     if (!isSaved) {
       setProblems(["The browser could not save it: the pictures are too big for its storage. Use smaller pictures or type a picture address (e.g. /images/products/…)."]);
-      return;
+      return false;
     }
 
+    if (embedded) {
+      setProblems([]);
+      return true;
+    }
     setSavedSlug(slug);
     setStep("saved");
     showToast(`${savedPage.name} ${isEditing ? "updated" : "added"} · /products/${slug}`);
+    return true;
   }
+
+  // Inside a card's pop-up: hand the latest save to the pop-up (its Save changes calls it)
+  useEffect(() => {
+    embedded?.registerSave(save);
+  });
 
   // ---------- Step 1: what kind of product (Add only) ----------
   if (step === "kind") {
@@ -834,8 +978,22 @@ export function ProductPageForm({
   const setPack = (index: number, changes: Partial<PackRow>) => setPacks(packs.map((row, rowIndex) => (rowIndex === index ? { ...row, ...changes } : row)));
   const setPlan = (index: number, changes: Partial<PlanRow>) => setPlans(plans.map((row, rowIndex) => (rowIndex === index ? { ...row, ...changes } : row)));
 
-  return (
-    <AdminDialog title={formTitle} onClose={onClose} onSubmit={save} submitLabel={isEditing ? "Save changes" : "Save product"}>
+  // Inside a card's pop-up: the sections sit in a plain box; otherwise in the panel's pop-up dialog
+  // (a plain function, not a component, so typing never resets the fields)
+  const formFrame = (children: ReactNode) =>
+    embedded ? (
+      <div className={styles["admin-product-page-embedded"]}>
+        <h3 className={styles["admin-product-page-embedded-title"]}>Website page</h3>
+        <div className={styles["admin-product-page-embedded-fields"]}>{children}</div>
+      </div>
+    ) : (
+      <AdminDialog title={formTitle} onClose={onClose} onSubmit={save} submitLabel={isEditing ? "Save changes" : "Save product"}>
+        {children}
+      </AdminDialog>
+    );
+
+  return formFrame(
+    <>
       {problems.length > 0 && (
         <div className={styles["admin-product-page-problems"]} role="alert">
           <strong>Please fill in:</strong>
@@ -848,9 +1006,12 @@ export function ProductPageForm({
       )}
 
       <FormSection number={nextSection()} title="Basic details">
+        {/* Inside a card's pop-up the card's Product name is used */}
+        {!embedded && (
         <AdminDialogField label="Product name *">
           <input className={adminInputClassName} value={name} onChange={(event) => setName(event.target.value)} placeholder="Ragi Flour" />
         </AdminDialogField>
+        )}
         {isEditing ? (
           <AdminDialogField label="Page address (stays the same)">
             <input className={adminInputClassName} value={`/products/${slug}`} readOnly />
@@ -906,6 +1067,8 @@ export function ProductPageForm({
         </AdminDialogField>
       </FormSection>
 
+      {/* Inside a card's pop-up the card's photo is the page's photo (no separate pictures) */}
+      {!embedded && (
       <FormSection number={nextSection()} title="Pictures">
         {pictures.length > 0 && (
           <div className={styles["admin-product-page-picture-previews"]}>
@@ -933,7 +1096,7 @@ export function ProductPageForm({
           </p>
         )}
         <p className={styles["admin-product-page-hint"]}>
-          Any picture (JPG, PNG, WebP…) is prepared automatically: the background is removed, a soft shadow is added below the
+          Any picture (JPG, PNG, WebP…, up to {PICTURE_UPLOAD_LIMIT_MB} MB) is prepared automatically: the background is removed, a soft shadow is added below the
           product, and it is saved as a high-quality see-through WebP, so the gold ring and green card show around it.
         </p>
         <AdminDialogField label="…or picture address" isWide>
@@ -942,6 +1105,7 @@ export function ProductPageForm({
         <AdminDialogField label="Picture shape">
           <select className={adminInputClassName} value={pictureShape} onChange={(event) => setPictureShape(event.target.value)}>
             {isEditing && <option value="keep">Keep as it is now</option>}
+            <option value="auto">Automatic (sized like the other products)</option>
             {PICTURE_SHAPES.map((shape) => (
               <option key={shape.value} value={shape.value}>
                 {shape.label}
@@ -951,6 +1115,7 @@ export function ProductPageForm({
           </select>
         </AdminDialogField>
       </FormSection>
+      )}
 
       {isOneTime ? (
         <>
@@ -1174,7 +1339,12 @@ export function ProductPageForm({
           ← Change kind
         </button>
       )}
-    </AdminDialog>
+      {onDelete && (
+        <button type="button" className={styles["admin-product-page-delete-button"]} onClick={onDelete}>
+          Delete product
+        </button>
+      )}
+    </>,
   );
 }
 
@@ -1240,102 +1410,80 @@ function FormSection({ number, title, children }: { number: number; title: strin
 }
 
 /*
-  "Product pages" on Products & pricing: every product page with Open, Edit and Delete.
+  A product page's buttons, shown inside its card's pop-up on Products & pricing: Open (or Preview), Edit page,
+  Delete page, and Restore for a page from the code that was changed or deleted.
   - added in the panel: Delete removes the page and its card(s) (asks once);
   - from the code (milk, ghee, …): Edit saves a changed copy, Delete hides it, and Restore original takes the
-    code's version back. Deleted starting pages stay listed (greyed) so they can be restored.
+    code's version back.
 */
-export function AdminProductPagesSection({ showToast }: { showToast: (message: string) => void }) {
-  const productPages = useProductPages();
-  const hiddenStartingSlugs = useHiddenStartingProductSlugs();
-  const [editingSlug, setEditingSlug] = useState<string | null>(null);
-  const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
-
-  const rows = [
-    ...productPages.map((page) => ({ page, isDeleted: false })),
-    ...startingProductPages.filter((page) => hiddenStartingSlugs.includes(page.slug)).map((page) => ({ page, isDeleted: true })),
-  ];
-  const editingPage = productPages.find((page) => page.slug === editingSlug);
-  const deletingPage = productPages.find((page) => page.slug === deletingSlug);
+export function ProductPageCardActions({
+  page,
+  isDeleted = false,
+  showToast,
+}: {
+  page: ProductPage;
+  isDeleted?: boolean;
+  showToast: (message: string) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const isFromCode = isStartingProductPage(page.slug);
+  const isChanged = isFromCode && !isDeleted && !startingProductPages.includes(page);
 
   function deleteConfirmed() {
-    if (!deletingPage) return;
-    deletingPage.panelCardIds?.forEach((cardId) => removeProduct(cardId));
-    deleteProductPage(deletingPage.slug);
-    setDeletingSlug(null);
-    showToast(`${deletingPage.name} deleted`);
+    page.panelCardIds?.forEach((cardId) => removeProduct(cardId));
+    deleteProductPage(page.slug);
+    setIsDeleting(false);
+    showToast(`${page.name} deleted`);
   }
 
-  function restore(slug: string, productName: string) {
-    restoreStartingProductPage(slug);
-    showToast(`${productName} is back to the original page`);
+  function restore() {
+    restoreStartingProductPage(page.slug);
+    showToast(`${page.name} is back to the original page`);
   }
 
   return (
-    <section className={styles["admin-product-pages-section"]} aria-labelledby="admin-product-pages-heading">
-      <h2 id="admin-product-pages-heading" className={styles["admin-product-pages-heading"]}>
-        Product pages <span>({productPages.length} on the website)</span>
-      </h2>
-      <p className={styles["admin-product-page-hint"]}>
-        Each product&rsquo;s page at /products/&hellip; Changes are saved in this browser until the database is connected.
-      </p>
+    <div className={styles["admin-product-page-card-actions"]}>
+      {isDeleted ? (
+        <button type="button" onClick={restore}>
+          Restore page
+        </button>
+      ) : (
+        <>
+          <a href={`/products/${page.slug}${page.status === "draft" ? "?preview=1" : ""}`} target="_blank" rel="noreferrer">
+            {page.status === "draft" ? "Preview" : "Open"}
+          </a>
+          <button type="button" onClick={() => setIsEditing(true)}>
+            Edit page
+          </button>
+          {isChanged && (
+            <button type="button" onClick={restore} title="Back to the page as it is in the code">
+              Restore
+            </button>
+          )}
+          <button type="button" className={styles["admin-product-page-card-delete"]} onClick={() => setIsDeleting(true)}>
+            Delete page
+          </button>
+        </>
+      )}
 
-      <ul className={styles["admin-product-pages-list"]}>
-        {rows.map(({ page, isDeleted }) => {
-          const isFromCode = isStartingProductPage(page.slug);
-          const isChanged = isFromCode && !isDeleted && !startingProductPages.includes(page);
-          const origin = isDeleted ? "Deleted" : isFromCode ? (isChanged ? "Changed in panel" : "From the code") : "Added in panel";
-          return (
-            <li key={page.slug} className={`${styles["admin-product-pages-row"]} ${isDeleted ? styles["admin-product-pages-row-deleted"] : ""}`}>
-              <span className={styles["admin-product-pages-name"]}>
-                <strong>{page.name}</strong>
-                <span>/products/{page.slug}</span>
-              </span>
-              <span className={styles["admin-product-pages-labels"]}>
-                <span className={styles["admin-product-pages-label"]}>{page.kind === "subscription" ? "Subscription" : "One-time"}</span>
-                <span className={styles["admin-product-pages-label"]}>{page.status === "draft" ? "Draft" : "Published"}</span>
-                <span className={`${styles["admin-product-pages-label"]} ${isChanged || !isFromCode ? styles["admin-product-pages-label-panel"] : ""}`}>{origin}</span>
-              </span>
-              <span className={styles["admin-product-pages-actions"]}>
-                {isDeleted ? (
-                  <button type="button" onClick={() => restore(page.slug, page.name)}>
-                    Restore original
-                  </button>
-                ) : (
-                  <>
-                    <a href={`/products/${page.slug}${page.status === "draft" ? "?preview=1" : ""}`} target="_blank" rel="noreferrer">
-                      {page.status === "draft" ? "Preview" : "Open"}
-                    </a>
-                    <button type="button" onClick={() => setEditingSlug(page.slug)}>
-                      Edit
-                    </button>
-                    {isChanged && (
-                      <button type="button" onClick={() => restore(page.slug, page.name)}>
-                        Restore original
-                      </button>
-                    )}
-                    <button type="button" className={styles["admin-product-pages-delete"]} onClick={() => setDeletingSlug(page.slug)}>
-                      Delete
-                    </button>
-                  </>
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      {isEditing && <ProductPageForm editingPage={page} onClose={() => setIsEditing(false)} showToast={showToast} />}
 
-      {editingPage && <ProductPageForm key={editingPage.slug} editingPage={editingPage} onClose={() => setEditingSlug(null)} showToast={showToast} />}
-
-      {deletingPage && (
-        <AdminDialog title={`Delete ${deletingPage.name}?`} onClose={() => setDeletingSlug(null)} onSubmit={deleteConfirmed} submitLabel="Delete" isDanger>
+      {isDeleting && (
+        <AdminDialog title={`Delete ${page.name}?`} onClose={() => setIsDeleting(false)} onSubmit={deleteConfirmed} submitLabel="Delete" isDanger>
           <p className={styles["admin-product-page-delete-text"]}>
-            {isStartingProductPage(deletingPage.slug)
-              ? `Its page /products/${deletingPage.slug} is taken off the website. It comes from the code, so "Restore original" in this list brings it back.`
-              : `Its page /products/${deletingPage.slug} and its ${deletingPage.panelCardIds?.length ?? 0} card(s) on Products & pricing are removed. This cannot be undone.`}
+            {isFromCode
+              ? `Its page /products/${page.slug} is taken off the website. It comes from the code, so "Restore page" in its card's pop-up brings it back.`
+              : `Its page /products/${page.slug} and its ${page.panelCardIds?.length ?? 0} card(s) on Products & pricing are removed. This cannot be undone.`}
           </p>
         </AdminDialog>
       )}
-    </section>
+    </div>
   );
+}
+
+// Product pages in the code that were deleted in the panel (their cards offer "Restore page")
+export function useDeletedStartingProductPages() {
+  const hiddenStartingSlugs = useHiddenStartingProductSlugs();
+  return startingProductPages.filter((page) => hiddenStartingSlugs.includes(page.slug));
 }

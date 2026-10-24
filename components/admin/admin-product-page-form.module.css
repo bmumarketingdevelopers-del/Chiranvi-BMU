@@ -273,129 +273,81 @@
   color: #1b2a20;
 }
 
-/* "Product pages" list below the product cards on Products & pricing */
-.admin-product-pages-section {
-  margin-top: calc(28 * var(--admin-pixel));
-}
-
-.admin-product-pages-heading {
-  font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(18 * var(--admin-pixel));
-  font-weight: 700;
-  color: #1b2a20;
-}
-
-.admin-product-pages-heading span {
-  font-family: var(--font-poppins), sans-serif;
-  font-size: calc(13 * var(--admin-pixel));
-  font-weight: 500;
-  color: #6e7a72;
-}
-
-.admin-product-pages-section > .admin-product-page-hint {
-  margin-top: calc(4 * var(--admin-pixel));
-}
-
-.admin-product-pages-list {
-  display: flex;
-  flex-direction: column;
-  gap: calc(8 * var(--admin-pixel));
-  margin-top: calc(12 * var(--admin-pixel));
-}
-
-.admin-product-pages-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) auto;
-  align-items: center;
-  gap: calc(12 * var(--admin-pixel));
-  padding: calc(10 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
-  border: 1px solid #e7e8e2;
-  border-radius: calc(12 * var(--admin-pixel));
-  background: #ffffff;
-}
-
-/* A starting page deleted in the panel: faded, only "Restore original" */
-.admin-product-pages-row-deleted {
-  background: #f7f7f3;
-}
-
-.admin-product-pages-row-deleted .admin-product-pages-name,
-.admin-product-pages-row-deleted .admin-product-pages-labels {
-  opacity: 0.55;
-}
-
-.admin-product-pages-name {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  font-size: calc(12 * var(--admin-pixel));
-  color: #6e7a72;
-}
-
-.admin-product-pages-name strong {
-  font-size: calc(14 * var(--admin-pixel));
-  font-weight: 600;
-  color: #1b2a20;
-}
-
-.admin-product-pages-labels {
+/* A product page's buttons on its card on Products & pricing: Open · Edit page · Delete (· Restore) */
+.admin-product-page-card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: calc(6 * var(--admin-pixel));
+  margin-top: calc(10 * var(--admin-pixel));
+  padding-top: calc(10 * var(--admin-pixel));
+  border-top: 1px solid #ecede7;
 }
 
-.admin-product-pages-label {
-  padding: calc(3 * var(--admin-pixel)) calc(9 * var(--admin-pixel));
-  border-radius: 9999px;
-  background: #f1f1ec;
-  font-size: calc(11.5 * var(--admin-pixel));
-  font-weight: 500;
-  color: #1b2a20;
-}
-
-/* Added or changed in the panel: light yellow, so it stands out from the code's versions */
-.admin-product-pages-label-panel {
-  background: #fbf3e1;
-  color: #a37a12;
-}
-
-.admin-product-pages-actions {
-  display: flex;
-  align-items: center;
-  gap: calc(6 * var(--admin-pixel));
-}
-
-.admin-product-pages-actions a,
-.admin-product-pages-actions button {
-  padding: calc(6 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+.admin-product-page-card-actions > a,
+.admin-product-page-card-actions > button {
+  flex: 1;
+  padding: calc(6 * var(--admin-pixel)) calc(8 * var(--admin-pixel));
   border: 1.5px solid #1f4d2e;
   border-radius: 9999px;
   background: #ffffff;
-  font-size: calc(12 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
   font-weight: 600;
+  text-align: center;
   white-space: nowrap;
   color: #1f4d2e;
   cursor: pointer;
 }
 
-.admin-product-pages-actions a:hover,
-.admin-product-pages-actions button:hover {
+.admin-product-page-card-actions > a:hover,
+.admin-product-page-card-actions > button:hover {
   background: #e6f0e1;
 }
 
 /* Delete: red (removing something) */
-.admin-product-pages-actions .admin-product-pages-delete {
+.admin-product-page-card-actions > .admin-product-page-card-delete {
   border-color: #c0392b;
   color: #c0392b;
 }
 
-.admin-product-pages-actions .admin-product-pages-delete:hover {
+.admin-product-page-card-actions > .admin-product-page-card-delete:hover {
   background: #fdecea;
 }
 
+/* The website page fields inside a card's pop-up (one Save changes for both) */
+.admin-product-page-embedded {
+  grid-column: 1 / -1;
+  margin-top: calc(18 * var(--admin-pixel));
+  padding-top: calc(16 * var(--admin-pixel));
+  border-top: 1px solid #ecede7;
+}
+
+.admin-product-page-embedded-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-product-page-embedded-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(14 * var(--admin-pixel));
+  margin-top: calc(12 * var(--admin-pixel));
+}
+
+/* Delete product (a page without a card): red, it removes something */
+.admin-product-page-delete-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  color: #c0392b;
+  cursor: pointer;
+}
 /* Phones (the panel's mobile layout): one column */
 @media (max-width: 720px) {
-  .admin-product-page-section-fields {
+  .admin-product-page-section-fields,
+  .admin-product-page-embedded-fields {
     grid-template-columns: 1fr;
   }
 
@@ -403,13 +355,5 @@
   .admin-product-page-pack-row:has(> :nth-child(7)),
   .admin-product-page-plan-row {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .admin-product-pages-row {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-product-pages-actions {
-    flex-wrap: wrap;
   }
 }
