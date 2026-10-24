@@ -376,8 +376,10 @@
 }
 
 /*
-  The products: one row each, two rows showing (63px rows + 8px gap), the rest scrolled to; no scrollbar.
-  Rows keep their height (no shrinking) so exactly two fit.
+  The products: one row each. Closed: two rows showing (63px rows + 8px gap), no scrolling. Opened with
+  "View more products": all of them, scrollable, no scrollbar; four and a half rows show (the half row
+  says there is more), and the pop-up slides so the list and Submit are in view (bulk-order-popup.tsx).
+  Rows keep their height (no shrinking).
 */
 .bulk-order-products {
   display: flex;
@@ -385,9 +387,15 @@
   gap: 8px;
   max-height: 134px;
   margin-top: 10px;
-  overflow-y: auto;
+  overflow: hidden;
   scrollbar-width: none;
   list-style: none;
+  transition: max-height 300ms ease;
+}
+
+.bulk-order-products-expanded {
+  max-height: 316px;
+  overflow-y: auto;
 }
 
 .bulk-order-products::-webkit-scrollbar {

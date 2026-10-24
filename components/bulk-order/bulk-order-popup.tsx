@@ -192,23 +192,22 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [problems, setProblems] = useState<string[]>([]);
   const firstFieldRef = useRef<HTMLInputElement>(null);
-  // The list shows two products; "View more" scrolls to the next ones and goes once the end shows
+  // The list shows two products and does not scroll; "View more products" opens all of them (scrollable)
   const productListRef = useRef<HTMLUListElement>(null);
-  const [isListAtEnd, setIsListAtEnd] = useState(false);
-  const checkListEnd = () => {
+  const [isListExpanded, setIsListExpanded] = useState(false);
+  function toggleProductList() {
     const list = productListRef.current;
-    if (list) setIsListAtEnd(list.scrollTop + list.clientHeight >= list.scrollHeight - 4);
-  };
-  // Scrolls so the first product not fully showing is at the top (whole rows, never half a row)
-  const showMoreProducts = () => {
-    const list = productListRef.current;
-    if (!list) return;
-    // Row positions measured from the top of the list's content
-    const rowTop = (row: Element) => (row as HTMLElement).offsetTop - list.offsetTop;
-    const listBottom = list.scrollTop + list.clientHeight;
-    const nextRow = Array.from(list.children).find((row) => rowTop(row) + (row as HTMLElement).offsetHeight > listBottom + 1);
-    if (nextRow) list.scrollTo({ top: rowTop(nextRow), behavior: "smooth" });
-  };
+    const popup = list?.closest("[role=dialog]");
+    if (isListExpanded) {
+      // Back to the first two products, and the pop-up back to its top
+      list?.scrollTo({ top: 0 });
+      popup?.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      // The opened list and the Submit button slide into view (on short screens the fields above move up)
+      window.setTimeout(() => popup?.scrollTo({ top: popup.scrollHeight, behavior: "smooth" }), 320);
+    }
+    setIsListExpanded(!isListExpanded);
+  }
 
   useEffect(() => {
     firstFieldRef.current?.focus();
@@ -295,7 +294,11 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
         <span>Products you need</span>
         <span className={styles["bulk-order-products-count"]}>{chosenCount > 0 ? `${chosenCount} chosen` : "Add the quantity"}</span>
       </div>
-      <ul ref={productListRef} className={styles["bulk-order-products"]} data-lenis-prevent onScroll={checkListEnd}>
+      <ul
+        ref={productListRef}
+        className={`${styles["bulk-order-products"]} ${isListExpanded ? styles["bulk-order-products-expanded"] : ""}`}
+        data-lenis-prevent
+      >
         {productCards.map((card) => {
           const quantity = quantities[card.cardId] ?? 0;
           return (
@@ -327,11 +330,11 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
           );
         })}
       </ul>
-      {!isListAtEnd && productCards.length > 2 && (
-        <button type="button" className={styles["bulk-order-view-more"]} onClick={showMoreProducts}>
-          View more products
+      {productCards.length > 2 && (
+        <button type="button" className={styles["bulk-order-view-more"]} onClick={toggleProductList} aria-expanded={isListExpanded}>
+          {isListExpanded ? "View less" : "View more products"}
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 9l6 6 6-6" />
+            <path d={isListExpanded ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} />
           </svg>
         </button>
       )}
