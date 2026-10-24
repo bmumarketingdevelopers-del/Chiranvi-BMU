@@ -38,7 +38,7 @@
 .subscription-product-page-content {
   width: 100%;
   padding: calc(27 * var(--subscription-product-vertical-design-pixel)) calc(58 * var(--subscription-product-horizontal-design-pixel) + 20px)
-    calc(64 * var(--subscription-product-design-pixel));
+    calc(8 * var(--subscription-product-design-pixel)); /* the footer below brings its own space */
 }
 
 /* Screen readers only */
@@ -1124,7 +1124,7 @@
   .subscription-product-page-content {
     max-width: none;
     /* Phones: 12px under the bar, like the 12px above it */
-    padding: 12px 16px 40px;
+    padding: 12px 16px 16px;
   }
 
   /* Every block takes the full screen width (the desktop grid's "start" would shrink them to their content) */

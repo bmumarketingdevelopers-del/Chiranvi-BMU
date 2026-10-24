@@ -5,10 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useIsLoggedIn } from "@/components/login/login-status";
+import SiteFooter from "@/components/footer/site-footer";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { addProductToCart, rememberPendingCartProduct, type CartProduct } from "@/store/cart-store";
 import { getDiscountPercent } from "@/store/products-store";
 import type { DeliveryStepIcon, FastSellingCard, OneTimePack, OneTimeProductPage as OneTimePageData, PictureFit } from "./product-page-data";
+import { ProductCardTile, useProductCards } from "./all-products-page";
 import styles from "./one-time-product-page.module.css";
 
 /*
@@ -193,7 +195,9 @@ function CartButtons({ page, pack, quantity }: { page: OneTimePageData; pack: On
 
 // "Fast selling products": heading, View all, and the cards
 function FastSellingRow({ cards }: { cards: FastSellingCard[] }) {
-  const router = useRouter();
+  // The products this row lists, as full cards with prices (in the row's order)
+  const allCards = useProductCards();
+  const rowCards = cards.flatMap((listed) => allCards.filter((card) => card.slug === listed.productId));
   return (
     <section className={styles["fast-selling-section"]} aria-labelledby="fast-selling-heading">
       <div className={styles["fast-selling-heading-row"]}>
@@ -208,35 +212,10 @@ function FastSellingRow({ cards }: { cards: FastSellingCard[] }) {
         </Link>
       </div>
 
+      {/* The same priced cards as the All products page (milk: View product; others: ADD) */}
       <ul className={styles["fast-selling-product-list"]}>
-        {cards.map((card) => (
-          // Clicking anywhere on the card opens the product (View Product keeps working as a link)
-          <li
-            key={card.productId}
-            className={styles["fast-selling-card"]}
-            onClick={(event) => {
-              if (!(event.target as HTMLElement).closest("a, button")) router.push(`/products/${card.productId}`);
-            }}
-          >
-            <div className={styles["fast-selling-image-area"]}>
-              <Image
-                src={card.imageSource}
-                alt={card.name}
-                width={card.imageWidth}
-                height={card.imageHeight}
-                sizes="200px"
-                className={styles["fast-selling-image"]}
-              />
-            </div>
-            <h3 className={styles["fast-selling-name"]}>{card.name}</h3>
-            <p className={styles["fast-selling-rating"]}>
-              <FiveStars className={styles["fast-selling-stars"]} />
-              <span className={styles["fast-selling-rating-count"]}>({card.ratingCount})</span>
-            </p>
-            <Link href={`/products/${card.productId}`} aria-label={`View ${card.name}`} className={styles["fast-selling-view-product-button"]}>
-              View Product
-            </Link>
-          </li>
+        {rowCards.map((card) => (
+          <ProductCardTile key={card.cardId} card={card} />
         ))}
       </ul>
     </section>
@@ -507,6 +486,9 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
 
         <FastSellingRow cards={page.fastSellingCards} />
       </main>
+
+      {/* Shared site footer with the Refer a Friend banner (same as the landing page) */}
+      <SiteFooter />
     </div>
   );
 }

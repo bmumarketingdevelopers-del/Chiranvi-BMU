@@ -41,8 +41,8 @@ export type FastSellingCard = {
 };
 
 // The filter it shows under on the All products page (/products)
-export type ShopCategory = "Milk" | "Paneer" | "Ghee" | "Butter" | "Flours" | "Batter" | "Others";
-export const SHOP_CATEGORIES: ShopCategory[] = ["Milk", "Paneer", "Ghee", "Butter", "Flours", "Batter", "Others"];
+export type ShopCategory = "Milk" | "Paneer" | "Ghee" | "Butter" | "Flours" | "Batter" | "Powders" | "Others";
+export const SHOP_CATEGORIES: ShopCategory[] = ["Milk", "Paneer", "Ghee", "Butter", "Flours", "Batter", "Powders", "Others"];
 
 type ProductPageBase = {
   slug: string; // the page address: /products/<slug>

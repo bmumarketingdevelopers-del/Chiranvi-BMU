@@ -631,7 +631,7 @@
   margin-top: calc(16 * var(--best-sellers-design-pixel));
 }
 
-.best-sellers-section-on-account-orders .best-seller-card:nth-child(n + 6) {
+.best-sellers-section-on-account-orders .best-sellers-product-list > li:nth-child(n + 6) {
   display: none;
 }
 
@@ -730,7 +730,7 @@
     margin-top: 14px;
   }
 
-  .best-sellers-section-on-account-orders .best-seller-card:nth-child(n + 5) {
+  .best-sellers-section-on-account-orders .best-sellers-product-list > li:nth-child(n + 5) {
     display: none;
   }
 

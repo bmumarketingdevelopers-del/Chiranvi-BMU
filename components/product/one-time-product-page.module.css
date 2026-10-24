@@ -26,7 +26,7 @@
 .one-time-product-page-content {
   width: 100%;
   padding: calc(27 * var(--one-time-product-vertical-design-pixel)) calc(58 * var(--one-time-product-horizontal-design-pixel) + 20px)
-    calc(64 * var(--one-time-product-design-pixel));
+    calc(8 * var(--one-time-product-design-pixel)); /* the footer below brings its own space */
 }
 
 /* Screen readers only */
@@ -891,7 +891,7 @@
 */
 :global(html:has(style[data-landing-layout="mobile"])) {
   .one-time-product-page-content {
-    padding: 12px 16px 40px;
+    padding: 12px 16px 16px;
   }
 
   .one-time-product-columns {

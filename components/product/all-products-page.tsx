@@ -1,36 +1,52 @@
 "use client";
 
-import { useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useIsLoggedIn } from "@/components/login/login-status";
+import SiteFooter from "@/components/footer/site-footer";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { addProductToCart, changeCartItemQuantity, rememberPendingCartProduct, useCartItems, type CartProduct } from "@/store/cart-store";
 import { useProductPages } from "@/store/product-pages-store";
+import { isAvailableToOrder, useShopProducts, type ShopProduct } from "@/store/products-store";
 import { toggleWishlistItem, useWishlist, type WishlistItem } from "@/store/wishlist-store";
 import { SHOP_CATEGORIES, type ProductPage, type ShopCategory } from "./product-page-data";
 import styles from "./all-products-page.module.css";
 
 /*
-  All products (/products), from the design: breadcrumb, title, category filters with a small picture and
-  a count, then one card per published product page (the six starting products and the ones added in
-  the Chiranvi Panel), and the daily milk subscription banner at the bottom.
-  - Clicking anywhere on a card opens that product's page; ADD, − + and the heart only do their own job.
+  All products (/products), from the design: title, category filters with a small picture and a count,
+  then one card per product.
+  - Products with a page (the six starting products and the ones added in the Chiranvi Panel): one card
+    each, clicking anywhere on it opens the page.
+  - The powders (Moringa, Turmeric, Red Chilli) from the product list (store/products-store.ts) under
+    "Powders": they have no page yet, so their card does not open anything (it will once a page with the
+    same address exists); ADD and the heart work.
   - ADD puts that pack in the cart (then "− 1 +"); not logged in, it goes to the login first.
   - The heart saves the pack to the Wishlist (account → Wishlist).
   "View all products" and "Start Shopping" across the site lead here.
 */
 
-type ProductCard = {
+export type ProductCard = {
   cardId: string; // the cart and wishlist id: same as the product page uses
-  page: ProductPage;
+  slug: string; // product page address: /products/<slug>
+  hasPage: boolean;
+  name: string;
   category: ShopCategory;
   packLabel: string;
+  cartPackSize: string; // what the cart shows: "1 litre glass jar"
+  cardNote?: string; // "· Bilona method"
+  rating: { score: string; count: string };
+  picture?: { imageSource: string; imageWidth: number; imageHeight: number; alt: string };
   price: number;
   originalPrice?: number;
   tag?: string; // on the picture: "Subscribe & save", "Best value", "Most popular"
+  isSoldOut?: boolean;
+  isSubscription?: boolean; // milk: View product (subscription or one-time is chosen on its page)
 };
+
+// The powders shown before their own pages exist (ids in store/products-store.ts)
+const POWDER_PRODUCT_IDS = ["moringa-powder", "turmeric-powder", "red-chilli-powder"];
 
 // Small picture on each filter button (pictures the site already has)
 const FILTER_PICTURES: Record<ShopCategory, { imageSource: string; imageWidth: number; imageHeight: number }> = {
@@ -40,6 +56,7 @@ const FILTER_PICTURES: Record<ShopCategory, { imageSource: string; imageWidth: n
   Butter: { imageSource: "/images/categories/butter-category.webp", imageWidth: 412, imageHeight: 272 },
   Flours: { imageSource: "/images/products/whole-wheat-atta-pack.webp", imageWidth: 1984, imageHeight: 1806 },
   Batter: { imageSource: "/images/products/idli-batter-powder-pack.webp", imageWidth: 1808, imageHeight: 2744 },
+  Powders: { imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548 },
   Others: { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276 },
 };
 
@@ -48,26 +65,34 @@ function formatRupees(amount: number) {
 }
 
 /*
-  One card per product: a one-time product shows its main pack (the one its page opens on, e.g. ghee
-  1 litre), a subscription product its one-time price per unit. The other sizes are chosen on the page.
+  One card per product page: a one-time product shows its main pack (the one its page opens on, e.g.
+  ghee 1 litre), a subscription product its one-time price per unit. The other sizes are chosen on the page.
 */
-function toCards(pages: ProductPage[]): ProductCard[] {
+function toPageCards(pages: ProductPage[]): ProductCard[] {
   return pages
     .filter((page) => page.status === "published")
     .flatMap((page): ProductCard[] => {
-      const category = page.shopCategory ?? "Others";
+      const shared = {
+        slug: page.slug,
+        hasPage: true,
+        name: page.name,
+        category: page.shopCategory ?? "Others",
+        cardNote: page.cardNote,
+        rating: page.rating,
+        picture: page.pictures[0],
+      };
       if (page.kind === "subscription") {
         // "1 litre" (the card note adds "· glass bottle")
-        return [{ cardId: page.slug, page, category, packLabel: `1 ${page.unitName}`, price: page.price, originalPrice: page.originalPrice, tag: "Subscribe & save" }];
+        return [{ ...shared, cardId: page.slug, packLabel: `1 ${page.unitName}`, cartPackSize: page.packSize, price: page.price, originalPrice: page.originalPrice, tag: "Subscribe & save", isSubscription: true }];
       }
       const pack = page.packs.find((onePack) => onePack.packId === page.defaultPackId) ?? page.packs[0];
       if (!pack) return [];
       return [
         {
+          ...shared,
           cardId: `${page.slug}-${pack.packId}`,
-          page,
-          category,
           packLabel: pack.label,
+          cartPackSize: `${pack.label} ${page.cartPackWord}`,
           price: pack.price,
           originalPrice: pack.originalPrice,
           tag: pack.tag,
@@ -76,32 +101,145 @@ function toCards(pages: ProductPage[]): ProductCard[] {
     });
 }
 
+// The powders, from the product list (their prices and stock change with the Chiranvi Panel)
+function toPowderCards(shopProducts: ShopProduct[], pageSlugs: Set<string>): ProductCard[] {
+  return POWDER_PRODUCT_IDS.flatMap((productId): ProductCard[] => {
+    const product = shopProducts.find((shopProduct) => shopProduct.productId === productId);
+    if (!product || pageSlugs.has(productId)) return []; // gone from the list, or it has its own page now
+    return [
+      {
+        cardId: product.productId,
+        slug: product.productId,
+        hasPage: false,
+        name: product.name,
+        category: "Powders",
+        packLabel: product.packSize,
+        cartPackSize: product.packSize,
+        // Placeholder rating, the same as the landing page's Best Sellers
+        rating: { score: "4.5", count: "(7,105)" },
+        picture: product.imageSource
+          ? { imageSource: product.imageSource, imageWidth: product.imageWidth ?? 400, imageHeight: product.imageHeight ?? 400, alt: product.name }
+          : undefined,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        isSoldOut: !isAvailableToOrder(product),
+      },
+    ];
+  });
+}
+
+/*
+  Flours shown before their own pages exist (from the design). Their pack pictures are still to come, so
+  for now both use the site's Ragi + Jowar flours picture; Jowar is out of stock (Notify me).
+*/
+const FLOURS_PICTURE = { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276 };
+const UPCOMING_FLOUR_CARDS: ProductCard[] = [
+  {
+    cardId: "ragi-flour-1-kg",
+    slug: "ragi-flour",
+    hasPage: false,
+    name: "Ragi Flour",
+    category: "Flours",
+    packLabel: "1 kg",
+    cartPackSize: "1 kg pouch",
+    cardNote: "stone-ground",
+    rating: { score: "4.6", count: "(402)" },
+    picture: { ...FLOURS_PICTURE, alt: "Chiranvi Farm Ragi Flour" },
+    price: 119,
+    originalPrice: 140,
+    tag: "New",
+  },
+  {
+    cardId: "jowar-flour-1-kg",
+    slug: "jowar-flour",
+    hasPage: false,
+    name: "Jowar Flour",
+    category: "Flours",
+    packLabel: "1 kg",
+    cartPackSize: "1 kg pouch",
+    cardNote: "stone-ground",
+    rating: { score: "4.5", count: "(196)" },
+    picture: { ...FLOURS_PICTURE, alt: "Chiranvi Farm Jowar Flour" },
+    price: 99,
+    originalPrice: 115,
+    isSoldOut: true,
+  },
+];
+
+// The upcoming flours, until a page with the same address exists (then that page's card shows instead)
+function toUpcomingFlourCards(pageSlugs: Set<string>) {
+  return UPCOMING_FLOUR_CARDS.filter((card) => !pageSlugs.has(card.slug));
+}
+
+// "Notify me" on an out-of-stock card: remembered in this browser until stock alerts are kept in Supabase
+const NOTIFY_STORAGE_KEY = "chiranvi-notify-me";
+
+function readNotifyRequests(): string[] {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(NOTIFY_STORAGE_KEY) ?? "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+function NotifyMeButton({ cardId }: { cardId: string }) {
+  const [isRequested, setIsRequested] = useState(false);
+  useEffect(() => {
+    // Read once in the browser (localStorage is not there while the page is drawn on the server)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsRequested(readNotifyRequests().includes(cardId));
+  }, [cardId]);
+
+  if (isRequested) {
+    return (
+      <span className={styles["all-products-notify-done"]} role="status">
+        ✓ We&rsquo;ll notify you
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={styles["all-products-notify-button"]}
+      onClick={() => {
+        try {
+          window.localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify([...readNotifyRequests(), cardId]));
+        } catch {
+          // Storage blocked: shown as requested until the page is refreshed.
+        }
+        setIsRequested(true);
+      }}
+    >
+      Notify me
+    </button>
+  );
+}
+
 function toCartProduct(card: ProductCard): CartProduct {
-  const picture = card.page.pictures[0];
   return {
     productId: card.cardId,
-    name: card.page.name,
-    imageSource: picture?.imageSource ?? "",
-    imageWidth: picture?.imageWidth ?? 400,
-    imageHeight: picture?.imageHeight ?? 400,
-    packSize: card.page.kind === "one-time" ? `${card.packLabel} ${card.page.cartPackWord}` : card.page.packSize,
+    name: card.name,
+    imageSource: card.picture?.imageSource ?? "",
+    imageWidth: card.picture?.imageWidth ?? 400,
+    imageHeight: card.picture?.imageHeight ?? 400,
+    packSize: card.cartPackSize,
     price: card.price,
     originalPrice: card.originalPrice ?? card.price,
   };
 }
 
 function toWishlistItem(card: ProductCard): WishlistItem {
-  const picture = card.page.pictures[0];
   return {
     itemId: card.cardId,
-    slug: card.page.slug,
-    name: card.page.name,
+    slug: card.slug,
+    name: card.name,
     packLabel: card.packLabel,
     price: card.price,
     originalPrice: card.originalPrice,
-    imageSource: picture?.imageSource ?? "",
-    imageWidth: picture?.imageWidth ?? 400,
-    imageHeight: picture?.imageHeight ?? 400,
+    imageSource: card.picture?.imageSource ?? "",
+    imageWidth: card.picture?.imageWidth ?? 400,
+    imageHeight: card.picture?.imageHeight ?? 400,
   };
 }
 
@@ -132,7 +270,7 @@ function CardCartControl({ card, quantityInCart, isLoggedIn }: { card: ProductCa
   const cartProduct = toCartProduct(card);
   if (quantityInCart > 0) {
     return (
-      <div className={styles["all-products-quantity-control"]} role="group" aria-label={`${card.page.name} ${card.packLabel} quantity`}>
+      <div className={styles["all-products-quantity-control"]} role="group" aria-label={`${card.name} ${card.packLabel} quantity`}>
         <button type="button" aria-label="One fewer" onClick={() => changeCartItemQuantity(card.cardId, -1)}>
           −
         </button>
@@ -164,30 +302,128 @@ function CardCartControl({ card, quantityInCart, isLoggedIn }: { card: ProductCa
   );
 }
 
-export default function AllProductsPage() {
-  const router = useRouter();
+// Every product card, in the All products page's order (also used by the product pages' Fast selling row)
+export function useProductCards() {
   const productPages = useProductPages();
+  const shopProducts = useShopProducts();
+  return useMemo(() => {
+    const pageSlugs = new Set(productPages.map((page) => page.slug));
+    const pageCards = toPageCards(productPages);
+    // The upcoming flours sit right after the other flours (atta)
+    const lastFlourIndex = pageCards.map((card) => card.category).lastIndexOf("Flours");
+    const flourCards = toUpcomingFlourCards(pageSlugs);
+    const withFlours =
+      lastFlourIndex === -1 ? [...pageCards, ...flourCards] : [...pageCards.slice(0, lastFlourIndex + 1), ...flourCards, ...pageCards.slice(lastFlourIndex + 1)];
+    return [...withFlours, ...toPowderCards(shopProducts, pageSlugs)];
+  }, [productPages, shopProducts]);
+}
+
+/*
+  One product card (All products page and the product pages' Fast selling row): picture with tag and heart,
+  name, pack, rating, price, and the button:
+  - milk (bought by subscription or one-time): "View product", to choose on its page;
+  - others: ADD → "− n +"; out of stock: Notify me.
+  Clicking anywhere else on the card opens the product page (when it has one).
+*/
+export function ProductCardTile({ card }: { card: ProductCard }) {
+  const router = useRouter();
   const cartItems = useCartItems();
   const wishlist = useWishlist();
   const isLoggedIn = useIsLoggedIn();
-  const [chosenCategory, setChosenCategory] = useState<ShopCategory | "All">("All");
+  const picture = card.picture;
+  const quantityInCart = cartItems.find((cartItem) => cartItem.productId === card.cardId)?.quantity ?? 0;
+  const isHearted = wishlist.some((item) => item.itemId === card.cardId);
+  // No page yet (the powders, Ragi and Jowar flour): the card does not open anything
+  const openPage = () => {
+    if (card.hasPage) router.push(`/products/${card.slug}`);
+  };
 
-  const cards = useMemo(() => toCards(productPages), [productPages]);
+  return (
+    <li
+      className={`${styles["all-products-card"]} ${quantityInCart > 0 && !card.isSubscription ? styles["all-products-card-in-cart"] : ""} ${
+        card.hasPage ? "" : styles["all-products-card-without-page"]
+      }`}
+      onClick={(event) => openProductOnCardClick(event, openPage)}
+    >
+      <div className={styles["all-products-picture-area"]}>
+        {card.tag && (
+          <span
+            className={`${styles["all-products-tag"]} ${card.tag === "Subscribe & save" ? styles["all-products-tag-green"] : ""} ${
+              card.tag === "New" ? styles["all-products-tag-new"] : ""
+            }`}
+          >
+            {card.tag}
+          </span>
+        )}
+        {card.isSoldOut && <span className={styles["all-products-out-of-stock"]}>Out of stock</span>}
+        <button
+          type="button"
+          aria-pressed={isHearted}
+          aria-label={isHearted ? `Remove ${card.name} ${card.packLabel} from wishlist` : `Add ${card.name} ${card.packLabel} to wishlist`}
+          className={styles["all-products-heart-button"]}
+          onClick={() => toggleWishlistItem(toWishlistItem(card))}
+        >
+          <HeartIcon isFilled={isHearted} />
+        </button>
+        {picture && (
+          <Image
+            src={picture.imageSource}
+            alt={picture.alt}
+            width={picture.imageWidth}
+            height={picture.imageHeight}
+            sizes="(max-width: 800px) 45vw, 220px"
+            className={styles["all-products-picture"]}
+          />
+        )}
+      </div>
+
+      {/* The name is a real link, so the card can be opened from the keyboard too */}
+      <h3 className={styles["all-products-name"]}>
+        {card.hasPage ? <Link href={`/products/${card.slug}`}>{card.name}</Link> : card.name}
+      </h3>
+      <p className={styles["all-products-pack"]}>
+        {card.packLabel}
+        {card.cardNote ? ` · ${card.cardNote}` : ""}
+      </p>
+      <p className={styles["all-products-rating"]}>
+        <StarIcon />
+        <strong>{card.rating.score}</strong> {card.rating.count}
+      </p>
+      <div className={styles["all-products-price-row"]}>
+        <p className={styles["all-products-price"]}>
+          {formatRupees(card.price)}
+          {card.originalPrice && card.originalPrice > card.price && (
+            <s>
+              <span className={styles["all-products-visually-hidden"]}>Was </span>
+              {formatRupees(card.originalPrice)}
+            </s>
+          )}
+        </p>
+        {card.isSubscription ? (
+          <Link href={`/products/${card.slug}`} className={styles["all-products-add-button"]}>
+            View product
+          </Link>
+        ) : card.isSoldOut ? (
+          <NotifyMeButton cardId={card.cardId} />
+        ) : (
+          <CardCartControl card={card} quantityInCart={quantityInCart} isLoggedIn={isLoggedIn} />
+        )}
+      </div>
+    </li>
+  );
+}
+
+export default function AllProductsPage() {
+  const [chosenCategory, setChosenCategory] = useState<ShopCategory | "All">("All");
+  const cards = useProductCards();
   const categoriesWithCards = SHOP_CATEGORIES.filter((category) => cards.some((card) => card.category === category));
   const shownCards = chosenCategory === "All" ? cards : cards.filter((card) => card.category === chosenCategory);
-  const milkPage = productPages.find((page) => page.kind === "subscription" && page.status === "published");
-  const milkSavingPercent = milkPage?.kind === "subscription" ? Math.max(0, ...milkPage.plans.map((plan) => plan.percentOff)) : 0;
 
   return (
     <div className={styles["all-products-page"]}>
       <SiteNavigationPlacement />
 
       <main className={styles["all-products-page-content"]}>
-        <nav aria-label="Breadcrumb" className={styles["all-products-breadcrumb"]}>
-          <Link href="/">Home</Link>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">All products</span>
-        </nav>
         <h1 className={styles["all-products-title"]}>All products</h1>
         <p className={styles["all-products-description"]}>
           Fresh from our farm: milk, ghee, paneer, butter, flours and batter. Delivered by 7 AM.
@@ -214,7 +450,7 @@ export default function AllProductsPage() {
                 onClick={() => setChosenCategory(category)}
               >
                 <span className={styles["all-products-filter-picture"]} aria-hidden="true">
-                  <Image src={picture.imageSource} alt="" width={picture.imageWidth} height={picture.imageHeight} sizes="32px" />
+                  <Image src={picture.imageSource} alt="" width={picture.imageWidth} height={picture.imageHeight} sizes="40px" />
                 </span>
                 {category}
                 <span className={styles["all-products-filter-count"]}>{cards.filter((card) => card.category === category).length}</span>
@@ -228,95 +464,14 @@ export default function AllProductsPage() {
         </p>
 
         <ul className={styles["all-products-grid"]}>
-          {shownCards.map((card) => {
-            const picture = card.page.pictures[0];
-            const quantityInCart = cartItems.find((cartItem) => cartItem.productId === card.cardId)?.quantity ?? 0;
-            const isHearted = wishlist.some((item) => item.itemId === card.cardId);
-            const openPage = () => router.push(`/products/${card.page.slug}`);
-            return (
-              <li
-                key={card.cardId}
-                className={`${styles["all-products-card"]} ${quantityInCart > 0 ? styles["all-products-card-in-cart"] : ""}`}
-                onClick={(event) => openProductOnCardClick(event, openPage)}
-              >
-                <div className={styles["all-products-picture-area"]}>
-                  {card.tag && (
-                    <span className={`${styles["all-products-tag"]} ${card.tag === "Subscribe & save" ? styles["all-products-tag-green"] : ""}`}>
-                      {card.tag}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    aria-pressed={isHearted}
-                    aria-label={isHearted ? `Remove ${card.page.name} ${card.packLabel} from wishlist` : `Add ${card.page.name} ${card.packLabel} to wishlist`}
-                    className={styles["all-products-heart-button"]}
-                    onClick={() => toggleWishlistItem(toWishlistItem(card))}
-                  >
-                    <HeartIcon isFilled={isHearted} />
-                  </button>
-                  {picture && (
-                    <Image
-                      src={picture.imageSource}
-                      alt={picture.alt}
-                      width={picture.imageWidth}
-                      height={picture.imageHeight}
-                      sizes="(max-width: 800px) 45vw, 220px"
-                      className={styles["all-products-picture"]}
-                    />
-                  )}
-                </div>
-
-                {/* The name is a real link, so the card can be opened from the keyboard too */}
-                <h2 className={styles["all-products-name"]}>
-                  <Link href={`/products/${card.page.slug}`}>{card.page.name}</Link>
-                </h2>
-                <p className={styles["all-products-pack"]}>
-                  {card.packLabel}
-                  {card.page.cardNote ? ` · ${card.page.cardNote}` : ""}
-                </p>
-                <p className={styles["all-products-rating"]}>
-                  <StarIcon />
-                  <strong>{card.page.rating.score}</strong> {card.page.rating.count}
-                </p>
-                <div className={styles["all-products-price-row"]}>
-                  <p className={styles["all-products-price"]}>
-                    {formatRupees(card.price)}
-                    {card.originalPrice && card.originalPrice > card.price && (
-                      <s>
-                        <span className={styles["all-products-visually-hidden"]}>Was </span>
-                        {formatRupees(card.originalPrice)}
-                      </s>
-                    )}
-                  </p>
-                  <CardCartControl card={card} quantityInCart={quantityInCart} isLoggedIn={isLoggedIn} />
-                </div>
-              </li>
-            );
-          })}
+          {shownCards.map((card) => (
+            <ProductCardTile key={card.cardId} card={card} />
+          ))}
         </ul>
-
-        {/* Daily milk subscription banner */}
-        {milkPage && (
-          <section className={styles["all-products-subscription-banner"]} aria-labelledby="all-products-subscription-heading">
-            <div className={styles["all-products-subscription-text"]}>
-              <p className={styles["all-products-subscription-kicker"]}>Daily milk subscription</p>
-              <h2 id="all-products-subscription-heading">Fresh A2 milk at your door every morning</h2>
-              <p>Save up to {milkSavingPercent}% · Free delivery · Pause or skip any day</p>
-            </div>
-            <Image
-              src="/images/products/desi-cow-milk-bottle-chiranvi-farm.webp"
-              alt=""
-              width={1188}
-              height={2312}
-              sizes="80px"
-              className={styles["all-products-subscription-bottle"]}
-            />
-            <Link href={`/products/${milkPage.slug}`} className={styles["all-products-subscription-button"]}>
-              Start subscription
-            </Link>
-          </section>
-        )}
       </main>
+
+      {/* Shared site footer with the Refer a Friend banner (same as the landing page) */}
+      <SiteFooter />
     </div>
   );
 }
