@@ -413,8 +413,9 @@ export function ProductCardTile({ card }: { card: ProductCard }) {
   );
 }
 
-export default function AllProductsPage() {
-  const [chosenCategory, setChosenCategory] = useState<ShopCategory | "All">("All");
+// startingCategory: from /products?category=Milk (Shop by Category on the home page); missing: All
+export default function AllProductsPage({ startingCategory }: { startingCategory?: ShopCategory }) {
+  const [chosenCategory, setChosenCategory] = useState<ShopCategory | "All">(startingCategory ?? "All");
   const cards = useProductCards();
   const categoriesWithCards = SHOP_CATEGORIES.filter((category) => cards.some((card) => card.category === category));
   const shownCards = chosenCategory === "All" ? cards : cards.filter((card) => card.category === chosenCategory);

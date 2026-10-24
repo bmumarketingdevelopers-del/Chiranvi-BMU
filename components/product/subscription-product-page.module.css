@@ -407,6 +407,53 @@
   color: #ffffff;
 }
 
+/* Bottle size (milk): two choices, 1 litre and ½ litre with their prices; the chosen one green */
+.subscription-bottle-sizes {
+  display: flex;
+  gap: calc(10 * var(--subscription-product-design-pixel));
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+}
+
+.subscription-bottle-size {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(2 * var(--subscription-product-design-pixel));
+  min-width: calc(110 * var(--subscription-product-design-pixel));
+  padding: calc(8 * var(--subscription-product-design-pixel)) calc(14 * var(--subscription-product-design-pixel));
+  border: 1.5px solid #dfe3dc;
+  border-radius: calc(10 * var(--subscription-product-design-pixel));
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.subscription-bottle-size:hover,
+.subscription-bottle-size:focus-visible {
+  border-color: #8fb98a;
+}
+
+.subscription-bottle-size-chosen,
+.subscription-bottle-size-chosen:hover {
+  border-color: #1f4d2e;
+  background: #e6f0e1;
+}
+
+.subscription-bottle-size-label {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.subscription-bottle-size-price {
+  font-size: calc(12.5 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
 .subscription-quantity-label {
   margin-top: calc(12 * var(--subscription-product-design-pixel));
   font-size: calc(13 * var(--subscription-product-design-pixel));
@@ -1093,6 +1140,27 @@
   review and delivery steps - and two product cards per row.
 */
 :global(html:has(style[data-landing-layout="mobile"])) {
+  /* Bottle size: two equal choices across the width */
+  .subscription-bottle-sizes {
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .subscription-bottle-size {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    border-radius: 10px;
+  }
+
+  .subscription-bottle-size-label {
+    font-size: 14px;
+  }
+
+  .subscription-bottle-size-price {
+    font-size: 12.5px;
+  }
+
   /* Add Quantity hint: the tip under the button, arrow pointing up */
   .subscription-add-quantity-tip {
     position: static;

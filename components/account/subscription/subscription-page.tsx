@@ -111,6 +111,8 @@ export default function SubscriptionPage() {
       planTotal: bottleCount * paidPlan.pricePerLitre,
       oneTimeTotal: bottleCount * oneTimePrice,
       extendsOrderId: paidPlan.orderId,
+      bottleLabel: paidPlan.bottleLabel,
+      unitName: paidPlan.unitName,
     });
     router.push("/cart");
   }
@@ -155,7 +157,7 @@ export default function SubscriptionPage() {
             <div className={styles["subscription-details"]}>
               <div className={styles["subscription-name-row"]}>
                 <h2 className={styles["subscription-product-name"]}>
-                  A2 Desi Milk · {paidPlan ? paidPlan.planName : currentPlan.shortName}
+                  {paidPlan ? `${paidPlan.product.name} · ${paidPlan.planName}` : `A2 Desi Milk · ${currentPlan.shortName}`}
                 </h2>
                 <span
                   className={`${styles["subscription-status-badge"]} ${
@@ -168,11 +170,11 @@ export default function SubscriptionPage() {
               <dl className={styles["subscription-facts"]}>
                 <div>
                   <dt>Quantity</dt>
-                  <dd>{paidPlan ? paidPlan.bottlesPerDay : 1} L / day</dd>
+                  <dd>{paidPlan ? `${paidPlan.bottlesPerDay} × ${paidPlan.bottleLabel}` : "1 L"} / day</dd>
                 </div>
                 <div>
                   <dt>Price</dt>
-                  <dd>₹{paidPlan ? paidPlan.pricePerLitre : 98} / L</dd>
+                  <dd>₹{paidPlan ? `${paidPlan.pricePerLitre} / ${paidPlan.unitName}` : "98 / L"}</dd>
                 </div>
                 <div>
                   <dt>Next delivery</dt>

@@ -290,11 +290,33 @@ function FastSellingRow({ cards }: { cards: FastSellingCard[] }) {
   );
 }
 
-export default function SubscriptionProductPage({ page }: { page: SubscriptionPageData }) {
+/*
+  Milk in ½ litre bottles (pages with hasHalfLitreBottle): the same page with ½ litre wording and half the
+  1 litre price, rounded up, so it follows the price set in the Chiranvi Panel. Plans, bills and the cart
+  all use these values; ½ litre bottles are their own line in the cart.
+*/
+function toHalfLitrePage(page: SubscriptionPageData): SubscriptionPageData {
+  return {
+    ...page,
+    price: Math.ceil(page.price / 2),
+    originalPrice: page.originalPrice ? Math.ceil(page.originalPrice / 2) : undefined,
+    unitName: "½ litre",
+    unitShort: " × ½ L", // "Milk (2 × ½ L × ₹53)", "2 × ½ L daily"
+    packShort: "½ L",
+    packSize: /^1 litre/.test(page.packSize) ? page.packSize.replace(/^1 litre/, "½ litre") : "½ litre bottle",
+  };
+}
+
+export default function SubscriptionProductPage({ page: fullPage }: { page: SubscriptionPageData }) {
+  // Bottle size (milk): 1 litre or ½ litre; the page below shows the chosen size's values
+  const [isHalfLitreChosen, setIsHalfLitreChosen] = useState(false);
+  const isHalfLitre = fullPage.hasHalfLitreBottle === true && isHalfLitreChosen;
+  const page = useMemo(() => (isHalfLitre ? toHalfLitrePage(fullPage) : fullPage), [fullPage, isHalfLitre]);
+
   // What goes in the cart: one unit at the one-time price (the cart always shows an old price)
   const cartProduct: CartProduct = useMemo(
     () => ({
-      productId: page.slug,
+      productId: isHalfLitre ? `${page.slug}-half-litre` : page.slug,
       name: page.name,
       imageSource: page.pictures[0]?.imageSource ?? "",
       imageWidth: page.pictures[0]?.imageWidth ?? 400,
@@ -303,7 +325,7 @@ export default function SubscriptionProductPage({ page }: { page: SubscriptionPa
       price: page.price,
       originalPrice: page.originalPrice ?? page.price,
     }),
-    [page],
+    [page, isHalfLitre],
   );
   const plans: SubscriptionPlan[] = useMemo(
     () => page.plans.map((plan) => ({ ...plan, pricePerUnit: Math.round(page.price * (1 - plan.percentOff / 100)) })),
@@ -384,6 +406,8 @@ export default function SubscriptionProductPage({ page }: { page: SubscriptionPa
       bottleCount: chosenPlanTotals.itemCount,
       planTotal: chosenPlanTotals.planTotal,
       oneTimeTotal: chosenPlanTotals.oneTimeTotal,
+      bottleLabel: page.packShort,
+      unitName: page.unitName,
     });
     router.push("/cart");
   }
@@ -484,6 +508,27 @@ export default function SubscriptionProductPage({ page }: { page: SubscriptionPa
                 </>
               )}
             </p>
+            {/* Bottle size (milk): 1 litre or ½ litre at half the price */}
+            {fullPage.hasHalfLitreBottle && (
+              <div className={styles["subscription-bottle-sizes"]} role="radiogroup" aria-label="Bottle size">
+                {[
+                  { isHalf: false, label: "1 litre", price: fullPage.price },
+                  { isHalf: true, label: "½ litre", price: Math.ceil(fullPage.price / 2) },
+                ].map((size) => (
+                  <button
+                    key={size.label}
+                    type="button"
+                    role="radio"
+                    aria-checked={isHalfLitre === size.isHalf}
+                    className={`${styles["subscription-bottle-size"]} ${isHalfLitre === size.isHalf ? styles["subscription-bottle-size-chosen"] : ""}`}
+                    onClick={() => setIsHalfLitreChosen(size.isHalf)}
+                  >
+                    <span className={styles["subscription-bottle-size-label"]}>{size.label}</span>
+                    <span className={styles["subscription-bottle-size-price"]}>{formatRupees(size.price)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <p className={styles["subscription-quantity-label"]}>
               <strong>Quantity</strong> · {page.packSize} each
             </p>

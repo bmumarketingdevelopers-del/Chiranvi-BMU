@@ -359,12 +359,17 @@ export default function CartView() {
   }
 
   /*
-    Picking a delivery address. For a new subscription, an address that already gets a running plan is
-    not picked: the "same address" pop-up offers to extend that plan or to choose another address.
+    Picking a delivery address. For a new subscription, an address that already gets a running plan of the
+    same milk and bottle size (e.g. A2 Milk 1 L) is not picked: the "same address" pop-up offers to extend
+    that plan or to choose another address. A different milk (Jersey, Skimmed) or size can go to the same address.
   */
   function pickAddress(addressId: string, addressDetails: AddressDetails) {
     const planAtThisAddress = cartSubscription
-      ? runningPlans.find((plan) => plan.deliverTo.endsWith(` · ${formatAddressLine(addressDetails)}`))
+      ? runningPlans.find(
+          (plan) =>
+            plan.product.productId === cartSubscription.product.productId &&
+            plan.deliverTo.endsWith(` · ${formatAddressLine(addressDetails)}`),
+        )
       : undefined;
     if (planAtThisAddress) {
       setHasPickedAddress(false);
@@ -447,6 +452,8 @@ export default function CartView() {
           pricePerLitre: cartSubscription.pricePerLitre,
           bottleCount: cartSubscription.bottleCount,
           extendsOrderId: planToExtend?.orderId,
+          bottleLabel: cartSubscription.bottleLabel,
+          unitName: cartSubscription.unitName,
         },
       },
     );
@@ -650,7 +657,7 @@ export default function CartView() {
                     placedPlan ? ` · Your plan now runs until ${formatPlanDate(placedPlan.endsOn)}` : ""
                   }`
                 : placedOrder.subscription
-                  ? `${placedOrder.subscription.planName} · ${placedOrder.subscription.bottlesPerDay} × 1 L every morning · ${placedOrder.subscription.bottleCount.toLocaleString("en-IN")} bottles`
+                  ? `${placedOrder.subscription.planName} · ${placedOrder.subscription.bottlesPerDay} × ${placedOrder.subscription.bottleLabel ?? "1 L"} every morning · ${placedOrder.subscription.bottleCount.toLocaleString("en-IN")} bottles`
                   : "Thank you for shopping with Chiranvi Farm"}
             </p>
             <dl className={styles["order-placed-details"]}>
@@ -736,11 +743,12 @@ export default function CartView() {
                           </span>
                         </h3>
                         <p className={styles["checkout-item-pack"]}>
-                          {cartSubscription.bottlesPerDay} × 1 L {cartSubscription.bottlesPerDay === 1 ? "bottle" : "bottles"} every morning ·{" "}
+                          {cartSubscription.bottlesPerDay} × {cartSubscription.bottleLabel ?? "1 L"}{" "}
+                          {cartSubscription.bottlesPerDay === 1 ? "bottle" : "bottles"} every morning ·{" "}
                           {cartSubscription.bottleCount.toLocaleString("en-IN")} bottles
                         </p>
                         <p className={styles["checkout-item-prices"]}>
-                          <span className={styles["checkout-item-price"]}>{rupees(cartSubscription.pricePerLitre)} / litre</span>
+                          <span className={styles["checkout-item-price"]}>{rupees(cartSubscription.pricePerLitre)} / {cartSubscription.unitName ?? "litre"}</span>
                           {cartSubscription.product.price > cartSubscription.pricePerLitre && (
                             <s className={styles["checkout-item-old-price"]}>{rupees(cartSubscription.product.price)}</s>
                           )}

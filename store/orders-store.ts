@@ -36,6 +36,8 @@ export type OrderSubscription = {
   pricePerLitre: number;
   bottleCount: number;
   extendsOrderId?: string; // set when this order adds days to an earlier plan instead of starting one
+  bottleLabel?: string; // "½ L" (missing: "1 L")
+  unitName?: string; // what the price is per: "½ litre" (missing: "litre")
 };
 
 // What the checkout adds to an order
@@ -123,6 +125,8 @@ export type RunningPlan = {
   days: number;
   bottlesPerDay: number;
   pricePerLitre: number;
+  bottleLabel: string; // "1 L" or "½ L"
+  unitName: string; // what the price is per: "litre" or "½ litre"
   deliverTo: string;
   product: CartItem; // the milk as bought (price = the plan's price per litre, originalPrice = one-time price)
   endsOn: Date; // the last delivery day
@@ -152,6 +156,8 @@ export function findRunningPlans(orderList: Order[], today = new Date()) {
       days: subscription.days,
       bottlesPerDay: subscription.bottlesPerDay,
       pricePerLitre: subscription.pricePerLitre,
+      bottleLabel: subscription.bottleLabel ?? "1 L",
+      unitName: subscription.unitName ?? "litre",
       deliverTo: order.deliverTo ?? "",
       product: order.items[0],
       endsOn: new Date(firstDay.getTime() + (subscription.days - 1) * DAY_IN_MILLISECONDS),

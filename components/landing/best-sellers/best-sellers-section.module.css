@@ -78,14 +78,14 @@
 /*
   Six equal product cards in one row, lined up with the review cards below ("Where Goodness Gets a
   Voice"): the row is as wide as their three cards (3 x 24.67% + 2 x 1.8% of the screen, + 4px) and
-  centred, the first card starts and the last ends at their edges. Each card is at most its design
-  width (200 of 1440), so cards don't stretch around their content; the gaps take the rest.
+  centred, the first card starts and the last ends at their edges. The cards share the row equally with
+  a small gap (16) between them.
 */
 
 .best-sellers-product-list {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, calc(200 * var(--best-sellers-design-pixel))));
-  justify-content: space-between;
+  /* Six equal cards filling the row, with the design's small gap between them */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   width: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) * 0.776 + 4px);
   max-width: 100%;
   margin-right: auto;

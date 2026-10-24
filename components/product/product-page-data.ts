@@ -135,6 +135,8 @@ export type SubscriptionProductPage = ProductPageBase & {
   deliveryByTime: string; // "7 AM"
   review: { quote: string; name: string; area: string; subscriberSince: string };
   subscriptionFastSellingCards: FastSellingCard[]; // the row under the Subscribe & save tab
+  // Milk: also sold in ½ litre bottles at half the 1 litre price (rounded up), chosen on the page
+  hasHalfLitreBottle?: boolean;
 };
 
 export type ProductPage = OneTimeProductPage | SubscriptionProductPage;
@@ -177,10 +179,10 @@ const milkPage: SubscriptionProductPage = {
   shopCategory: "Milk",
   cardNote: "glass bottle",
   status: "published",
-  name: "A2 Desi Cow Milk",
+  name: "A2 Milk (Gir Cow)",
   tagline: "Fresh, Raw & Unprocessed",
   description:
-    "Pure A2 milk from our own desi cows, milked at dawn and delivered chilled the same morning. No adulteration, no preservatives, no hormones.",
+    "Pure A2 milk from our own Gir cows, milked at dawn and delivered chilled the same morning. No adulteration, no preservatives, no hormones.",
   badge: { text: "Best seller", colour: "grey" },
   rating: { score: "4.8", count: "(12.4k)" },
   homesNote: { bold: "9.3k+ homes", rest: "get it every morning" },
@@ -190,8 +192,7 @@ const milkPage: SubscriptionProductPage = {
   ],
   pictureFit: { heightPercent: 94 },
   timingsStripText: "Order by 9 PM for delivery tomorrow by 7 AM · Free delivery on all subscriptions",
-  price: 95,
-  originalPrice: 110,
+  price: 105,
   unitName: "litre",
   unitShort: "L",
   packShort: "1 L",
@@ -212,6 +213,42 @@ const milkPage: SubscriptionProductPage = {
   deliverySteps: [orderByNineStep, { icon: "milk-drop", title: "Milked at 5 AM", detail: "Chilled within minutes" }, atYourDoorStep],
   fastSellingCards: defaultFastSellingCards,
   subscriptionFastSellingCards: defaultSubscriptionFastSellingCards,
+  hasHalfLitreBottle: true,
+};
+
+/*
+  Jersey and Skimmed milk: the same page as A2 milk (subscription, 1 L or ½ L) with their own name, text
+  and price. They start with the A2 milk's picture, review-free; the picture and texts are changed in the
+  Chiranvi Panel (Product pages → Edit).
+*/
+const jerseyMilkPage: SubscriptionProductPage = {
+  ...milkPage,
+  slug: "jersey-milk",
+  name: "Jersey Milk",
+  tagline: "Creamy, Fresh & Everyday",
+  description: "Fresh milk from our Jersey cows, milked at dawn and delivered chilled the same morning. Creamy and wholesome for tea, coffee and everyday cooking.",
+  badge: { text: "Everyday milk", colour: "cream" },
+  rating: { score: "4.6", count: "(new)" },
+  homesNote: { bold: "", rest: "" },
+  highlights: ["Farm fresh", "No Hormones", "No Preservatives", "Delivered chilled"],
+  pictures: [{ ...milkPage.pictures[0], alt: "Chiranvi Farms Jersey milk in a glass bottle" }],
+  price: 60,
+  review: { quote: "", name: "", area: "", subscriberSince: "" },
+};
+
+const skimmedMilkPage: SubscriptionProductPage = {
+  ...milkPage,
+  slug: "skimmed-milk",
+  name: "Skimmed Milk",
+  tagline: "Light, Low-Fat & Fresh",
+  description: "Our fresh farm milk with the cream taken off: all the goodness of milk with less fat. Milked at dawn and delivered chilled the same morning.",
+  badge: { text: "Low fat", colour: "green" },
+  rating: { score: "4.6", count: "(new)" },
+  homesNote: { bold: "", rest: "" },
+  highlights: ["Low fat", "Farm fresh", "No Preservatives", "Delivered chilled"],
+  pictures: [{ ...milkPage.pictures[0], alt: "Chiranvi Farms skimmed milk in a glass bottle" }],
+  price: 95,
+  review: { quote: "", name: "", area: "", subscriberSince: "" },
 };
 
 const gheePage: OneTimeProductPage = {
@@ -263,6 +300,35 @@ const gheePage: OneTimeProductPage = {
   ],
   nutritionBasis: "per 100 g (approx.)",
   fastSellingCards: defaultFastSellingCards,
+};
+
+/*
+  Jersey ghee: the A2 ghee's page with its own name, text and (starting) prices; the picture, texts and
+  prices are changed in the Chiranvi Panel (Product pages → Edit).
+*/
+const jerseyGheePage: OneTimeProductPage = {
+  ...gheePage,
+  slug: "jersey-ghee",
+  cardNote: "slow-cooked",
+  name: "Jersey Cow Ghee",
+  tagline: "Golden, Aromatic & Pure",
+  description:
+    "Made from the cream of our Jersey cows' milk and slowly heated to bring out its rich aroma and golden colour. A wholesome everyday ghee for cooking and traditional recipes.",
+  badge: { text: "Everyday ghee", colour: "cream" },
+  rating: { score: "4.6", count: "(new)" },
+  ratingNote: "Slow-cooked",
+  highlights: ["Lab-tested", "Slow-cooked", "No preservatives", "Glass jar"],
+  pictures: [{ ...gheePage.pictures[0], alt: "Chiranvi Farms Jersey cow ghee in a glass jar" }],
+  packs: [
+    { packId: "250-ml", label: "250 ml", size: 250, price: 549 },
+    { packId: "500-ml", label: "500 ml", size: 500, price: 999 },
+    { packId: "1-litre", label: "1 litre", size: 1000, price: 1099, originalPrice: 1399, tag: "Best value" },
+  ],
+  note: { text: "Made in small batches · keep at room temperature", tone: "fresh" },
+  review: { quote: "", name: "", area: "" },
+  productInformation: gheePage.productInformation.map((row) =>
+    row.label === "Ingredients" ? { ...row, value: "Milk fat from Jersey cow milk" } : row,
+  ),
 };
 
 const paneerPage: OneTimeProductPage = {
@@ -371,6 +437,32 @@ const butterPage: OneTimeProductPage = {
   ],
   nutritionBasis: "per 100 g (approx.)",
   fastSellingCards: defaultFastSellingCards,
+};
+
+/*
+  Jersey butter: the A2 butter's page with its own name, text and (starting) prices; the picture, texts and
+  prices are changed in the Chiranvi Panel (Product pages → Edit).
+*/
+const jerseyButterPage: OneTimeProductPage = {
+  ...butterPage,
+  slug: "jersey-butter",
+  cardNote: "fresh-churned",
+  name: "Jersey Cow Butter",
+  tagline: "Soft, Creamy & Fresh",
+  description:
+    "Soft white butter churned from the cream of our Jersey cows' milk. Rich and creamy for breakfast, rotis and everyday homemade recipes.",
+  badge: { text: "Everyday butter", colour: "cream" },
+  rating: { score: "4.6", count: "(new)" },
+  pictures: [{ ...butterPage.pictures[0], alt: "Chiranvi Farm Jersey cow white butter on a wooden board" }],
+  packs: [
+    { packId: "100-g", label: "100 g", size: 100, price: 99 },
+    { packId: "250-g", label: "250 g", size: 250, price: 219 },
+    { packId: "500-g", label: "500 g", size: 500, price: 399, originalPrice: 479, tag: "Best value" },
+  ],
+  review: { quote: "", name: "", area: "" },
+  productInformation: butterPage.productInformation.map((row) =>
+    row.label === "Ingredients" ? { ...row, value: "Cream from Jersey cow milk" } : row,
+  ),
 };
 
 const attaPage: OneTimeProductPage = {
@@ -482,7 +574,19 @@ const batterPage: OneTimeProductPage = {
   fastSellingCards: defaultFastSellingCards,
 };
 
-export const startingProductPages: ProductPage[] = [milkPage, gheePage, paneerPage, butterPage, attaPage, batterPage];
+// Order on the All products page: the three milks, then the ghees, paneer, the butters, atta, batter
+export const startingProductPages: ProductPage[] = [
+  milkPage,
+  jerseyMilkPage,
+  skimmedMilkPage,
+  gheePage,
+  jerseyGheePage,
+  paneerPage,
+  butterPage,
+  jerseyButterPage,
+  attaPage,
+  batterPage,
+];
 
 // Page address from a product name: "Ragi Flour" → "ragi-flour"
 export function toProductSlug(name: string) {

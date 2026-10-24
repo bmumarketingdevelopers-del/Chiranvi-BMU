@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useIsLoggedIn } from "@/components/login/login-status";
 import SiteFooter from "@/components/footer/site-footer";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
-import { addProductToCart, rememberPendingCartProduct, type CartProduct } from "@/store/cart-store";
+import { addProductToCart, changeCartItemQuantity, rememberPendingCartProduct, useCartItems, type CartProduct } from "@/store/cart-store";
 import { getDiscountPercent } from "@/store/products-store";
 import type { DeliveryStepIcon, FastSellingCard, OneTimePack, OneTimeProductPage as OneTimePageData, PictureFit } from "./product-page-data";
 import { ProductCardTile, useProductCards } from "./all-products-page";
@@ -18,7 +18,7 @@ import styles from "./one-time-product-page.module.css";
   added in the Chiranvi Panel). It draws one entry of product-page-data.ts / the panel:
   - left: the picture(s) on the landing hero's gold ring and green panel, a customer review and the three
     delivery steps; fixed under the navigation bar while the right side scrolls;
-  - right: name, price of the chosen pack, pack sizes, quantity, Add to cart, Buy now, and free delivery
+  - right: name, price of the chosen pack, pack sizes, Add to cart (then "− n +"), Buy now, and free delivery
     (always, or "Add ₹X more" until the order reaches the product's amount);
   - below: Product information, Nutrition facts and Fast selling products.
 */
@@ -129,70 +129,6 @@ function CartIcon() {
   );
 }
 
-/*
-  Add to cart and Buy now (both add the chosen pack, as many as the quantity):
-  - Add to cart stays on the page; Buy now then opens the cart (Pay now there starts the checkout);
-  - not logged in: both go to the login with one pack of the chosen size remembered (the login adds it
-    and comes back here).
-*/
-function CartButtons({ page, pack, quantity }: { page: OneTimePageData; pack: OneTimePack; quantity: number }) {
-  const isLoggedIn = useIsLoggedIn();
-  const router = useRouter();
-  const [isAdded, setIsAdded] = useState(false);
-  const cartProduct = toCartProduct(page, pack);
-
-  function addChosenPackToCart() {
-    for (let packNumber = 0; packNumber < quantity; packNumber++) addProductToCart(cartProduct);
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <>
-        {(["Add to cart", "Buy now"] as const).map((buttonLabel) => (
-          <Link
-            key={buttonLabel}
-            href="/login"
-            className={styles[buttonLabel === "Add to cart" ? "one-time-add-to-cart-button" : "one-time-buy-now-button"]}
-            onPointerDown={() => rememberPendingCartProduct(cartProduct)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") rememberPendingCartProduct(cartProduct);
-            }}
-          >
-            {buttonLabel === "Add to cart" && <CartIcon />}
-            {buttonLabel}
-          </Link>
-        ))}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <button
-        type="button"
-        className={styles["one-time-add-to-cart-button"]}
-        onClick={() => {
-          addChosenPackToCart();
-          setIsAdded(true);
-        }}
-      >
-        <CartIcon />
-        {isAdded ? "Added to cart" : "Add to cart"}
-      </button>
-      <button
-        type="button"
-        className={styles["one-time-buy-now-button"]}
-        onClick={() => {
-          addChosenPackToCart();
-          router.push("/cart");
-        }}
-      >
-        Buy now
-      </button>
-    </>
-  );
-}
-
 // "Fast selling products": heading, View all, and the cards
 function FastSellingRow({ cards }: { cards: FastSellingCard[] }) {
   // The products this row lists, as full cards with prices (in the row's order)
@@ -225,9 +161,22 @@ function FastSellingRow({ cards }: { cards: FastSellingCard[] }) {
 export default function OneTimeProductPage({ page }: { page: OneTimePageData }) {
   const [chosenPackId, setChosenPackId] = useState(page.defaultPackId);
   const chosenPack = page.packs.find((pack) => pack.packId === chosenPackId) ?? page.packs[0];
-  const [quantity, setQuantity] = useState(1);
-  // Free delivery: always, or the chosen pack × quantity against the product's amount (the bar fills up)
-  const orderAmount = (chosenPack?.price ?? 0) * quantity;
+  /*
+    Quantity: the chosen pack's number in the cart. Not in the cart: "Add to cart" (adds one); then
+    "− n +" changes the cart, and − at 1 takes it out, back to "Add to cart". Not logged in, Add to cart
+    goes to the login with one pack remembered (the login adds it and comes back here). The customer then
+    checks out from the cart: Buy now (adds one first if the pack isn't in the cart yet) or the cart icon,
+    then Cart → Select address → Pay now.
+  */
+  const isLoggedIn = useIsLoggedIn();
+  const cartItems = useCartItems();
+  const chosenPackCartProduct = chosenPack ? toCartProduct(page, chosenPack) : null;
+  const router = useRouter();
+  const chosenPackCartId = chosenPackCartProduct?.productId ?? "";
+  const quantityInCart = cartItems.find((cartItem) => cartItem.productId === chosenPackCartId)?.quantity ?? 0;
+  const isChosenPackInCart = quantityInCart > 0;
+  // Free delivery: always, or the chosen pack × quantity (one before any is added) against the product's amount
+  const orderAmount = (chosenPack?.price ?? 0) * Math.max(1, quantityInCart);
   const freeDeliveryFromAmount = page.freeDelivery.kind === "from" ? page.freeDelivery.amount : 0;
   const amountLeftForFreeDelivery = Math.max(0, freeDeliveryFromAmount - orderAmount);
   const freeDeliveryProgressPercent =
@@ -392,33 +341,77 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
               </p>
             )}
 
-            {/* Quantity, Add to cart and Buy now */}
+            {/* Quantity: Add to cart (then "− n +") and Buy now */}
             <p className={styles["one-time-section-label"]}>Quantity</p>
             <div className={styles["one-time-buy-row"]}>
-              <div className={styles["one-time-quantity-control"]} role="group" aria-label={`Number of ${quantityWord.many}`}>
+              {isChosenPackInCart ? (
+                <div className={styles["one-time-quantity-control"]} role="group" aria-label={`Number of ${quantityWord.many}`}>
+                  <button
+                    type="button"
+                    aria-label={`One ${quantityWord.one} fewer`}
+                    className={styles["one-time-quantity-minus-button"]}
+                    onClick={() => changeCartItemQuantity(chosenPackCartId, -1)}
+                  >
+                    −
+                  </button>
+                  <span className={styles["one-time-quantity"]} aria-live="polite">
+                    {quantityInCart}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`One ${quantityWord.one} more`}
+                    className={styles["one-time-quantity-plus-button"]}
+                    onClick={() => changeCartItemQuantity(chosenPackCartId, 1)}
+                  >
+                    +
+                  </button>
+                </div>
+              ) : isLoggedIn ? (
                 <button
                   type="button"
-                  aria-label={`One ${quantityWord.one} fewer`}
-                  className={styles["one-time-quantity-minus-button"]}
-                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                  disabled={quantity === 1}
+                  className={styles["one-time-add-to-cart-button"]}
+                  onClick={() => chosenPackCartProduct && addProductToCart(chosenPackCartProduct)}
                 >
-                  −
+                  <CartIcon />
+                  Add to cart
                 </button>
-                <span className={styles["one-time-quantity"]} aria-live="polite">
-                  {quantity}
-                </span>
+              ) : (
+                <Link
+                  href="/login"
+                  className={styles["one-time-add-to-cart-button"]}
+                  onPointerDown={() => chosenPackCartProduct && rememberPendingCartProduct(chosenPackCartProduct)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && chosenPackCartProduct) rememberPendingCartProduct(chosenPackCartProduct);
+                  }}
+                >
+                  <CartIcon />
+                  Add to cart
+                </Link>
+              )}
+              {/* Buy now: one pack if it isn't in the cart yet, then the cart */}
+              {isLoggedIn ? (
                 <button
                   type="button"
-                  aria-label={`One ${quantityWord.one} more`}
-                  className={styles["one-time-quantity-plus-button"]}
-                  onClick={() => setQuantity((current) => current + 1)}
+                  className={styles["one-time-buy-now-button"]}
+                  onClick={() => {
+                    if (!isChosenPackInCart && chosenPackCartProduct) addProductToCart(chosenPackCartProduct);
+                    router.push("/cart");
+                  }}
                 >
-                  +
+                  Buy now
                 </button>
-              </div>
-              {/* key: "Added to cart" goes back to "Add to cart" when another pack is chosen */}
-              {chosenPack && <CartButtons key={chosenPack.packId} page={page} pack={chosenPack} quantity={quantity} />}
+              ) : (
+                <Link
+                  href="/login"
+                  className={styles["one-time-buy-now-button"]}
+                  onPointerDown={() => chosenPackCartProduct && rememberPendingCartProduct(chosenPackCartProduct)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && chosenPackCartProduct) rememberPendingCartProduct(chosenPackCartProduct);
+                  }}
+                >
+                  Buy now
+                </Link>
+              )}
             </div>
 
             {/* Free delivery: how much more to add, or that this order already has it */}

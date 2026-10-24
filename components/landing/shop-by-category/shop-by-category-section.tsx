@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useIsLoggedIn } from "@/components/login/login-status";
+import { rememberPageAfterLogin, useIsLoggedIn } from "@/components/login/login-status";
 import styles from "./shop-by-category-section.module.css";
 
 /*
   Landing page section below the purity promises: "Shop By Category" heading
   with six round category pictures (Milk, Paneer, Ghee, Butter, Flours, Batter).
-  Logged out, every category leads to the login page (logging in comes before shopping). Logged in, the
-  categories do not open anything yet (they will open the product pages once those are finished).
+  Logged in, each category opens All products with that category's filter chosen (/products?category=Milk):
+  Milk shows A2, Jersey and Skimmed milk; Ghee and Butter their A2 and Jersey kinds; the others one product.
+  Logged out, every category leads to the login page first (logging in comes before shopping), which then
+  comes back to that category.
   Scroll reveal: when the section scrolls into view, the heading and the six
   categories fade and slide up together.
 */
@@ -89,12 +91,16 @@ export default function ShopByCategorySection() {
               <span className={styles["shop-by-category-name"]}>{productCategory.name}</span>
             </>
           );
+          // The category's name is the same as its filter on All products
+          const categoryPagePath = `/products?category=${encodeURIComponent(productCategory.name)}`;
           return (
             <li key={productCategory.name}>
               {isLoggedIn ? (
-                <span className={styles["shop-by-category-link"]}>{categoryPictureAndName}</span>
+                <Link href={categoryPagePath} className={styles["shop-by-category-link"]}>
+                  {categoryPictureAndName}
+                </Link>
               ) : (
-                <Link href="/login" className={styles["shop-by-category-link"]}>
+                <Link href="/login" className={styles["shop-by-category-link"]} onClick={() => rememberPageAfterLogin(categoryPagePath)}>
                   {categoryPictureAndName}
                 </Link>
               )}
