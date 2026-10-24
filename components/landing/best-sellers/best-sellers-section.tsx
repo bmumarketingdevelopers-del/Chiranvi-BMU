@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { rememberPageAfterLogin, useLoggedInMobileNumber } from "@/components/login/login-status";
 import { askToBeNotified, isAvailableToOrder, useShopProducts, type ShopProduct } from "@/store/products-store";
 import styles from "./best-sellers-section.module.css";
@@ -126,6 +127,7 @@ export default function BestSellersSection({
   placement?: "landing-page" | "account-orders" | "cart";
 }) {
   const bestSellingProducts = useBestSellingProducts();
+  const router = useRouter();
   const isOnAccountOrdersPage = placement === "account-orders";
   const sectionRef = useRef<HTMLElement>(null);
   // "visible": shown normally (also the server-rendered state, so nothing is hidden without JavaScript).
@@ -190,9 +192,13 @@ export default function BestSellersSection({
         {bestSellingProducts.map((product) => {
           const isSoldOut = !isAvailableToOrder(product);
           return (
+          // Clicking anywhere on the card opens the product page (its buttons keep their own job)
           <li
             key={product.productId}
             className={`${styles["best-seller-card"]} ${isSoldOut ? styles["best-seller-card-sold-out"] : ""}`}
+            onClick={(event) => {
+              if (!(event.target as HTMLElement).closest("a, button")) router.push(`/products/${product.productId}`);
+            }}
           >
             <div className={styles["best-seller-image-area"]}>
               {isSoldOut && <span className={styles["best-seller-sold-out-tag"]}>Sold out</span>}

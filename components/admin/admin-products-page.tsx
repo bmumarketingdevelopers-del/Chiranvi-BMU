@@ -18,6 +18,7 @@ import {
 } from "@/store/products-store";
 import { useCurrentStaffAccess, useStaffMembers } from "@/store/staff-access-store";
 import { AdminFeatureGate } from "./admin-panel-layout";
+import AddProductPageForm, { AdminProductPagesSection } from "./admin-product-page-form";
 import {
   AdminFilterTabs,
   AdminPageTop,
@@ -157,6 +158,8 @@ function ProductsPage() {
   const gridRef = useRef<HTMLUListElement>(null);
   // null: no pop-up open; "new": Add product; otherwise the id of the product being changed
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
+  // "Add product": asks subscription or one-time, then the product's details and its website page
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
   const { showToast, toast } = useAdminToast();
 
   const words = searchText.trim().toLowerCase();
@@ -224,7 +227,7 @@ function ProductsPage() {
         onSearchTextChange={setSearchText}
         searchPlaceholder="Search products..."
         actionLabel="Add product"
-        onAction={() => setEditingId("new")}
+        onAction={() => setIsAddingProduct(true)}
         onExport={exportProducts}
         belowSearch={
           <AdminFilterTabs
@@ -359,6 +362,11 @@ function ProductsPage() {
           showToast={showToast}
         />
       )}
+
+      {isAddingProduct && <AddProductPageForm onClose={() => setIsAddingProduct(false)} showToast={showToast} />}
+
+      {/* Every product's website page: Open, Edit, Delete (and Restore original for the starting ones) */}
+      <AdminProductPagesSection showToast={showToast} />
 
       {toast}
     </div>

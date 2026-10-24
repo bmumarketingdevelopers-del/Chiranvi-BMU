@@ -1,0 +1,493 @@
+/*
+  Product pages: what each kind of product page needs, and the pages the site starts with.
+  There are two kinds, each drawn by its own template:
+  - "subscription" (like milk): one price per unit, Subscribe & save plans (3 / 6 / 12 months) and a
+    one-time tab with a bill   → components/product/subscription-product-page.tsx
+  - "one-time" (like ghee, paneer, butter, atta, batter): pack sizes, quantity, Add to cart and Buy now
+    → components/product/one-time-product-page.tsx
+  A page is only data: /products/<slug> finds the entry and the template for its kind draws it.
+  The starting pages are below; the Chiranvi Panel adds more ("Add product" on Products & pricing), saved
+  by store/product-pages-store.ts (in the browser for now, in Supabase later).
+*/
+
+export type ProductKind = "subscription" | "one-time";
+export type PublishStatus = "draft" | "published";
+
+export type ProductPicture = {
+  imageSource: string; // "/images/products/…" or a picture uploaded in the panel
+  imageWidth: number;
+  imageHeight: number;
+  alt: string;
+  isServedAsIs?: boolean; // sharp upscaled files: shown without Next's re-compression
+};
+
+// How big the picture(s) are in the picture area, as parts (%) of the area. With a width the picture is
+// sized by width (never taller than heightPercent); without one it is sized by height.
+export type PictureFit = { widthPercent?: number; heightPercent: number };
+
+export type BadgeColour = "gold" | "cream" | "green" | "grey";
+export type DeliveryStepIcon = "clock" | "milk-drop" | "box" | "home";
+export type DeliveryStep = { icon: DeliveryStepIcon; title: string; detail: string };
+export type InformationRow = { label: string; value: string };
+
+// One card in the "Fast selling products" row ("View Product" opens /products/<productId>)
+export type FastSellingCard = {
+  productId: string;
+  name: string;
+  imageSource: string;
+  imageWidth: number;
+  imageHeight: number;
+  ratingCount: string;
+};
+
+// The filter it shows under on the All products page (/products)
+export type ShopCategory = "Milk" | "Paneer" | "Ghee" | "Butter" | "Flours" | "Batter" | "Others";
+export const SHOP_CATEGORIES: ShopCategory[] = ["Milk", "Paneer", "Ghee", "Butter", "Flours", "Batter", "Others"];
+
+type ProductPageBase = {
+  slug: string; // the page address: /products/<slug>
+  shopCategory?: ShopCategory; // missing: "Others"
+  cardNote?: string; // after the pack size on the All products card: "1 litre · Bilona method"
+  status: PublishStatus; // drafts show only in the panel's preview
+  name: string;
+  tagline: string;
+  description: string;
+  badge: { text: string; colour: BadgeColour };
+  rating: { score: string; count: string }; // "4.8", "(1.5K)"
+  highlights: string[]; // the ✓ chips
+  pictures: ProductPicture[]; // one, or two side by side (Idli + Dosa)
+  pictureFit: PictureFit;
+  hasPictureShadow?: boolean;
+  deliverySteps: DeliveryStep[]; // three: Order by 9 PM → … → At your door
+  fastSellingCards: FastSellingCard[];
+  addedInPanel?: boolean; // false / missing: a starting page from this file
+  // The product's cards on Products & pricing (store/products-store.ts) made with this page, so editing
+  // or deleting the page in the panel updates or removes them too
+  panelCardIds?: string[];
+};
+
+// ---------- One-time purchase ----------
+
+export type OneTimePack = {
+  packId: string; // "500-g"
+  label: string; // "500 g"
+  size: number; // in the price breakdown's unit (500 for 500 g with "100 g"; 5 for 5 kg with "kg")
+  price: number;
+  originalPrice?: number; // crossed out, only where shown
+  tag?: "Best value" | "Most popular";
+  itemCount?: number; // "About 20 idlis" (price breakdown "item-count")
+};
+
+/*
+  The small line under the price and on each pack card:
+  - per-unit: "₹69.80 per 100 g" (headline, 0 or 2 decimals) and "₹70 / 100 g" (cards, whole rupees or
+    to the nearest 50 paise);
+  - item-count: "About 20 idlis".
+*/
+export type PriceBreakdown =
+  | { kind: "per-unit"; unitLabel: string; unitSize: number; headlineDecimals: 0 | 2; cardRounding: "whole" | "half"; taxNote: string }
+  | { kind: "item-count"; itemLabel: string; taxNote: string };
+
+export type OneTimeProductPage = ProductPageBase & {
+  kind: "one-time";
+  ratingNote: string; // green text after the rating: "Crafted with care"
+  packs: OneTimePack[];
+  defaultPackId: string;
+  priceBreakdown: PriceBreakdown;
+  cartPackWord: string; // the cart shows "500 g <word>": "glass jar", "pack", "pouch"
+  quantityWord: { one: string; many: string }; // "jar" / "jars" for the − + buttons
+  note: { text: string; tone: "warning" | "fresh" }; // red stock line, or green dot freshness line
+  freeDelivery: { kind: "always" } | { kind: "from"; amount: number };
+  review: { quote: string; name: string; area: string }; // shown with "✓ Verified buyer"
+  productInformation: InformationRow[];
+  nutritionFacts: InformationRow[];
+  nutritionBasis: string; // "per 100 g (approx.)"
+};
+
+// ---------- Subscription ----------
+
+export type SubscriptionPlanSetting = {
+  planId: string;
+  label: string; // "6 Months"
+  months: number;
+  days: number; // one delivery a day
+  percentOff: number; // off the one-time price per unit
+  tag?: "Most popular" | "Best value";
+  showsSavingInDetails: boolean; // "you save ₹…" (otherwise "1L daily")
+};
+
+export type SubscriptionProductPage = ProductPageBase & {
+  kind: "subscription";
+  timingsStripText: string; // green strip above the navigation bar
+  price: number; // one-time price per unit
+  originalPrice?: number;
+  unitName: string; // "litre": "₹95 / litre"
+  unitShort: string; // "L": "1L daily", "Milk (2L × ₹95)"
+  packShort: string; // "1 L": "Your plan: 2 × 1 L bottles every morning"
+  packSize: string; // "1 litre glass bottle"
+  billLabel: string; // "Milk": first line of the one-time bill
+  itemWord: { one: string; many: string }; // "bottle" / "bottles"
+  homesNote: { bold: string; rest: string }; // "9.3k+ homes" "get it every morning"
+  plans: SubscriptionPlanSetting[];
+  defaultPlanId: string;
+  oneTimeDeliveryCharge: number;
+  orderCutoffHour: number; // 21 = 9 PM
+  deliveryByTime: string; // "7 AM"
+  review: { quote: string; name: string; area: string; subscriberSince: string };
+  subscriptionFastSellingCards: FastSellingCard[]; // the row under the Subscribe & save tab
+};
+
+export type ProductPage = OneTimeProductPage | SubscriptionProductPage;
+
+// ---------- Defaults the panel starts a new page with ----------
+
+// The one-time "Fast selling products" row (the design's five items)
+export const defaultFastSellingCards: FastSellingCard[] = [
+  { productId: "a2-desi-ghee", name: "A2 Desi Ghee", imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, ratingCount: "1,069" },
+  { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-box-chiranvi-farm.webp", imageWidth: 3712, imageHeight: 2728, ratingCount: "982" },
+  { productId: "batter-powder", name: "Batter Powder", imageSource: "/images/categories/batter-category-chiranvi-farm.webp", imageWidth: 372, imageHeight: 248, ratingCount: "764" },
+  { productId: "whole-wheat-atta", name: "Flours", imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, ratingCount: "1,106" },
+  { productId: "desi-white-butter", name: "Desi White Butter", imageSource: "/images/categories/butter-category.webp", imageWidth: 412, imageHeight: 272, ratingCount: "646" },
+];
+
+// The subscription tab's row (the landing page's Best Sellers products)
+export const defaultSubscriptionFastSellingCards: FastSellingCard[] = [
+  { productId: "a2-desi-milk", name: "A2 Desi Milk", imageSource: "/images/products/a2-cow-milk-1-litre-bottle.webp", imageWidth: 232, imageHeight: 500, ratingCount: "7,105" },
+  { productId: "a2-desi-ghee", name: "A2 Desi Ghee", imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, ratingCount: "7,105" },
+  { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-box-chiranvi-farm.webp", imageWidth: 3712, imageHeight: 2728, ratingCount: "7,105" },
+  { productId: "moringa-powder", name: "Moringa Powder", imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516, ratingCount: "7,105" },
+  { productId: "turmeric-powder", name: "Turmeric Powder", imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548, ratingCount: "7,105" },
+];
+
+// Subscribe & save plans a new subscription product starts with (the milk page's)
+export const defaultSubscriptionPlans: SubscriptionPlanSetting[] = [
+  { planId: "3-months", label: "3 Months", months: 3, days: 90, percentOff: 5, showsSavingInDetails: false },
+  { planId: "6-months", label: "6 Months", months: 6, days: 180, percentOff: 8, tag: "Most popular", showsSavingInDetails: true },
+  { planId: "12-months", label: "12 Months", months: 12, days: 365, percentOff: 13, tag: "Best value", showsSavingInDetails: true },
+];
+
+export const orderByNineStep: DeliveryStep = { icon: "clock", title: "Order by 9 PM", detail: "Tonight" };
+export const atYourDoorStep: DeliveryStep = { icon: "home", title: "At your door", detail: "By 7 AM" };
+
+// ---------- The pages the site starts with (copied from the first hand-made pages) ----------
+
+const milkPage: SubscriptionProductPage = {
+  kind: "subscription",
+  slug: "a2-desi-milk",
+  shopCategory: "Milk",
+  cardNote: "glass bottle",
+  status: "published",
+  name: "A2 Desi Cow Milk",
+  tagline: "Fresh, Raw & Unprocessed",
+  description:
+    "Pure A2 milk from our own desi cows, milked at dawn and delivered chilled the same morning. No adulteration, no preservatives, no hormones.",
+  badge: { text: "Best seller", colour: "grey" },
+  rating: { score: "4.8", count: "(12.4k)" },
+  homesNote: { bold: "9.3k+ homes", rest: "get it every morning" },
+  highlights: ["No Urea", "100% Raw Milk", "No Hormones", "No Preservatives"],
+  pictures: [
+    { imageSource: "/images/products/desi-cow-milk-bottle-chiranvi-farm.webp", imageWidth: 1188, imageHeight: 2312, alt: "Chiranvi Farms Desi Cow Milk in a glass bottle" },
+  ],
+  pictureFit: { heightPercent: 94 },
+  timingsStripText: "Order by 9 PM for delivery tomorrow by 7 AM · Free delivery on all subscriptions",
+  price: 95,
+  originalPrice: 110,
+  unitName: "litre",
+  unitShort: "L",
+  packShort: "1 L",
+  packSize: "1 litre glass bottle",
+  billLabel: "Milk",
+  itemWord: { one: "bottle", many: "bottles" },
+  plans: defaultSubscriptionPlans,
+  defaultPlanId: "6-months",
+  oneTimeDeliveryCharge: 30,
+  orderCutoffHour: 21,
+  deliveryByTime: "7 AM",
+  review: {
+    quote: "Tastes like the milk we had in our village. Thick, fresh, and the morning delivery is always on time.",
+    name: "Lakshmi R.",
+    area: "Basavanagudi",
+    subscriberSince: "Subscriber for 8 months",
+  },
+  deliverySteps: [orderByNineStep, { icon: "milk-drop", title: "Milked at 5 AM", detail: "Chilled within minutes" }, atYourDoorStep],
+  fastSellingCards: defaultFastSellingCards,
+  subscriptionFastSellingCards: defaultSubscriptionFastSellingCards,
+};
+
+const gheePage: OneTimeProductPage = {
+  kind: "one-time",
+  slug: "a2-desi-ghee",
+  shopCategory: "Ghee",
+  cardNote: "Bilona method",
+  status: "published",
+  name: "A2 Desi Cow Ghee",
+  tagline: "Traditional Bilona Ghee, Golden & Pure",
+  description:
+    "Made from desi cow curd using the traditional bilona method, our ghee is slowly heated to develop its rich aroma, golden colour and authentic taste. A wholesome touch for everyday cooking and traditional recipes.",
+  badge: { text: "Farm favourite", colour: "gold" },
+  rating: { score: "4.8", count: "(1.5K)" },
+  ratingNote: "Crafted with care",
+  highlights: ["Lab-tested", "Bilona method", "No preservatives", "Glass jar"],
+  pictures: [
+    { imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, alt: "Chiranvi Farms Desi Ghee in a glass jar" },
+  ],
+  pictureFit: { heightPercent: 80 },
+  packs: [
+    { packId: "250-ml", label: "250 ml", size: 250, price: 699 },
+    { packId: "500-ml", label: "500 ml", size: 500, price: 1299 },
+    { packId: "1-litre", label: "1 litre", size: 1000, price: 1399, originalPrice: 1799, tag: "Best value" },
+  ],
+  defaultPackId: "1-litre",
+  priceBreakdown: { kind: "per-unit", unitLabel: "100 ml", unitSize: 100, headlineDecimals: 0, cardRounding: "whole", taxNote: "incl. all taxes" },
+  cartPackWord: "glass jar",
+  quantityWord: { one: "jar", many: "jars" },
+  note: { text: "Only 18 jars left in Batch #4542", tone: "warning" },
+  freeDelivery: { kind: "always" },
+  review: { quote: "Smells exactly like the ghee my mother made. Lovely grainy texture, and it lasts us a whole month.", name: "Priya R.", area: "Jayanagar" },
+  deliverySteps: [orderByNineStep, { icon: "box", title: "Packed fresh", detail: "From this week’s batch" }, atYourDoorStep],
+  productInformation: [
+    { label: "Ingredients", value: "Milk fat from A2 desi cow milk" },
+    { label: "Net quantity", value: "250 ml / 500 ml / 1 litre" },
+    { label: "Shelf life", value: "Best within 9 months" },
+    { label: "Storage", value: "Keep at room temperature" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+    { label: "FSSAI Lic. No.", value: "[add number]" },
+  ],
+  nutritionFacts: [
+    { label: "Energy", value: "897 kcal" },
+    { label: "Protein", value: "0 g" },
+    { label: "Total fat", value: "99.7 g" },
+    { label: "Saturated fat", value: "61 g" },
+    { label: "Carbohydrate", value: "0 g" },
+  ],
+  nutritionBasis: "per 100 g (approx.)",
+  fastSellingCards: defaultFastSellingCards,
+};
+
+const paneerPage: OneTimeProductPage = {
+  kind: "one-time",
+  slug: "fresh-cow-paneer",
+  shopCategory: "Paneer",
+  cardNote: "made today",
+  status: "published",
+  name: "A2 Desi Paneer",
+  tagline: "Soft, Creamy & Made Fresh",
+  description:
+    "Made from fresh A2 cow milk, our soft and creamy paneer brings natural goodness and authentic taste to your everyday meals. No added starch, no fillers, just wholesome dairy goodness.",
+  badge: { text: "Fresh daily", colour: "green" },
+  rating: { score: "4.7", count: "1.2K" },
+  ratingNote: "Farm Fresh",
+  highlights: ["Freshly Made", "Rich & Creamy", "No starch", "A2 Cow Milk"],
+  pictures: [
+    {
+      imageSource: "/images/products/fresh-paneer-box-chiranvi-farm.webp",
+      imageWidth: 3712,
+      imageHeight: 2728,
+      alt: "Chiranvi Farm fresh and natural paneer box",
+      isServedAsIs: true,
+    },
+  ],
+  pictureFit: { widthPercent: 72, heightPercent: 80 },
+  packs: [
+    { packId: "200-g", label: "200 g", size: 200, price: 149 },
+    { packId: "500-g", label: "500 g", size: 500, price: 349, originalPrice: 399, tag: "Most popular" },
+    { packId: "1-kg", label: "1 kg", size: 1000, price: 649 },
+  ],
+  defaultPackId: "500-g",
+  priceBreakdown: { kind: "per-unit", unitLabel: "100 g", unitSize: 100, headlineDecimals: 2, cardRounding: "half", taxNote: "Inclusive of all taxes" },
+  cartPackWord: "pack",
+  quantityWord: { one: "pack", many: "packs" },
+  note: { text: "Freshly prepared · Delivered chilled", tone: "fresh" },
+  freeDelivery: { kind: "from", amount: 499 },
+  review: { quote: "So soft it melts in the gravy. My kids won’t eat packet paneer any more.", name: "Arjun K.", area: "Whitefield" },
+  deliverySteps: [orderByNineStep, { icon: "box", title: "Made at 4 AM", detail: "From fresh milk" }, atYourDoorStep],
+  productInformation: [
+    { label: "Ingredients", value: "Cow milk, citric acid" },
+    { label: "Net quantity", value: "200 g / 500 g / 1 kg" },
+    { label: "Shelf life", value: "Best within 3 days" },
+    { label: "Storage", value: "Refrigerate at 0 to 4 °C" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+    { label: "FSSAI Lic. No.", value: "[add number]" },
+  ],
+  nutritionFacts: [
+    { label: "Energy", value: "265 kcal" },
+    { label: "Protein", value: "18 g" },
+    { label: "Total fat", value: "20 g" },
+    { label: "Carbohydrate", value: "3.4 g" },
+    { label: "Calcium", value: "208 mg" },
+  ],
+  nutritionBasis: "per 100 g (approx.)",
+  fastSellingCards: defaultFastSellingCards,
+};
+
+const butterPage: OneTimeProductPage = {
+  kind: "one-time",
+  slug: "desi-white-butter",
+  shopCategory: "Butter",
+  cardNote: "hand-churned",
+  status: "published",
+  name: "A2 Desi Butter",
+  tagline: "Pure from Desi Cow Milk",
+  description:
+    "Enjoy the soft, creamy taste of traditional makkhan, carefully churned from desi cow curd. With its rich texture and authentic flavour, it brings a touch of farm-fresh goodness to your breakfast, rotis and favourite homemade recipes.",
+  badge: { text: "Traditional goodness", colour: "cream" },
+  rating: { score: "4.8", count: "(1.1K)" },
+  ratingNote: "Freshly Churned",
+  highlights: ["Hand-churned", "Unsalted", "No preservatives", "Lab-tested"],
+  pictures: [
+    { imageSource: "/images/categories/butter-category.webp", imageWidth: 412, imageHeight: 272, alt: "Chiranvi Farm desi white butter on a wooden board" },
+  ],
+  pictureFit: { widthPercent: 72, heightPercent: 80 },
+  packs: [
+    { packId: "100-g", label: "100 g", size: 100, price: 129 },
+    { packId: "250-g", label: "250 g", size: 250, price: 279 },
+    { packId: "500-g", label: "500 g", size: 500, price: 499, originalPrice: 599, tag: "Best value" },
+  ],
+  defaultPackId: "500-g",
+  priceBreakdown: { kind: "per-unit", unitLabel: "100 g", unitSize: 100, headlineDecimals: 2, cardRounding: "whole", taxNote: "Inclusive of all taxes" },
+  cartPackWord: "pack",
+  quantityWord: { one: "pack", many: "packs" },
+  note: { text: "Churned this week · keep refrigerated", tone: "fresh" },
+  freeDelivery: { kind: "from", amount: 499 },
+  review: { quote: "Tastes just like the makkhan at my nani’s house. Perfect on hot parathas.", name: "Rohit M.", area: "Koramangala" },
+  deliverySteps: [orderByNineStep, { icon: "box", title: "Churned fresh", detail: "This week’s batch" }, atYourDoorStep],
+  productInformation: [
+    { label: "Ingredients", value: "Cream from desi cow curd" },
+    { label: "Net quantity", value: "100 g / 250 g / 500 g" },
+    { label: "Shelf life", value: "Best within 7 days" },
+    { label: "Storage", value: "Refrigerate at 0 to 4 °C" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+    { label: "FSSAI Lic. No.", value: "[add number]" },
+  ],
+  nutritionFacts: [
+    { label: "Energy", value: "720 kcal" },
+    { label: "Protein", value: "0.9 g" },
+    { label: "Total fat", value: "80 g" },
+    { label: "Saturated fat", value: "51 g" },
+    { label: "Carbohydrate", value: "0.6 g" },
+  ],
+  nutritionBasis: "per 100 g (approx.)",
+  fastSellingCards: defaultFastSellingCards,
+};
+
+const attaPage: OneTimeProductPage = {
+  kind: "one-time",
+  slug: "whole-wheat-atta",
+  shopCategory: "Flours",
+  cardNote: "stone-ground",
+  status: "published",
+  name: "Whole Wheat Atta",
+  tagline: "Traditional Chakki-Ground Goodness",
+  description:
+    "Made from carefully selected whole wheat grains and traditionally stone-ground to retain their natural goodness. Enjoy soft rotis, fluffy chapatis and delicious homemade parathas with wholesome flavour in every bite.",
+  badge: { text: "Fresh from the chakki", colour: "cream" },
+  rating: { score: "4.7", count: "(2.4K)" },
+  ratingNote: "Freshly Milled",
+  highlights: ["Stone-ground", "100% whole wheat", "No maida", "Lab-tested"],
+  pictures: [
+    {
+      imageSource: "/images/products/whole-wheat-atta-pack.webp",
+      imageWidth: 1984,
+      imageHeight: 1806,
+      alt: "Chiranvi Farm whole wheat atta pouch with a bowl of flour and wheat",
+    },
+  ],
+  pictureFit: { widthPercent: 78, heightPercent: 88 },
+  packs: [
+    { packId: "1-kg", label: "1 kg", size: 1, price: 79 },
+    { packId: "2-kg", label: "2 kg", size: 2, price: 149 },
+    { packId: "5-kg", label: "5 kg", size: 5, price: 329, originalPrice: 399, tag: "Best value" },
+  ],
+  defaultPackId: "5-kg",
+  priceBreakdown: { kind: "per-unit", unitLabel: "kg", unitSize: 1, headlineDecimals: 2, cardRounding: "whole", taxNote: "Inclusive of all taxes" },
+  cartPackWord: "pouch",
+  quantityWord: { one: "pack", many: "packs" },
+  note: { text: "Milled this week · resealable zip pouch", tone: "fresh" },
+  freeDelivery: { kind: "from", amount: 499 },
+  review: { quote: "Rotis stay soft even in the lunch box. You can smell the fresh wheat when you open the pack.", name: "Kavya P.", area: "Malleshwaram" },
+  deliverySteps: [orderByNineStep, { icon: "box", title: "Milled fresh", detail: "This week’s batch" }, { icon: "home", title: "At your door", detail: "By tomorrow" }],
+  productInformation: [
+    { label: "Ingredients", value: "100% whole wheat" },
+    { label: "Net quantity", value: "1 kg / 2 kg / 5 kg" },
+    { label: "Shelf life", value: "Best within 3 months" },
+    { label: "Storage", value: "Cool, dry place" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+    { label: "FSSAI Lic. No.", value: "[add number]" },
+  ],
+  nutritionFacts: [
+    { label: "Energy", value: "340 kcal" },
+    { label: "Protein", value: "12 g" },
+    { label: "Total fat", value: "1.7 g" },
+    { label: "Carbohydrate", value: "72 g" },
+    { label: "Dietary fibre", value: "11 g" },
+  ],
+  nutritionBasis: "per 100 g (approx.)",
+  fastSellingCards: defaultFastSellingCards,
+};
+
+const batterPage: OneTimeProductPage = {
+  kind: "one-time",
+  slug: "batter-powder",
+  shopCategory: "Batter",
+  cardNote: "ground today",
+  status: "published",
+  name: "Idli & Dosa Batter",
+  tagline: "Traditional Taste, Naturally Fermented",
+  description:
+    "Prepared with rice and urad dal, soaked, ground and naturally fermented for soft idlis and crispy golden dosas. Enjoy the comfort of traditional homemade breakfasts.",
+  badge: { text: "Freshly prepared", colour: "green" },
+  rating: { score: "4.8", count: "(1.3K)" },
+  ratingNote: "1,500+ breakfasts a week",
+  highlights: ["Freshly Ground", "No soda", "Naturally Fermented", "No Added Preservatives"],
+  pictures: [
+    { imageSource: "/images/products/idli-batter-powder-pack.webp", imageWidth: 1808, imageHeight: 2744, alt: "Chiranvi Farm Idli batter powder pouch", isServedAsIs: true },
+    { imageSource: "/images/products/dosa-batter-powder-pack.webp", imageWidth: 1824, imageHeight: 2772, alt: "Chiranvi Farm Dosa batter powder pouch", isServedAsIs: true },
+  ],
+  pictureFit: { widthPercent: 34, heightPercent: 84 },
+  hasPictureShadow: true,
+  packs: [
+    { packId: "500-g", label: "500 g", size: 500, price: 59, itemCount: 10 },
+    { packId: "1-kg", label: "1 kg", size: 1000, price: 99, originalPrice: 120, tag: "Most popular", itemCount: 20 },
+    { packId: "2-kg", label: "2 kg", size: 2000, price: 179, itemCount: 40 },
+  ],
+  defaultPackId: "1-kg",
+  priceBreakdown: { kind: "item-count", itemLabel: "idlis", taxNote: "incl. all taxes" },
+  cartPackWord: "pack",
+  quantityWord: { one: "pack", many: "packs" },
+  note: { text: "Ground this morning · best within 3 days, refrigerated", tone: "fresh" },
+  freeDelivery: { kind: "from", amount: 499 },
+  review: { quote: "Soft idlis and crisp dosas, just like home. Saves me so much time on weekday mornings.", name: "Lakshmi R.", area: "Basavanagudi" },
+  deliverySteps: [orderByNineStep, { icon: "box", title: "Ground at 4 AM", detail: "Fresh batch" }, atYourDoorStep],
+  productInformation: [
+    { label: "Ingredients", value: "Rice, urad dal, methi seeds, salt" },
+    { label: "Net quantity", value: "500 g / 1 kg / 2 kg" },
+    { label: "Shelf life", value: "Best within 3 days" },
+    { label: "Storage", value: "Refrigerate at 0 to 4 °C" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+    { label: "FSSAI Lic. No.", value: "[add number]" },
+  ],
+  nutritionFacts: [
+    { label: "Energy", value: "120 kcal" },
+    { label: "Protein", value: "4 g" },
+    { label: "Total fat", value: "0.5 g" },
+    { label: "Carbohydrate", value: "26 g" },
+    { label: "Dietary fibre", value: "1.5 g" },
+  ],
+  nutritionBasis: "per 100 g (approx.)",
+  fastSellingCards: defaultFastSellingCards,
+};
+
+export const startingProductPages: ProductPage[] = [milkPage, gheePage, paneerPage, butterPage, attaPage, batterPage];
+
+// Page address from a product name: "Ragi Flour" → "ragi-flour"
+export function toProductSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}

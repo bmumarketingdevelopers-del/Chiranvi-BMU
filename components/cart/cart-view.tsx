@@ -600,7 +600,7 @@ export default function CartView() {
                 Your cart is empty
               </h2>
               <p className={styles["empty-cart-description"]}>Your farm-fresh favourites are waiting for you!</p>
-              <Link href="/" className={styles["empty-cart-start-shopping-button"]}>
+              <Link href="/products" className={styles["empty-cart-start-shopping-button"]}>
                 Start Shopping
               </Link>
             </section>

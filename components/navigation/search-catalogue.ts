@@ -2,7 +2,7 @@
   What the navigation bar's search can find, until real product data exists.
   Each entry: the name shown in the results, a short label, a picture, and extra words people
   might type (so "ghee", "turmeric" or "haldi" all find the right item).
-  Picking a result leads to the login page for now, like "Add to cart".
+  Picking a result opens its product page (productSlug), or the All products page when it has none yet.
 */
 
 export type SearchCatalogueItem = {
@@ -12,11 +12,13 @@ export type SearchCatalogueItem = {
   imageWidth: number;
   imageHeight: number;
   extraSearchWords: string;
+  productSlug?: string; // /products/<productSlug>
 };
 
 export const searchCatalogue: SearchCatalogueItem[] = [
   {
     name: "A2 Desi Milk",
+    productSlug: "a2-desi-milk",
     label: "Milk",
     imageSource: "/images/products/a2-cow-milk-1-litre-bottle.webp",
     imageWidth: 232,
@@ -25,6 +27,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   },
   {
     name: "A2 Desi Ghee",
+    productSlug: "a2-desi-ghee",
     label: "Ghee",
     imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp",
     imageWidth: 1524,
@@ -33,6 +36,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   },
   {
     name: "Fresh Cow Paneer",
+    productSlug: "fresh-cow-paneer",
     label: "Paneer",
     imageSource: "/images/products/fresh-paneer-200g-box.webp",
     imageWidth: 604,
@@ -41,6 +45,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   },
   {
     name: "Butter",
+    productSlug: "desi-white-butter",
     label: "Butter",
     imageSource: "/images/categories/butter-category.webp",
     imageWidth: 412,
@@ -49,6 +54,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   },
   {
     name: "Flours",
+    productSlug: "whole-wheat-atta",
     label: "Flours",
     imageSource: "/images/categories/flours-category-chiranvi-farm.webp",
     imageWidth: 412,
@@ -57,6 +63,7 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   },
   {
     name: "Batter",
+    productSlug: "batter-powder",
     label: "Batter",
     imageSource: "/images/categories/batter-category-chiranvi-farm.webp",
     imageWidth: 372,

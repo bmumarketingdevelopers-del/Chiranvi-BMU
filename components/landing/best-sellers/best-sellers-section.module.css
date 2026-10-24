@@ -95,6 +95,7 @@
 }
 
 .best-seller-card {
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   padding: calc(18 * var(--best-sellers-design-pixel)) calc(24 * var(--best-sellers-design-pixel))

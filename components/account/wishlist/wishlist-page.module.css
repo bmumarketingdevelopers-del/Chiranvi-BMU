@@ -1,0 +1,176 @@
+/*
+  "My Wishlist" dashboard page (wishlist-page.tsx), in the dashboard's style (like My Offers).
+  Numbers in calc() are design pixels multiplied by --account-design-pixel (set by the dashboard frame).
+*/
+
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: calc(18 * var(--account-design-pixel));
+  margin-top: calc(18 * var(--account-design-pixel));
+  list-style: none;
+}
+
+.wishlist-card {
+  display: flex;
+  flex-direction: column;
+  padding: calc(8 * var(--account-design-pixel)) calc(8 * var(--account-design-pixel)) calc(14 * var(--account-design-pixel));
+  border: 1px solid #e8ece6;
+  border-radius: calc(14 * var(--account-design-pixel));
+  background: #ffffff;
+  cursor: pointer;
+  transition: box-shadow 200ms ease;
+}
+
+.wishlist-card:hover {
+  box-shadow: 0 8px 24px rgba(22, 26, 23, 0.08);
+}
+
+.wishlist-picture-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(130 * var(--account-design-pixel));
+  border-radius: calc(10 * var(--account-design-pixel));
+  background: #f4f3ee;
+}
+
+.wishlist-picture {
+  width: auto;
+  max-width: 80%;
+  height: 84%;
+  object-fit: contain;
+}
+
+.wishlist-name {
+  margin-top: calc(10 * var(--account-design-pixel));
+  padding: 0 calc(4 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14.5 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.wishlist-pack {
+  padding: 0 calc(4 * var(--account-design-pixel));
+  font-size: calc(12 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.wishlist-price {
+  display: flex;
+  align-items: baseline;
+  gap: calc(4 * var(--account-design-pixel));
+  margin-top: calc(6 * var(--account-design-pixel));
+  padding: 0 calc(4 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--account-design-pixel));
+  font-weight: 700;
+}
+
+.wishlist-price s {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(11 * var(--account-design-pixel));
+  font-weight: 400;
+  color: #948c8c;
+}
+
+.wishlist-buttons {
+  display: flex;
+  gap: calc(6 * var(--account-design-pixel));
+  margin-top: auto;
+  padding: calc(12 * var(--account-design-pixel)) calc(4 * var(--account-design-pixel)) 0;
+}
+
+.wishlist-add-button,
+.wishlist-remove-button {
+  flex: 1;
+  height: calc(34 * var(--account-design-pixel));
+  border-radius: calc(8 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(12.5 * var(--account-design-pixel));
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wishlist-add-button {
+  background: #2f6b3f;
+  color: #ffffff;
+}
+
+.wishlist-add-button:hover {
+  background: #245433;
+}
+
+.wishlist-remove-button {
+  border: 1.5px solid #2f6b3f;
+  background: #ffffff;
+  color: #2f6b3f;
+}
+
+.wishlist-remove-button:hover {
+  background: #e6f0e1;
+}
+
+/* Empty wishlist */
+.wishlist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: calc(40 * var(--account-design-pixel));
+  padding: calc(40 * var(--account-design-pixel));
+  border: 1px solid #e8ece6;
+  border-radius: calc(16 * var(--account-design-pixel));
+  background: #ffffff;
+  text-align: center;
+}
+
+.wishlist-empty-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(18 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.wishlist-empty-text {
+  margin-top: calc(6 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.wishlist-start-shopping-button {
+  margin-top: calc(18 * var(--account-design-pixel));
+  padding: calc(10 * var(--account-design-pixel)) calc(22 * var(--account-design-pixel));
+  border-radius: 9999px;
+  background: #2f6b3f;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Phones: two cards a row */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .wishlist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .wishlist-picture-area {
+    height: 120px;
+  }
+
+  .wishlist-name {
+    font-size: 14px;
+  }
+
+  .wishlist-buttons {
+    flex-direction: column;
+  }
+
+  .wishlist-add-button,
+  .wishlist-remove-button {
+    height: 34px;
+    font-size: 12.5px;
+  }
+}

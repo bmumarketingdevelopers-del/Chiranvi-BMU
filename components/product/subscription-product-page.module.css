@@ -1,0 +1,1527 @@
+/*
+  Subscription product page template (subscription-product-page.tsx): milk and every subscription product
+  added in the Chiranvi Panel. Measured from the milk page's desktop design (1440-wide frame).
+  Two units (window size at the starting zoom, from the landing layout script):
+  - --subscription-product-design-pixel: text, pictures and boxes, the same zoom-aware unit as the landing page,
+    so sizes match the rest of the site;
+  - --subscription-product-horizontal-design-pixel: the window width / 1440, only for the side margins and the
+    gap between the columns, so the page still fills the width on wide, short laptop screens.
+  Phone layout (chosen by that script): one column, at the bottom of this file.
+*/
+
+.subscription-product-page {
+  --subscription-product-design-pixel: min(
+    var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440,
+    var(--landing-viewport-height-at-starting-zoom, 100svh) / 916
+  );
+  --subscription-product-horizontal-design-pixel: calc(var(--landing-viewport-width-at-starting-zoom, 100vw) / 1440);
+  /* Same unit as the space above the navigation bar (site-navigation-placement.module.css) */
+  --subscription-product-vertical-design-pixel: max(100svh / 916, var(--subscription-product-design-pixel));
+
+  min-height: 100svh;
+  background: #ffffff;
+  font-family: var(--font-poppins), sans-serif;
+  color: #1a1a1a;
+}
+
+/* "Order by 9 PM for delivery tomorrow by 7 AM · Free delivery on all subscriptions" */
+.subscription-delivery-timings-strip {
+  padding: calc(8 * var(--subscription-product-design-pixel)) calc(16 * var(--subscription-product-design-pixel));
+  background: #285c3a;
+  font-size: calc(13 * var(--subscription-product-design-pixel));
+  line-height: calc(18 * var(--subscription-product-design-pixel));
+  text-align: center;
+  color: #ffffff;
+}
+
+/* The gap under the navigation bar matches the gap above it (27 of the same unit); sides: 58 + 20px */
+.subscription-product-page-content {
+  width: 100%;
+  padding: calc(27 * var(--subscription-product-vertical-design-pixel)) calc(58 * var(--subscription-product-horizontal-design-pixel) + 20px)
+    calc(64 * var(--subscription-product-design-pixel));
+}
+
+/* Screen readers only */
+.subscription-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Two columns: picture side and details side */
+
+.subscription-product-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(82 * var(--subscription-product-horizontal-design-pixel));
+  align-items: start;
+}
+
+/*
+  Fixed under the navigation bar on every screen size, so only the plan side scrolls; when the plan side
+  ends (after the "Order within …" strip) the whole page scrolls on to Fast selling products.
+  It is exactly as tall as the screen below the bar (less the green timings strip and a small margin), so
+  the picture, review and delivery steps are always fully in view: the review and steps keep their size
+  and the picture area takes the rest.
+*/
+.subscription-product-left-column {
+  /* 27 above the bar + the bar (100) + the same 27 below it */
+  --subscription-navigation-space: calc(
+    54 * var(--subscription-product-vertical-design-pixel) + 100 * var(--subscription-product-design-pixel)
+  );
+
+  position: sticky;
+  top: var(--subscription-navigation-space);
+  display: flex;
+  flex-direction: column;
+  gap: calc(24 * var(--subscription-product-design-pixel));
+  /* Screen - bar space - green strip (34) - bottom margin (24) */
+  height: calc(100svh - var(--subscription-navigation-space) - 58 * var(--subscription-product-design-pixel));
+}
+
+/*
+  Picture area with the landing hero's shapes (hero-section.module.css): a gold ring and the green panel
+  on the right half, on white. The green panel is drawn over the ring, so the ring only shows on the
+  left, curving behind the picture like in the hero.
+  Ring sizes are parts of the area's height (measured by the component), so the circle stays round.
+*/
+.subscription-picture-area {
+  /* Used until the component has measured the real height */
+  --subscription-picture-stage-height: calc(400 * var(--subscription-product-design-pixel));
+
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  /* Content centred on the green card's edge (52%), between the ring and the card */
+  padding-left: 4%;
+  /* Never squeezed below this on very short screens (the column may then run a little past the bottom) */
+  min-height: calc(220 * var(--subscription-product-design-pixel));
+  overflow: hidden;
+  border-radius: calc(16 * var(--subscription-product-design-pixel));
+  background: #ffffff;
+}
+
+/*
+  Gold ring, measured from the hero: outer radius 0.95 of the height, centre 0.38 of the height right of
+  the green panel's edge and 0.55 down, thickness 0.3 of the radius. Inside the ring the background
+  shows, leaving a gap between the gold and the green panel (the gold only meets the panel at the top).
+*/
+.subscription-picture-area::before {
+  content: "";
+  position: absolute;
+  left: calc(52% - 0.57 * var(--subscription-picture-stage-height));
+  top: calc(-0.4 * var(--subscription-picture-stage-height));
+  width: calc(1.9 * var(--subscription-picture-stage-height));
+  height: calc(1.9 * var(--subscription-picture-stage-height));
+  border: calc(0.285 * var(--subscription-picture-stage-height)) solid #d6aa55;
+  border-radius: 50%;
+}
+
+/* Green panel: right half, over the ring */
+.subscription-picture-area::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 52%;
+  background: #285c3a;
+}
+
+/*
+  Centred on the green panel's edge (between the ring and the card); how big is set per product
+  (pictureFit in product-page-data.ts; milk: 94% of the height) by the component
+*/
+.subscription-picture {
+  position: relative;
+  z-index: 1;
+  object-fit: contain;
+}
+
+/* Customer review card */
+
+/* White box with a light border; the quote uses the full width of the box (design) */
+.subscription-review-card {
+  padding: calc(20 * var(--subscription-product-design-pixel)) calc(26 * var(--subscription-product-design-pixel));
+  border: 1.5px solid #e8e8df;
+  border-radius: calc(16 * var(--subscription-product-design-pixel));
+  background: #ffffff;
+}
+
+.subscription-review-stars,
+.subscription-product-rating-stars,
+.fast-selling-stars {
+  display: flex;
+  gap: calc(2 * var(--subscription-product-design-pixel));
+}
+
+.subscription-review-stars svg,
+.subscription-product-rating-stars svg,
+.fast-selling-stars svg {
+  width: calc(16 * var(--subscription-product-design-pixel));
+  height: calc(16 * var(--subscription-product-design-pixel));
+  fill: #f5bf2c;
+}
+
+.subscription-review-quote {
+  margin-top: calc(12 * var(--subscription-product-design-pixel));
+  font-size: calc(14.5 * var(--subscription-product-design-pixel));
+  line-height: calc(26 * var(--subscription-product-design-pixel));
+  color: #1a1a1a;
+}
+
+/* "Subscriber for 8 months": small green line above the name */
+.subscription-review-subscriber-since {
+  margin-top: calc(10 * var(--subscription-product-design-pixel));
+  font-size: calc(12 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+  color: #285c3a;
+}
+
+.subscription-review-author {
+  margin-top: calc(2 * var(--subscription-product-design-pixel));
+  font-size: calc(14 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+}
+
+.subscription-review-author-area {
+  color: #7a7a7a;
+}
+
+/* Order by 9 PM - Milked at 5 AM - At your door, joined by a dashed line */
+
+.subscription-delivery-steps-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: calc(18 * var(--subscription-product-design-pixel)) calc(12 * var(--subscription-product-design-pixel));
+  border: 1.5px solid #e8e8df;
+  border-radius: calc(16 * var(--subscription-product-design-pixel));
+  list-style: none;
+}
+
+/* The dashed line runs between the first and last icon centres, behind the icons */
+.subscription-delivery-steps-card::before {
+  content: "";
+  position: absolute;
+  top: calc(18 * var(--subscription-product-design-pixel) + 21 * var(--subscription-product-design-pixel));
+  left: calc(100% / 6);
+  right: calc(100% / 6);
+  border-top: 2px dashed #c9dcbf;
+}
+
+.subscription-delivery-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.subscription-delivery-step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(42 * var(--subscription-product-design-pixel));
+  height: calc(42 * var(--subscription-product-design-pixel));
+  border-radius: 50%;
+  background: #1f4d2e;
+}
+
+.subscription-delivery-step-icon svg {
+  width: calc(22 * var(--subscription-product-design-pixel));
+  height: calc(22 * var(--subscription-product-design-pixel));
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.subscription-delivery-step-icon .subscription-delivery-step-icon-filled {
+  fill: #ffffff;
+  stroke: none;
+}
+
+.subscription-delivery-step-title {
+  margin-top: calc(10 * var(--subscription-product-design-pixel));
+  font-size: calc(14.5 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+}
+
+.subscription-delivery-step-detail {
+  margin-top: calc(2 * var(--subscription-product-design-pixel));
+  font-size: calc(12.5 * var(--subscription-product-design-pixel));
+  color: #7a7a7a;
+}
+
+/* Right column: badge, name, tagline, description */
+
+.subscription-product-right-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.subscription-badge {
+  padding: calc(4 * var(--subscription-product-design-pixel)) calc(12 * var(--subscription-product-design-pixel));
+  border-radius: 9999px;
+  background: #f1f1ec;
+  font-size: calc(11 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Other badge colours a product can choose (the milk page uses the grey one above) */
+.subscription-badge-gold {
+  background: #fbf3e1;
+  color: #c99a1e;
+}
+
+.subscription-badge-cream {
+  background: #fbf3e1;
+  color: #1a1a1a;
+}
+
+.subscription-badge-green {
+  background: #e6f0e1;
+  color: #285c3a;
+}
+
+.subscription-product-name {
+  margin-top: calc(12 * var(--subscription-product-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(36 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.subscription-product-tagline {
+  margin-top: calc(2 * var(--subscription-product-design-pixel));
+  font-size: calc(22 * var(--subscription-product-design-pixel));
+  font-weight: 500;
+}
+
+.subscription-product-description {
+  max-width: calc(560 * var(--subscription-product-design-pixel));
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+  font-size: calc(14.5 * var(--subscription-product-design-pixel));
+  line-height: calc(24 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+/* Rating: stars, 4.8 (12.4k), homes */
+
+.subscription-product-rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(6 * var(--subscription-product-design-pixel));
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+  font-size: calc(13.5 * var(--subscription-product-design-pixel));
+}
+
+.subscription-product-rating-stars svg {
+  width: calc(14 * var(--subscription-product-design-pixel));
+  height: calc(14 * var(--subscription-product-design-pixel));
+}
+
+.subscription-product-rating-score {
+  font-weight: 600;
+}
+
+.subscription-product-rating-count {
+  color: #7a7a7a;
+}
+
+.subscription-product-homes {
+  margin-left: calc(4 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+.subscription-product-homes strong {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* ✓ No Urea, ✓ 100% Raw Milk ... */
+
+.subscription-product-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(10 * var(--subscription-product-design-pixel));
+  margin-top: calc(18 * var(--subscription-product-design-pixel));
+  list-style: none;
+}
+
+.subscription-product-highlight {
+  padding: calc(6 * var(--subscription-product-design-pixel)) calc(14 * var(--subscription-product-design-pixel));
+  border-radius: 9999px;
+  background: #e6f0e1;
+  font-size: calc(12.5 * var(--subscription-product-design-pixel));
+  font-weight: 500;
+  color: #1f4d2e;
+}
+
+/* ₹95 / litre ₹110 SAVE 14% */
+
+.subscription-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: calc(8 * var(--subscription-product-design-pixel));
+  margin-top: calc(24 * var(--subscription-product-design-pixel));
+}
+
+.subscription-price {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(42 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  line-height: 1;
+}
+
+.subscription-price-unit {
+  font-size: calc(14 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+.subscription-original-price {
+  font-size: calc(14 * var(--subscription-product-design-pixel));
+  color: #948c8c;
+}
+
+.subscription-save-badge {
+  align-self: center;
+  padding: calc(4 * var(--subscription-product-design-pixel)) calc(10 * var(--subscription-product-design-pixel));
+  border-radius: calc(6 * var(--subscription-product-design-pixel));
+  background: #1f4d2e;
+  font-size: calc(11 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.subscription-quantity-label {
+  margin-top: calc(12 * var(--subscription-product-design-pixel));
+  font-size: calc(13 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+.subscription-quantity-label strong {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Add to Cart, then "- quantity +" once milk is in the cart (same size and colour) */
+
+.subscription-add-to-cart-button,
+.subscription-quantity-control {
+  display: flex;
+  align-items: center;
+  height: calc(46 * var(--subscription-product-design-pixel));
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+  border-radius: calc(10 * var(--subscription-product-design-pixel));
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+.subscription-add-to-cart-button {
+  justify-content: center;
+  min-width: calc(160 * var(--subscription-product-design-pixel));
+  padding: 0 calc(28 * var(--subscription-product-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15.5 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.subscription-add-to-cart-button:hover,
+.subscription-add-to-cart-button:focus-visible {
+  background: #285c3a;
+}
+
+.subscription-quantity-control {
+  justify-content: space-between;
+  width: calc(160 * var(--subscription-product-design-pixel));
+  overflow: hidden;
+}
+
+.subscription-quantity-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(48 * var(--subscription-product-design-pixel));
+  height: 100%;
+  color: #ffffff;
+  font-size: calc(20 * var(--subscription-product-design-pixel));
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.subscription-quantity-button:hover,
+.subscription-quantity-button:focus-visible {
+  background: #285c3a;
+}
+
+.subscription-quantity {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+/* Choose your plan panel */
+
+.subscription-plan-panel {
+  align-self: stretch;
+  margin-top: calc(24 * var(--subscription-product-design-pixel));
+  padding: calc(24 * var(--subscription-product-design-pixel));
+  border-radius: calc(18 * var(--subscription-product-design-pixel));
+  background: #f4f3ee;
+}
+
+.subscription-plan-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(18 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+/* Subscribe & save | One-time purchase */
+.subscription-plan-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(4 * var(--subscription-product-design-pixel));
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+  padding: calc(4 * var(--subscription-product-design-pixel));
+  border-radius: calc(10 * var(--subscription-product-design-pixel));
+  background: #e9e8e1;
+}
+
+/* The chosen tab is a white pill on the grey track (design) */
+.subscription-plan-tab {
+  height: calc(40 * var(--subscription-product-design-pixel));
+  border-radius: calc(8 * var(--subscription-product-design-pixel));
+  font-size: calc(13 * var(--subscription-product-design-pixel));
+  color: #7a7a7a;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.subscription-plan-tab:hover {
+  color: #1a1a1a;
+}
+
+.subscription-plan-tab-selected {
+  background: #ffffff;
+  font-weight: 600;
+  color: #1a1a1a;
+  box-shadow: 0 1px 3px rgba(22, 26, 23, 0.08);
+}
+
+/* Plan options */
+
+.subscription-plan-options {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--subscription-product-design-pixel));
+  margin-top: calc(18 * var(--subscription-product-design-pixel));
+  border: 0;
+}
+
+.subscription-plan-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--subscription-product-design-pixel));
+  padding: calc(16 * var(--subscription-product-design-pixel)) calc(18 * var(--subscription-product-design-pixel));
+  border: 1.5px solid #e3e2da;
+  border-radius: calc(12 * var(--subscription-product-design-pixel));
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.subscription-plan-option:hover {
+  border-color: #b9cfae;
+}
+
+.subscription-plan-option-chosen,
+.subscription-plan-option-chosen:hover {
+  border-color: #285c3a;
+  background: #e6f0e1;
+}
+
+/* MOST POPULAR / BEST VALUE, sitting on the top border */
+.subscription-plan-tag {
+  position: absolute;
+  top: 0;
+  left: calc(14 * var(--subscription-product-design-pixel));
+  padding: calc(2 * var(--subscription-product-design-pixel)) calc(10 * var(--subscription-product-design-pixel));
+  border-radius: 9999px;
+  background: #1f4d2e;
+  font-size: calc(10 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  transform: translateY(-50%);
+}
+
+.subscription-plan-tag-best-value {
+  background: #f5bf2c;
+  color: #1a1a1a;
+}
+
+.subscription-plan-radio {
+  flex-shrink: 0;
+  width: calc(18 * var(--subscription-product-design-pixel));
+  height: calc(18 * var(--subscription-product-design-pixel));
+  margin: 0;
+  accent-color: #285c3a;
+  cursor: pointer;
+}
+
+.subscription-plan-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.subscription-plan-label {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+.subscription-plan-details {
+  margin-top: calc(2 * var(--subscription-product-design-pixel));
+  font-size: calc(12 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+.subscription-plan-details strong {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.subscription-plan-amounts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.subscription-plan-total {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(18 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+.subscription-plan-one-time-total {
+  font-size: calc(11.5 * var(--subscription-product-design-pixel));
+  color: #948c8c;
+}
+
+/* Your plan: 2 × 1 L bottles every morning */
+
+.subscription-plan-summary {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--subscription-product-design-pixel));
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+  padding: calc(12 * var(--subscription-product-design-pixel)) calc(16 * var(--subscription-product-design-pixel));
+  border: 1.5px solid #e3e2da;
+  border-radius: calc(12 * var(--subscription-product-design-pixel));
+  background: #ffffff;
+}
+
+.subscription-plan-summary-icon svg {
+  display: block;
+  width: calc(32 * var(--subscription-product-design-pixel));
+  height: calc(32 * var(--subscription-product-design-pixel));
+  fill: none;
+  stroke: #1a1a1a;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.subscription-plan-summary-text {
+  display: flex;
+  flex-direction: column;
+  font-size: calc(12 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+.subscription-plan-summary-text strong {
+  font-size: calc(14 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* One-time purchase: product row, then Milk / Delivery charge / Total */
+
+.subscription-one-time-summary {
+  margin-top: calc(18 * var(--subscription-product-design-pixel));
+  padding: calc(16 * var(--subscription-product-design-pixel)) calc(18 * var(--subscription-product-design-pixel));
+  border: 1.5px solid #e3e2da;
+  border-radius: calc(12 * var(--subscription-product-design-pixel));
+  background: #ffffff;
+}
+
+.subscription-one-time-product-row {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--subscription-product-design-pixel));
+  padding-bottom: calc(14 * var(--subscription-product-design-pixel));
+  border-bottom: 1px solid #ecebe4;
+}
+
+.subscription-one-time-product-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(40 * var(--subscription-product-design-pixel));
+  height: calc(40 * var(--subscription-product-design-pixel));
+  border: 1px solid #e3e2da;
+  border-radius: calc(8 * var(--subscription-product-design-pixel));
+}
+
+.subscription-one-time-product-icon svg {
+  width: calc(24 * var(--subscription-product-design-pixel));
+  height: calc(24 * var(--subscription-product-design-pixel));
+  fill: none;
+  stroke: #1a1a1a;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.subscription-one-time-product-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  font-size: calc(12 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+.subscription-one-time-product-text strong {
+  font-size: calc(14 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.subscription-one-time-product-amount {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+.subscription-one-time-bill {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--subscription-product-design-pixel));
+  padding-top: calc(14 * var(--subscription-product-design-pixel));
+}
+
+.subscription-one-time-bill-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(13 * var(--subscription-product-design-pixel));
+  color: #5f5f5f;
+}
+
+.subscription-one-time-bill-row dd {
+  color: #1a1a1a;
+}
+
+/* Total: a line above it, bold and larger */
+.subscription-one-time-bill-total-row {
+  align-items: baseline;
+  margin-top: calc(4 * var(--subscription-product-design-pixel));
+  padding-top: calc(12 * var(--subscription-product-design-pixel));
+  border-top: 1px solid #ecebe4;
+  font-size: calc(14 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.subscription-one-time-bill-total-row dd {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(20 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+.subscription-one-time-delivery-day {
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+  font-size: calc(13 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+}
+
+/* Start subscription @ ₹… and Checkout to Cart (same button) */
+
+.subscription-start-subscription-button,
+.subscription-checkout-to-cart-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: calc(52 * var(--subscription-product-design-pixel));
+  margin-top: calc(22 * var(--subscription-product-design-pixel));
+  border-radius: calc(10 * var(--subscription-product-design-pixel));
+  background: #1f4d2e;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16.5 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.subscription-start-subscription-button:hover,
+.subscription-start-subscription-button:focus-visible,
+.subscription-checkout-to-cart-button:hover,
+.subscription-checkout-to-cart-button:focus-visible {
+  background: #285c3a;
+}
+
+.subscription-checkout-to-cart-button {
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+}
+
+/* No quantity chosen yet: greyed green (a click shows the Add Quantity hint) */
+.subscription-start-subscription-button.subscription-button-waiting,
+.subscription-checkout-to-cart-button.subscription-button-waiting,
+.subscription-start-subscription-button.subscription-button-waiting:hover,
+.subscription-checkout-to-cart-button.subscription-button-waiting:hover {
+  background: #9fb3a5;
+  cursor: not-allowed;
+}
+
+/* ---------- "Choose a quantity first" hint at Add Quantity ---------- */
+
+/* Add Quantity and its tip bubble */
+.subscription-add-quantity-area {
+  position: relative;
+  width: fit-content;
+}
+
+/* Add Quantity: a short shake, then a gold ring pulses twice */
+.subscription-add-quantity-attention {
+  animation:
+    subscription-add-quantity-shake 500ms ease-in-out,
+    subscription-add-quantity-glow 900ms ease-out 450ms 2;
+}
+
+@keyframes subscription-add-quantity-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes subscription-add-quantity-glow {
+  from {
+    box-shadow: 0 0 0 0 rgba(245, 191, 44, 0.9);
+  }
+  to {
+    box-shadow: 0 0 0 calc(12 * var(--subscription-product-design-pixel)) rgba(245, 191, 44, 0);
+  }
+}
+
+/* Tip bubble to the right of the button, pointing at it; fades out after about 3 seconds */
+.subscription-add-quantity-tip {
+  position: absolute;
+  bottom: calc(23 * var(--subscription-product-design-pixel));
+  left: calc(100% + 14px);
+  padding: calc(7 * var(--subscription-product-design-pixel)) calc(12 * var(--subscription-product-design-pixel));
+  border: 1px solid #f5bf2c;
+  border-radius: calc(8 * var(--subscription-product-design-pixel));
+  background: #fbf3e1;
+  font-size: calc(13 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+  color: #1f4d2e;
+  white-space: nowrap;
+  transform: translateY(50%);
+  pointer-events: none;
+  animation: subscription-add-quantity-tip-show 3.2s ease forwards;
+}
+
+/* The little arrow pointing left at Add Quantity */
+.subscription-add-quantity-tip::before {
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  width: 10px;
+  height: 10px;
+  border-bottom: 1px solid #f5bf2c;
+  border-left: 1px solid #f5bf2c;
+  background: #fbf3e1;
+  content: "";
+  transform: translateY(-50%) rotate(45deg);
+}
+
+@keyframes subscription-add-quantity-tip-show {
+  0% {
+    opacity: 0;
+    transform: translate(-6px, 50%);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: translate(0, 50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 50%);
+    visibility: hidden;
+  }
+}
+
+/* Phones: the tip shows under the button (see the phone rules) */
+@keyframes subscription-add-quantity-tip-show-below {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subscription-add-quantity-attention {
+    animation: none;
+    box-shadow: 0 0 0 3px #f5bf2c;
+  }
+}
+
+.subscription-payment-note {
+  margin-top: calc(8 * var(--subscription-product-design-pixel));
+  font-size: calc(12.5 * var(--subscription-product-design-pixel));
+  text-align: center;
+  color: #285c3a;
+}
+
+.subscription-plan-footnote {
+  margin-top: calc(10 * var(--subscription-product-design-pixel));
+  font-size: calc(12.5 * var(--subscription-product-design-pixel));
+  text-align: center;
+  color: #7a7a7a;
+}
+
+/* Order within … for your first bottle tomorrow by 7 AM */
+
+.subscription-order-cutoff-strip {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--subscription-product-design-pixel));
+  align-self: stretch;
+  margin-top: calc(14 * var(--subscription-product-design-pixel));
+  padding: calc(12 * var(--subscription-product-design-pixel)) calc(16 * var(--subscription-product-design-pixel));
+  border-radius: calc(10 * var(--subscription-product-design-pixel));
+  background: #e6f0e1;
+  font-size: calc(13 * var(--subscription-product-design-pixel));
+  font-weight: 600;
+  color: #1f4d2e;
+}
+
+.subscription-order-cutoff-strip svg {
+  flex-shrink: 0;
+  width: calc(22 * var(--subscription-product-design-pixel));
+  height: calc(22 * var(--subscription-product-design-pixel));
+  fill: #1f4d2e;
+}
+
+/* Fast selling products: heading on the left, View all on the right, five cards */
+
+.fast-selling-section {
+  margin-top: calc(48 * var(--subscription-product-design-pixel));
+}
+
+.fast-selling-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fast-selling-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(22 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+.fast-selling-view-all-link {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--subscription-product-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(20 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  color: #1a1a1a;
+  transition: color 150ms ease;
+}
+
+.fast-selling-view-all-link:hover,
+.fast-selling-view-all-link:focus-visible {
+  color: #285c3a;
+}
+
+.fast-selling-view-all-link svg {
+  width: calc(24 * var(--subscription-product-design-pixel));
+  height: calc(24 * var(--subscription-product-design-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fast-selling-product-list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: calc(28 * var(--subscription-product-design-pixel));
+  margin-top: calc(20 * var(--subscription-product-design-pixel));
+  list-style: none;
+}
+
+.fast-selling-card {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  padding: calc(18 * var(--subscription-product-design-pixel)) calc(20 * var(--subscription-product-design-pixel));
+  border: 1px solid #e8e8df;
+  border-radius: calc(16 * var(--subscription-product-design-pixel));
+  background: #ffffff;
+  transition:
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.fast-selling-card:hover {
+  border-color: #d5dfd0;
+  box-shadow: 0 8px 24px rgba(22, 26, 23, 0.08);
+}
+
+.fast-selling-image-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(190 * var(--subscription-product-design-pixel));
+}
+
+.fast-selling-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.fast-selling-name {
+  margin-top: calc(16 * var(--subscription-product-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+}
+
+.fast-selling-rating {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--subscription-product-design-pixel));
+  margin-top: calc(4 * var(--subscription-product-design-pixel));
+}
+
+.fast-selling-stars svg {
+  width: calc(13 * var(--subscription-product-design-pixel));
+  height: calc(13 * var(--subscription-product-design-pixel));
+}
+
+.fast-selling-rating-count {
+  font-size: calc(12 * var(--subscription-product-design-pixel));
+  color: #7a7a7a;
+}
+
+/* View Product: same look as the landing page's Best Sellers button (two thirds of the card, centred) */
+.fast-selling-view-product-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 66%;
+  min-width: min(100%, calc(128 * var(--subscription-product-design-pixel)));
+  height: calc(44 * var(--subscription-product-design-pixel));
+  margin-top: calc(16 * var(--subscription-product-design-pixel));
+  border-radius: 9999px;
+  background: #285c3a;
+  color: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15.5 * var(--subscription-product-design-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.fast-selling-view-product-button:hover,
+.fast-selling-view-product-button:focus-visible {
+  background: #1f4d2e;
+}
+
+/*
+  Phone layout (chosen by the landing layout script): one column - bottle, details and plans, then the
+  review and delivery steps - and two product cards per row.
+*/
+:global(html:has(style[data-landing-layout="mobile"])) {
+  /* Add Quantity hint: the tip under the button, arrow pointing up */
+  .subscription-add-quantity-tip {
+    position: static;
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12.5px;
+    transform: none;
+    animation-name: subscription-add-quantity-tip-show-below;
+  }
+
+  .subscription-add-quantity-tip::before {
+    top: -6px;
+    left: 22px;
+    transform: rotate(135deg);
+  }
+
+  .subscription-add-quantity-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .subscription-delivery-timings-strip {
+    padding: 7px 12px;
+    font-size: 11.5px;
+    line-height: 16px;
+  }
+
+  .subscription-product-page-content {
+    max-width: none;
+    /* Phones: 12px under the bar, like the 12px above it */
+    padding: 12px 16px 40px;
+  }
+
+  /* Every block takes the full screen width (the desktop grid's "start" would shrink them to their content) */
+  .subscription-product-columns {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  /* Bottle first, then the details; review and steps move below the plans */
+  /* One column on phones: nothing sticks, the page scrolls normally */
+  .subscription-product-left-column {
+    position: static;
+    display: contents;
+  }
+
+  /* Phones and upright tablets: one column, so nothing is fixed; the bottle area has its own height */
+  .subscription-picture-area {
+    --subscription-picture-stage-height: 300px;
+
+    flex: none;
+    order: 1;
+    height: 300px;
+    border-radius: 14px;
+  }
+
+  .subscription-product-right-column {
+    order: 2;
+    padding-top: 0;
+  }
+
+  .subscription-review-card {
+    order: 3;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .subscription-delivery-steps-card {
+    order: 4;
+    padding: 14px 6px;
+    border-radius: 14px;
+  }
+
+  .subscription-delivery-steps-card::before {
+    top: calc(14px + 18px);
+  }
+
+  .subscription-review-stars svg,
+  .subscription-product-rating-stars svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .subscription-review-quote {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .subscription-review-subscriber-since {
+    margin-top: 8px;
+    font-size: 11.5px;
+  }
+
+  .subscription-review-author {
+    margin-top: 2px;
+    font-size: 13px;
+  }
+
+  .subscription-delivery-step-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .subscription-delivery-step-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .subscription-delivery-step-title {
+    margin-top: 8px;
+    font-size: 12.5px;
+  }
+
+  .subscription-delivery-step-detail {
+    font-size: 11px;
+  }
+
+  .subscription-badge {
+    padding: 3px 10px;
+    font-size: 10.5px;
+  }
+
+  .subscription-product-name {
+    margin-top: 10px;
+    font-size: 28px;
+  }
+
+  .subscription-product-tagline {
+    font-size: 18px;
+  }
+
+  .subscription-product-description {
+    max-width: none;
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .subscription-product-rating {
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  .subscription-product-homes {
+    margin-left: 0;
+  }
+
+  .subscription-product-highlights {
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .subscription-product-highlight {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  .subscription-price-row {
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .subscription-price {
+    font-size: 34px;
+  }
+
+  .subscription-price-unit,
+  .subscription-original-price {
+    font-size: 13px;
+  }
+
+  .subscription-save-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10.5px;
+  }
+
+  .subscription-quantity-label {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  .subscription-add-to-cart-button,
+  .subscription-quantity-control {
+    width: 100%;
+    height: 44px;
+    margin-top: 12px;
+    border-radius: 10px;
+  }
+
+  .subscription-add-to-cart-button {
+    font-size: 15px;
+  }
+
+  .subscription-quantity-button {
+    width: 56px;
+    font-size: 20px;
+  }
+
+  .subscription-quantity {
+    font-size: 16px;
+  }
+
+  .subscription-plan-panel {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .subscription-plan-heading {
+    font-size: 17px;
+  }
+
+  .subscription-plan-tabs {
+    gap: 4px;
+    margin-top: 12px;
+    padding: 4px;
+    border-radius: 10px;
+  }
+
+  .subscription-plan-tab-selected,
+  .subscription-plan-tab {
+    height: 38px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+
+  .subscription-plan-options {
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .subscription-plan-option {
+    gap: 10px;
+    padding: 16px 12px 12px;
+    border-radius: 12px;
+  }
+
+  .subscription-plan-tag {
+    left: 12px;
+    padding: 2px 8px;
+    font-size: 9.5px;
+  }
+
+  .subscription-plan-radio {
+    width: 18px;
+    height: 18px;
+  }
+
+  .subscription-plan-label {
+    font-size: 15px;
+  }
+
+  .subscription-plan-details {
+    font-size: 11.5px;
+  }
+
+  .subscription-plan-total {
+    font-size: 16px;
+  }
+
+  .subscription-plan-one-time-total {
+    font-size: 11px;
+  }
+
+  .subscription-plan-summary {
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .subscription-plan-summary-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .subscription-plan-summary-text {
+    font-size: 12px;
+  }
+
+  .subscription-plan-summary-text strong {
+    font-size: 13.5px;
+  }
+
+  .subscription-start-subscription-button,
+  .subscription-checkout-to-cart-button {
+    height: 50px;
+    margin-top: 18px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+
+  .subscription-checkout-to-cart-button {
+    margin-top: 12px;
+  }
+
+  .subscription-one-time-summary {
+    margin-top: 16px;
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .subscription-one-time-product-row {
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .subscription-one-time-product-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  .subscription-one-time-product-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .subscription-one-time-product-text {
+    font-size: 12px;
+  }
+
+  .subscription-one-time-product-text strong {
+    font-size: 13.5px;
+  }
+
+  .subscription-one-time-product-amount {
+    font-size: 15px;
+  }
+
+  .subscription-one-time-bill {
+    gap: 8px;
+    padding-top: 12px;
+  }
+
+  .subscription-one-time-bill-row {
+    font-size: 13px;
+  }
+
+  .subscription-one-time-bill-total-row {
+    margin-top: 4px;
+    padding-top: 10px;
+    font-size: 14px;
+  }
+
+  .subscription-one-time-bill-total-row dd {
+    font-size: 19px;
+  }
+
+  .subscription-one-time-delivery-day {
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  .subscription-payment-note,
+  .subscription-plan-footnote {
+    font-size: 12px;
+  }
+
+  .subscription-order-cutoff-strip {
+    gap: 10px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12.5px;
+  }
+
+  .subscription-order-cutoff-strip svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .fast-selling-section {
+    margin-top: 32px;
+  }
+
+  .fast-selling-heading {
+    font-size: 19px;
+  }
+
+  .fast-selling-view-all-link {
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .fast-selling-view-all-link svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .fast-selling-product-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .fast-selling-card {
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+
+  .fast-selling-image-area {
+    height: 120px;
+  }
+
+  .fast-selling-name {
+    margin-top: 12px;
+    font-size: 14.5px;
+  }
+
+  .fast-selling-stars svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .fast-selling-rating-count {
+    font-size: 11px;
+  }
+
+  .fast-selling-view-product-button {
+    width: 100%;
+    height: 36px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+}

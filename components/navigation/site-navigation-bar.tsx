@@ -285,7 +285,7 @@ export default function SiteNavigationBar() {
                         <li key={catalogueItem.name} role="presentation">
                           <Link
                             id={`site-search-result-${resultIndex}`}
-                            href="/login"
+                            href={catalogueItem.productSlug ? `/products/${catalogueItem.productSlug}` : "/products"}
                             role="option"
                             aria-selected={resultIndex === highlightedResultIndex}
                             onMouseEnter={() => setHighlightedResultIndex(resultIndex)}

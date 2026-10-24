@@ -1,0 +1,415 @@
+/*
+  "Add product" form (admin-product-page-form.tsx), inside the panel's shared pop-up (AdminDialog in
+  admin-shared.tsx). Chiranvi colours only (red only for the "Please fill in" list). Sizes use --admin-pixel.
+*/
+
+/* Sections and the extra blocks span both columns of the pop-up's field grid */
+.admin-product-page-section,
+.admin-product-page-problems,
+.admin-product-page-kind-choices,
+.admin-product-page-saved,
+.admin-product-page-back-button {
+  grid-column: 1 / -1;
+}
+
+.admin-product-page-section {
+  padding-top: calc(14 * var(--admin-pixel));
+  border-top: 1px solid #ecede7;
+}
+
+.admin-product-page-section:first-of-type {
+  padding-top: 0;
+  border-top: none;
+}
+
+.admin-product-page-section-title {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  margin-bottom: calc(10 * var(--admin-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+/* The section's number in a small green circle */
+.admin-product-page-section-number {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(22 * var(--admin-pixel));
+  height: calc(22 * var(--admin-pixel));
+  border-radius: 50%;
+  background: #1f4d2e;
+  font-size: calc(12 * var(--admin-pixel));
+  color: #ffffff;
+}
+
+/* "Making a high-quality PNG…" while a chosen picture is converted, then "Converted…" */
+.admin-product-page-picture-status {
+  grid-column: 1 / -1;
+  padding: calc(8 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  border-radius: calc(8 * var(--admin-pixel));
+  background: #e6f0e1;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 500;
+  color: #1f4d2e;
+}
+
+/* Product information / nutrition: Label · Value · × */
+.admin-product-page-information-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-product-page-section-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(12 * var(--admin-pixel));
+}
+
+/* Step 1: two big choices */
+.admin-product-page-kind-choices {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--admin-pixel));
+  border: none;
+}
+
+.admin-product-page-kind-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(12 * var(--admin-pixel));
+  padding: calc(14 * var(--admin-pixel));
+  border: 1.5px solid #e0e2da;
+  border-radius: calc(12 * var(--admin-pixel));
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-product-page-kind-choice input {
+  margin-top: calc(3 * var(--admin-pixel));
+  accent-color: #1f4d2e;
+}
+
+.admin-product-page-kind-choice span {
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--admin-pixel));
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #5f6b62;
+}
+
+.admin-product-page-kind-choice strong {
+  font-size: calc(14.5 * var(--admin-pixel));
+  color: #1b2a20;
+}
+
+.admin-product-page-kind-choice-chosen {
+  border-color: #1f4d2e;
+  background: #e6f0e1;
+}
+
+/* Missing or wrong fields, listed at the top (red: the form cannot be saved yet) */
+.admin-product-page-problems {
+  padding: calc(12 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #fdecea;
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #a93226;
+}
+
+.admin-product-page-problems ul {
+  margin-top: calc(4 * var(--admin-pixel));
+  padding-left: calc(18 * var(--admin-pixel));
+  list-style: disc;
+}
+
+.admin-product-page-textarea,
+.admin-product-page-textarea-tall {
+  height: auto;
+  min-height: calc(72 * var(--admin-pixel));
+  padding: calc(10 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.admin-product-page-textarea-tall {
+  min-height: calc(130 * var(--admin-pixel));
+}
+
+.admin-product-page-hint {
+  grid-column: 1 / -1;
+  font-size: calc(11.5 * var(--admin-pixel));
+  color: #6e7a72;
+}
+
+.admin-product-page-checkbox {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #1b2a20;
+}
+
+.admin-product-page-checkbox input {
+  accent-color: #1f4d2e;
+}
+
+.admin-product-page-checkbox-wide {
+  grid-column: 1 / -1;
+}
+
+/* Chosen pictures, small, each with Remove */
+.admin-product-page-picture-previews {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-product-page-picture-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--admin-pixel));
+}
+
+.admin-product-page-picture-preview img {
+  width: calc(72 * var(--admin-pixel));
+  height: calc(72 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: calc(8 * var(--admin-pixel));
+  object-fit: contain;
+  background: #f4f3ee;
+}
+
+.admin-product-page-picture-preview button,
+.admin-product-page-back-button {
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1f4d2e;
+  cursor: pointer;
+}
+
+.admin-product-page-back-button {
+  justify-self: start;
+}
+
+/* Pack sizes and plans: one line per row */
+.admin-product-page-rows {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1 / -1;
+  gap: calc(8 * var(--admin-pixel));
+}
+
+.admin-product-page-row-heading {
+  font-size: calc(11.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #6e7a72;
+}
+
+.admin-product-page-pack-row {
+  display: grid;
+  grid-template-columns: 1.1fr 0.8fr 0.8fr 0.8fr 1.1fr auto;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+/* With the "Items" column (price shown as "About 20 idlis") */
+.admin-product-page-pack-row:has(> :nth-child(7)) {
+  grid-template-columns: 1.1fr 0.7fr 0.7fr 0.7fr 1.1fr 0.6fr auto;
+}
+
+.admin-product-page-plan-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.7fr 0.7fr 0.7fr 1.1fr;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-product-page-remove-button {
+  width: calc(32 * var(--admin-pixel));
+  font-size: calc(18 * var(--admin-pixel));
+  color: #6e7a72;
+  cursor: pointer;
+}
+
+.admin-product-page-add-button {
+  align-self: flex-start;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1f4d2e;
+  cursor: pointer;
+}
+
+/* Step 3: saved */
+.admin-product-page-saved {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--admin-pixel));
+  font-size: calc(13.5 * var(--admin-pixel));
+  color: #1b2a20;
+}
+
+.admin-product-page-saved-link {
+  align-self: flex-start;
+  padding: calc(8 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #e6f0e1;
+  font-weight: 600;
+  color: #1f4d2e;
+}
+
+.admin-product-page-saved-link:hover {
+  background: #d7e7cf;
+}
+
+.admin-product-page-delete-text {
+  grid-column: 1 / -1;
+  font-size: calc(13.5 * var(--admin-pixel));
+  line-height: 1.5;
+  color: #1b2a20;
+}
+
+/* "Product pages" list below the product cards on Products & pricing */
+.admin-product-pages-section {
+  margin-top: calc(28 * var(--admin-pixel));
+}
+
+.admin-product-pages-heading {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(18 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1b2a20;
+}
+
+.admin-product-pages-heading span {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 500;
+  color: #6e7a72;
+}
+
+.admin-product-pages-section > .admin-product-page-hint {
+  margin-top: calc(4 * var(--admin-pixel));
+}
+
+.admin-product-pages-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--admin-pixel));
+  margin-top: calc(12 * var(--admin-pixel));
+}
+
+.admin-product-pages-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: calc(12 * var(--admin-pixel));
+  padding: calc(10 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  border: 1px solid #e7e8e2;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #ffffff;
+}
+
+/* A starting page deleted in the panel: faded, only "Restore original" */
+.admin-product-pages-row-deleted {
+  background: #f7f7f3;
+}
+
+.admin-product-pages-row-deleted .admin-product-pages-name,
+.admin-product-pages-row-deleted .admin-product-pages-labels {
+  opacity: 0.55;
+}
+
+.admin-product-pages-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: calc(12 * var(--admin-pixel));
+  color: #6e7a72;
+}
+
+.admin-product-pages-name strong {
+  font-size: calc(14 * var(--admin-pixel));
+  font-weight: 600;
+  color: #1b2a20;
+}
+
+.admin-product-pages-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-product-pages-label {
+  padding: calc(3 * var(--admin-pixel)) calc(9 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #f1f1ec;
+  font-size: calc(11.5 * var(--admin-pixel));
+  font-weight: 500;
+  color: #1b2a20;
+}
+
+/* Added or changed in the panel: light yellow, so it stands out from the code's versions */
+.admin-product-pages-label-panel {
+  background: #fbf3e1;
+  color: #a37a12;
+}
+
+.admin-product-pages-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-product-pages-actions a,
+.admin-product-pages-actions button {
+  padding: calc(6 * var(--admin-pixel)) calc(12 * var(--admin-pixel));
+  border: 1.5px solid #1f4d2e;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-size: calc(12 * var(--admin-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+  color: #1f4d2e;
+  cursor: pointer;
+}
+
+.admin-product-pages-actions a:hover,
+.admin-product-pages-actions button:hover {
+  background: #e6f0e1;
+}
+
+/* Delete: red (removing something) */
+.admin-product-pages-actions .admin-product-pages-delete {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.admin-product-pages-actions .admin-product-pages-delete:hover {
+  background: #fdecea;
+}
+
+/* Phones (the panel's mobile layout): one column */
+@media (max-width: 720px) {
+  .admin-product-page-section-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-product-page-pack-row,
+  .admin-product-page-pack-row:has(> :nth-child(7)),
+  .admin-product-page-plan-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-product-pages-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-product-pages-actions {
+    flex-wrap: wrap;
+  }
+}

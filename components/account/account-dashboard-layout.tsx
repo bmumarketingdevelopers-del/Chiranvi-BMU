@@ -37,6 +37,12 @@ const accountPages = [
     iconPaths: ["M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z", "M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"],
   },
   {
+    // Products hearted on the All products page (store/wishlist-store.ts)
+    href: "/account/wishlist",
+    label: "Wishlist",
+    iconPaths: ["M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.6 3.9 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.6 3.1 4.4 6.6-1.7 4.8-9.2 9.4-9.2 9.4Z"],
+  },
+  {
     href: "/account/offers",
     label: "Offers",
     iconPaths: ["M3 12V4h8l10 10-8 8L3 12Z", "M7.5 7.5h.01"],
