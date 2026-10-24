@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Poppins, Ubuntu } from "next/font/google";
+import BulkOrderPopup from "@/components/bulk-order/bulk-order-popup";
 import NetworkStatus from "@/components/network-status/network-status";
 import SmoothScroll from "@/components/smooth-scroll/smooth-scroll";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// The site's fonts for the bulk order pop-up (each page loads them only inside itself)
+const poppinsFont = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" });
+const ubuntuFont = Ubuntu({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-ubuntu" });
 
 export const metadata: Metadata = {
   title: "Dairy Store",
@@ -20,6 +24,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SmoothScroll>{children}</SmoothScroll>
         {/* "No internet connection" screen over any page while offline */}
         <NetworkStatus />
+        {/* "We take bulk orders!" pop-up on the customer pages (10 s after landing; see the component) */}
+        <div className={`${poppinsFont.variable} ${ubuntuFont.variable}`}>
+          <BulkOrderPopup />
+        </div>
       </body>
     </html>
   );

@@ -30,7 +30,13 @@ export type AdminLead = {
   // Small note on the card: "Call back 5 PM", "Daily Milk", "Price" ...
   note?: string;
   trialEndsAt?: string; // ISO date, for free trials
+  // From the website's bulk order form ("Get a bulk quote")
+  address?: string;
+  email?: string;
+  bulkOrderItems?: BulkOrderItem[];
 };
+
+export type BulkOrderItem = { productName: string; packLabel: string; quantity: number };
 
 const STORAGE_KEY = "chiranvi-admin-leads";
 
@@ -131,7 +137,8 @@ export function moveLead(id: string, stage: LeadStage) {
   );
 }
 
-export function addLead(lead: Pick<AdminLead, "name" | "phone" | "source">) {
+// A new lead (stage New). The website's bulk order form also sends a note, the address, email and products.
+export function addLead(lead: Pick<AdminLead, "name" | "phone" | "source"> & Partial<Pick<AdminLead, "note" | "address" | "email" | "bulkOrderItems">>) {
   const highest = Math.max(0, ...getLeads().map((existing) => Number(existing.id.replace(/\D/g, ""))));
   const newLead: AdminLead = { ...lead, id: `LD-${highest + 1}`, stage: "new", createdAt: new Date().toISOString() };
   save([newLead, ...getLeads()]);

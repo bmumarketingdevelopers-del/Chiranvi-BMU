@@ -1,0 +1,477 @@
+/*
+  "We take bulk orders!" pop-up and its bulk quote form (bulk-order-popup.tsx). Chiranvi colours only
+  (red only for the "Please fill in" list). Opening animation as the footer's "Good Milk. Good Health."
+  banner: fade and slide up in 700 ms, and the lines on the green band draw themselves.
+  Sizes are in pixels for a 400-wide pop-up and the whole pop-up is scaled to the screen (--bulk-order-scale),
+  always centred.
+  It floats over the page without darkening it, so the page can still be scrolled behind it.
+*/
+
+.bulk-order-backdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  /* No dark or blurred layer: the page stays visible, and clicks and scrolling go through to it */
+  pointer-events: none;
+  font-family: var(--font-poppins), sans-serif;
+  color: #1a1a1a;
+}
+
+.bulk-order-popup {
+  /*
+    One size number from the screen: about 0.82 on small phones, 1 on a 1366 x 768 laptop, up to 1.15
+    on large screens (the smaller of width and height decides, so short screens get a smaller pop-up).
+    zoom scales everything inside together, so it keeps its look on every screen.
+  */
+  --bulk-order-scale: clamp(0.8, min(100vw / 480px, 100svh / 760px), 1.15);
+
+  position: relative;
+  zoom: var(--bulk-order-scale);
+  /* Never wider or taller than the screen (less a 16px margin), counting the zoom */
+  width: min(400px, (100vw - 32px) / var(--bulk-order-scale));
+  max-height: calc((100svh - 32px) / var(--bulk-order-scale));
+  pointer-events: auto;
+  overflow-y: auto;
+  border-radius: 20px;
+  background: #ffffff;
+  /* A stronger shadow, as nothing darkens the page behind it */
+  box-shadow:
+    0 20px 50px rgba(19, 37, 27, 0.35),
+    0 0 0 1px rgba(19, 37, 27, 0.06);
+  /* Same reveal as the footer banner: fade in and slide up */
+  animation: bulk-order-popup-reveal 700ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* The form needs more room */
+.bulk-order-popup-wide {
+  width: min(560px, (100vw - 32px) / var(--bulk-order-scale));
+}
+
+@keyframes bulk-order-popup-reveal {
+  from {
+    opacity: 0;
+    translate: 0 40px;
+  }
+}
+
+.bulk-order-close-button {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(19, 37, 27, 0.15);
+  cursor: pointer;
+}
+
+.bulk-order-close-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #1a1a1a;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+/* Green band with the products; the lines draw themselves like the footer banner's */
+.bulk-order-band {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1f4d2e 0%, #2f6b3a 100%);
+}
+
+.bulk-order-band-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.bulk-order-band-lines > * {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 2;
+  stroke-dashoffset: 2;
+  animation: bulk-order-line-draw 3.2s ease-in-out 300ms forwards;
+}
+
+.bulk-order-band-lines > path {
+  animation-duration: 4.8s;
+  animation-delay: 800ms;
+}
+
+@keyframes bulk-order-line-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+  The products grouped together in the middle of the band, each slightly over the next one (a product
+  display), standing on the band's bottom edge
+*/
+.bulk-order-band-pictures {
+  /* Spans the whole band and centres the group in it (sized so the five pictures fit the 400-wide band) */
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 92px;
+}
+
+.bulk-order-band-picture {
+  flex-shrink: 0;
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 6px 8px rgba(10, 30, 16, 0.35));
+}
+
+/* Each picture tucks a little under the one before it; sizes kept in proportion to the real packs */
+.bulk-order-band-picture + .bulk-order-band-picture {
+  margin-left: -10px;
+}
+
+.bulk-order-band-picture:nth-child(1) {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+}
+
+.bulk-order-band-picture:nth-child(2) {
+  position: relative;
+  z-index: 4;
+  height: 79%;
+}
+
+.bulk-order-band-picture:nth-child(3) {
+  position: relative;
+  z-index: 5;
+  height: 56%;
+}
+
+.bulk-order-band-picture:nth-child(4) {
+  position: relative;
+  z-index: 4;
+  height: 88%;
+}
+
+.bulk-order-band-picture:nth-child(5) {
+  position: relative;
+  z-index: 3;
+  height: 77%;
+}
+
+.bulk-order-offer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 24px 20px;
+  text-align: center;
+}
+
+.bulk-order-badge {
+  padding: 5px 14px;
+  border-radius: 9999px;
+  background: #e6f0e1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1f4d2e;
+}
+
+.bulk-order-title {
+  margin-top: 10px;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.bulk-order-text {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5f5f5f;
+}
+
+.bulk-order-main-button {
+  width: 100%;
+  height: 48px;
+  margin-top: 18px;
+  border-radius: 11px;
+  background: #1f4d2e;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.bulk-order-main-button:hover,
+.bulk-order-main-button:focus-visible {
+  background: #285c3a;
+}
+
+.bulk-order-footnote {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a7a7a;
+  text-align: center;
+}
+
+.bulk-order-phone-link {
+  color: #285c3a;
+}
+
+.bulk-order-maybe-later {
+  font-weight: 600;
+  color: #9a9a9a;
+  cursor: pointer;
+}
+
+.bulk-order-maybe-later:hover {
+  color: #285c3a;
+}
+
+/* Sent */
+.bulk-order-thanks-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-top: 18px;
+  border-radius: 50%;
+  background: #e6f0e1;
+}
+
+.bulk-order-thanks-icon svg {
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The form */
+.bulk-order-form {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 28px 24px;
+}
+
+.bulk-order-form-title {
+  padding-right: 44px;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.bulk-order-form-intro {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #5f5f5f;
+}
+
+.bulk-order-problems {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fdecea;
+  font-size: 13px;
+  color: #a93226;
+}
+
+.bulk-order-problems ul {
+  margin-top: 4px;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.bulk-order-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.bulk-order-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bulk-order-field-wide {
+  grid-column: 1 / -1;
+}
+
+.bulk-order-field input,
+.bulk-order-field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1.5px solid #e3e2da;
+  border-radius: 10px;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1a1a1a;
+  resize: vertical;
+}
+
+.bulk-order-field input:focus,
+.bulk-order-field textarea:focus {
+  border-color: #285c3a;
+  outline: none;
+}
+
+.bulk-order-products-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 20px;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.bulk-order-products-count {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #285c3a;
+}
+
+/* The products: a scrollable list, one row each */
+.bulk-order-products {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 290px;
+  margin-top: 10px;
+  padding-right: 4px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.bulk-order-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1.5px solid #ecebe4;
+  border-radius: 12px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.bulk-order-product-chosen {
+  border-color: #285c3a;
+  background: #e6f0e1;
+}
+
+.bulk-order-product-picture {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #f4f3ee;
+}
+
+.bulk-order-product-picture img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+}
+
+.bulk-order-product-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 12px;
+  color: #7a7a7a;
+}
+
+.bulk-order-product-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.bulk-order-quantity {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #1f4d2e;
+}
+
+.bulk-order-quantity button {
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.bulk-order-quantity button:disabled {
+  color: rgba(255, 255, 255, 0.4);
+  cursor: default;
+}
+
+.bulk-order-quantity input {
+  width: 46px;
+  height: 34px;
+  border: none;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+/*
+  Small screens: the form's fields in one column. The pop-up stays centred and is scaled down by
+  --bulk-order-scale (see .bulk-order-popup), so nothing else needs changing here.
+*/
+@media (max-width: 600px) {
+  .bulk-order-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .bulk-order-products {
+    max-height: 240px;
+  }
+}

@@ -44,7 +44,8 @@ const CARDS_SHOWN_PER_COLUMN = 6;
 function cardNote(lead: AdminLead) {
   if (lead.stage === "new") {
     const daysAgo = Math.max(1, Math.round((Date.now() - new Date(lead.createdAt).getTime()) / 86400000));
-    return `${daysAgo}d ago`;
+    // A bulk order request from the website keeps its "Bulk quote" label while new
+    return lead.bulkOrderItems?.length ? `Bulk quote · ${daysAgo}d ago` : `${daysAgo}d ago`;
   }
   if (lead.stage === "trial" && lead.trialEndsAt) {
     const daysLeft = Math.max(0, Math.ceil((new Date(lead.trialEndsAt).getTime() - Date.now()) / 86400000));
@@ -74,6 +75,9 @@ function LeadsPage() {
   const [dropColumn, setDropColumn] = useState<LeadStage | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newLead, setNewLead] = useState(EMPTY_NEW_LEAD);
+  // Clicking a card opens its details (address, email and the products of a bulk order request)
+  const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const openLead = leads.find((lead) => lead.id === openLeadId);
   const { showToast, toast } = useAdminToast();
 
   const shownLeads = useMemo(() => {
@@ -121,7 +125,7 @@ function LeadsPage() {
 
   function exportLeads() {
     downloadCsv(`chiranvi-leads-${toDateFileName(today)}.csv`, [
-      ["Name", "Phone", "Source", "Stage", "Note", "Came in"],
+      ["Name", "Phone", "Source", "Stage", "Note", "Came in", "Address", "Email", "Bulk order"],
       ...shownLeads.map((lead) => [
         lead.name,
         lead.phone,
@@ -129,6 +133,9 @@ function LeadsPage() {
         LEAD_STAGES.find((stage) => stage.key === lead.stage)?.label ?? lead.stage,
         cardNote(lead),
         new Date(lead.createdAt).toLocaleDateString("en-GB"),
+        lead.address ?? "",
+        lead.email ?? "",
+        (lead.bulkOrderItems ?? []).map((item) => `${item.productName} ${item.packLabel} × ${item.quantity}`).join("; "),
       ]),
     ]);
   }
@@ -233,6 +240,9 @@ function LeadsPage() {
                       setDraggedLeadId(null);
                       setDropColumn(null);
                     }}
+                    onClick={(clickEvent) => {
+                      if (!(clickEvent.target as HTMLElement).closest("a, button")) setOpenLeadId(lead.id);
+                    }}
                   >
                     <div className={styles["admin-lead-card-top"]}>
                       <span className={styles["admin-lead-initials"]} aria-hidden="true">
@@ -327,6 +337,66 @@ function LeadsPage() {
               ))}
             </select>
           </AdminDialogField>
+        </AdminDialog>
+      )}
+
+      {openLead && (
+        <AdminDialog title={openLead.name} submitLabel="Close" onClose={() => setOpenLeadId(null)} onSubmit={() => setOpenLeadId(null)}>
+          <dl className={styles["admin-lead-details"]}>
+            <div>
+              <dt>Phone</dt>
+              <dd>
+                <a href={`tel:+91${openLead.phone.replace(/\D/g, "")}`}>{openLead.phone}</a>
+              </dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd>{openLead.source}</dd>
+            </div>
+            <div>
+              <dt>Stage</dt>
+              <dd>{LEAD_STAGES.find((stage) => stage.key === openLead.stage)?.label}</dd>
+            </div>
+            <div>
+              <dt>Came in</dt>
+              <dd>{new Date(openLead.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</dd>
+            </div>
+            {openLead.note && (
+              <div>
+                <dt>Note</dt>
+                <dd>{openLead.note}</dd>
+              </div>
+            )}
+            {openLead.email && (
+              <div>
+                <dt>Email</dt>
+                <dd>
+                  <a href={`mailto:${openLead.email}`}>{openLead.email}</a>
+                </dd>
+              </div>
+            )}
+            {openLead.address && (
+              <div className={styles["admin-lead-details-wide"]}>
+                <dt>Address</dt>
+                <dd>{openLead.address}</dd>
+              </div>
+            )}
+          </dl>
+          {openLead.bulkOrderItems && openLead.bulkOrderItems.length > 0 && (
+            <div className={styles["admin-lead-bulk-order"]}>
+              <h3>Bulk order request</h3>
+              <ul>
+                {openLead.bulkOrderItems.map((item) => (
+                  <li key={`${item.productName}-${item.packLabel}`}>
+                    <span>
+                      {item.productName} <small>{item.packLabel}</small>
+                    </span>
+                    <strong>× {item.quantity}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </AdminDialog>
       )}
 

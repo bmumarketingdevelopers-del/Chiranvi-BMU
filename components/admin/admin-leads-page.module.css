@@ -232,3 +232,71 @@
   text-align: center;
   color: #8a918b;
 }
+
+/* A lead card opens its details on click */
+.admin-lead-card {
+  cursor: pointer;
+}
+
+/* Lead details pop-up: label / value pairs, then a bulk order's products */
+.admin-lead-details {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(12 * var(--admin-pixel));
+}
+
+.admin-lead-details dt {
+  font-size: calc(11.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #6e7a72;
+}
+
+.admin-lead-details dd {
+  margin-top: calc(2 * var(--admin-pixel));
+  font-size: calc(13.5 * var(--admin-pixel));
+  color: #1b2a20;
+  overflow-wrap: anywhere;
+}
+
+.admin-lead-details a {
+  color: #1f4d2e;
+  font-weight: 600;
+}
+
+.admin-lead-details-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-lead-bulk-order {
+  grid-column: 1 / -1;
+  padding: calc(12 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #e6f0e1;
+}
+
+.admin-lead-bulk-order h3 {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-lead-bulk-order ul {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--admin-pixel));
+  margin-top: calc(8 * var(--admin-pixel));
+}
+
+.admin-lead-bulk-order li {
+  display: flex;
+  justify-content: space-between;
+  gap: calc(10 * var(--admin-pixel));
+  font-size: calc(13 * var(--admin-pixel));
+  color: #1b2a20;
+}
+
+.admin-lead-bulk-order small {
+  color: #6e7a72;
+}
