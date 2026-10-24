@@ -11,7 +11,6 @@ import {
   changeCartItemQuantity,
   rememberPendingCartProduct,
   setCartSubscription,
-  startSwitchToSubscription,
   useCartItems,
   type CartProduct,
 } from "@/store/cart-store";
@@ -387,15 +386,14 @@ export default function SubscriptionProductPage({ page }: { page: SubscriptionPa
 
   /*
     Start subscription (after Add Quantity): the chosen plan goes to the cart, which checks it out
-    (address, then Pay now). The units chosen with Add Quantity were only for the plan, so they leave the
-    one-time cart (not bought twice).
+    (address, then Pay now). The units chosen with Add Quantity stay in the cart while the plan waits; the
+    cart page takes them out once the plan is paid (not bought twice).
   */
   function startSubscription() {
     if (quantityInCart === 0 || !chosenPlan || !chosenPlanTotals) {
       showQuantityHint();
       return;
     }
-    startSwitchToSubscription(cartProduct.productId);
     setCartSubscription({
       product: cartProduct,
       planId: chosenPlan.planId,
