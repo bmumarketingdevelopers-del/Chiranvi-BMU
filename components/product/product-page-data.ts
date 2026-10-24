@@ -173,6 +173,24 @@ export const atYourDoorStep: DeliveryStep = { icon: "home", title: "At your door
 
 // ---------- The pages the site starts with (copied from the first hand-made pages) ----------
 
+/*
+  The milks point to each other: each milk page's Fast selling rows (both tabs) start with the next milk,
+  A2 (Gir) → Jersey → Skimmed → A2, then the row's other products (five cards in all). The cards take their
+  name, picture and price from the product's own page.
+*/
+function startsWithNextMilk(cards: FastSellingCard[], nextMilk: { productId: string; name: string }): FastSellingCard[] {
+  const nextMilkCard: FastSellingCard = {
+    productId: nextMilk.productId,
+    name: nextMilk.name,
+    imageSource: "/images/products/desi-cow-milk-bottle-chiranvi-farm.webp",
+    imageWidth: 1188,
+    imageHeight: 2312,
+    ratingCount: "",
+  };
+  const milkSlugs = ["a2-desi-milk", "jersey-milk", "skimmed-milk"];
+  return [nextMilkCard, ...cards.filter((card) => !milkSlugs.includes(card.productId))].slice(0, 5);
+}
+
 const milkPage: SubscriptionProductPage = {
   kind: "subscription",
   slug: "a2-desi-milk",
@@ -211,8 +229,8 @@ const milkPage: SubscriptionProductPage = {
     subscriberSince: "Subscriber for 8 months",
   },
   deliverySteps: [orderByNineStep, { icon: "milk-drop", title: "Milked at 5 AM", detail: "Chilled within minutes" }, atYourDoorStep],
-  fastSellingCards: defaultFastSellingCards,
-  subscriptionFastSellingCards: defaultSubscriptionFastSellingCards,
+  fastSellingCards: startsWithNextMilk(defaultFastSellingCards, { productId: "jersey-milk", name: "Jersey Milk" }),
+  subscriptionFastSellingCards: startsWithNextMilk(defaultSubscriptionFastSellingCards, { productId: "jersey-milk", name: "Jersey Milk" }),
   hasHalfLitreBottle: true,
 };
 
@@ -234,6 +252,8 @@ const jerseyMilkPage: SubscriptionProductPage = {
   pictures: [{ ...milkPage.pictures[0], alt: "Chiranvi Farms Jersey milk in a glass bottle" }],
   price: 60,
   review: { quote: "", name: "", area: "", subscriberSince: "" },
+  fastSellingCards: startsWithNextMilk(defaultFastSellingCards, { productId: "skimmed-milk", name: "Skimmed Milk" }),
+  subscriptionFastSellingCards: startsWithNextMilk(defaultSubscriptionFastSellingCards, { productId: "skimmed-milk", name: "Skimmed Milk" }),
 };
 
 const skimmedMilkPage: SubscriptionProductPage = {
@@ -249,6 +269,8 @@ const skimmedMilkPage: SubscriptionProductPage = {
   pictures: [{ ...milkPage.pictures[0], alt: "Chiranvi Farms skimmed milk in a glass bottle" }],
   price: 95,
   review: { quote: "", name: "", area: "", subscriberSince: "" },
+  fastSellingCards: startsWithNextMilk(defaultFastSellingCards, { productId: "a2-desi-milk", name: "A2 Milk (Gir Cow)" }),
+  subscriptionFastSellingCards: startsWithNextMilk(defaultSubscriptionFastSellingCards, { productId: "a2-desi-milk", name: "A2 Milk (Gir Cow)" }),
 };
 
 const gheePage: OneTimeProductPage = {
