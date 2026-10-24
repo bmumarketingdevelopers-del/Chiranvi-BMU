@@ -130,10 +130,13 @@ function CartIcon() {
 }
 
 // "Fast selling products": heading, View all, and the cards
-function FastSellingRow({ cards }: { cards: FastSellingCard[] }) {
+// The product's own card is left out on its own page (clicking it would only open this page again)
+function FastSellingRow({ cards, currentSlug }: { cards: FastSellingCard[]; currentSlug: string }) {
   // The products this row lists, as full cards with prices (in the row's order)
   const allCards = useProductCards();
-  const rowCards = cards.flatMap((listed) => allCards.filter((card) => card.slug === listed.productId));
+  const rowCards = cards
+    .filter((listed) => listed.productId !== currentSlug)
+    .flatMap((listed) => allCards.filter((card) => card.slug === listed.productId));
   return (
     <section className={styles["fast-selling-section"]} aria-labelledby="fast-selling-heading">
       <div className={styles["fast-selling-heading-row"]}>
@@ -477,7 +480,7 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
         </div>
         )}
 
-        <FastSellingRow cards={page.fastSellingCards} />
+        <FastSellingRow cards={page.fastSellingCards} currentSlug={page.slug} />
       </main>
 
       {/* Shared site footer with the Refer a Friend banner (same as the landing page) */}
