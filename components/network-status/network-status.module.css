@@ -1,12 +1,13 @@
 /*
-  "No internet connection" screen, from the design (desktop and phone).
-  Numbers in calc() are design pixels multiplied by --offline-design-pixel: the window size against a
+  "No internet connection" and "Slow internet connection" screens, from the designs (desktop and phone);
+  both share the same layout.
+  Numbers in calc() are design pixels multiplied by --network-design-pixel: the window size against a
   1440 x 860 frame, kept between 0.72px and 1.2px. Fonts: Ubuntu for the heading, button and tip
   titles; Poppins for the rest. Colours from the design.
 */
 
-.offline-screen {
-  --offline-design-pixel: clamp(0.72px, min(100vw / 1440, 100svh / 860), 1.2px);
+.network-screen {
+  --network-design-pixel: clamp(0.72px, min(100vw / 1440, 100svh / 860), 1.2px);
 
   position: fixed;
   z-index: 3000;
@@ -18,105 +19,105 @@
 }
 
 /* Pale circles: top right and bottom left, partly off the screen */
-.offline-corner-circle-top,
-.offline-corner-circle-bottom {
+.network-corner-circle-top,
+.network-corner-circle-bottom {
   position: fixed;
   border-radius: 50%;
   pointer-events: none;
 }
 
-.offline-corner-circle-top {
-  top: calc(-250 * var(--offline-design-pixel));
-  right: calc(-170 * var(--offline-design-pixel));
-  width: calc(560 * var(--offline-design-pixel));
-  height: calc(560 * var(--offline-design-pixel));
+.network-corner-circle-top {
+  top: calc(-250 * var(--network-design-pixel));
+  right: calc(-170 * var(--network-design-pixel));
+  width: calc(560 * var(--network-design-pixel));
+  height: calc(560 * var(--network-design-pixel));
   background: #edf3ec;
 }
 
-.offline-corner-circle-bottom {
-  bottom: calc(-230 * var(--offline-design-pixel));
-  left: calc(-200 * var(--offline-design-pixel));
-  width: calc(460 * var(--offline-design-pixel));
-  height: calc(460 * var(--offline-design-pixel));
+.network-corner-circle-bottom {
+  bottom: calc(-230 * var(--network-design-pixel));
+  left: calc(-200 * var(--network-design-pixel));
+  width: calc(460 * var(--network-design-pixel));
+  height: calc(460 * var(--network-design-pixel));
   background: #f0f3ef;
 }
 
-.offline-logo {
+.network-logo {
   position: absolute;
-  top: calc(28 * var(--offline-design-pixel));
-  left: calc(36 * var(--offline-design-pixel));
+  top: calc(28 * var(--network-design-pixel));
+  left: calc(36 * var(--network-design-pixel));
   width: auto;
-  height: calc(46 * var(--offline-design-pixel));
+  height: calc(46 * var(--network-design-pixel));
 }
 
-.offline-content {
+.network-content {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100%;
-  padding: calc(70 * var(--offline-design-pixel)) 24px calc(26 * var(--offline-design-pixel));
+  padding: calc(70 * var(--network-design-pixel)) 24px calc(26 * var(--network-design-pixel));
   text-align: center;
 }
 
 /* The picture: the pale circle 250 wide, the bottle 57 x 109 */
-.offline-picture {
-  width: calc(416 * var(--offline-design-pixel));
+.network-picture {
+  width: calc(416 * var(--network-design-pixel));
   height: auto;
 }
 
-.offline-heading {
-  margin-top: calc(14 * var(--offline-design-pixel));
+.network-heading {
+  margin-top: calc(14 * var(--network-design-pixel));
   font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(34 * var(--offline-design-pixel));
+  font-size: calc(34 * var(--network-design-pixel));
   font-weight: 700;
   line-height: 1.2;
   color: #1b2a20;
 }
 
-.offline-description {
-  margin-top: calc(12 * var(--offline-design-pixel));
-  font-size: calc(16 * var(--offline-design-pixel));
+.network-description {
+  margin-top: calc(12 * var(--network-design-pixel));
+  font-size: calc(16 * var(--network-design-pixel));
   line-height: 1.55;
   color: #6b7a70;
 }
 
-.offline-description-second-line {
+.network-description-second-line {
   display: block;
 }
 
 /* Try again: 190 x 50 pill, gold refresh icon */
-.offline-try-again-button {
+.network-try-again-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(10 * var(--offline-design-pixel));
-  min-width: calc(190 * var(--offline-design-pixel));
-  height: calc(50 * var(--offline-design-pixel));
-  margin-top: calc(26 * var(--offline-design-pixel));
-  padding: 0 calc(26 * var(--offline-design-pixel));
+  gap: calc(10 * var(--network-design-pixel));
+  min-width: calc(190 * var(--network-design-pixel));
+  height: calc(50 * var(--network-design-pixel));
+  margin-top: calc(26 * var(--network-design-pixel));
+  padding: 0 calc(26 * var(--network-design-pixel));
   border-radius: 9999px;
   background: #1f4d2e;
   font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(16 * var(--offline-design-pixel));
+  font-size: calc(16 * var(--network-design-pixel));
   font-weight: 700;
   color: #ffffff;
   cursor: pointer;
   transition: background-color 150ms ease;
 }
 
-.offline-try-again-button:hover,
-.offline-try-again-button:focus-visible {
+.network-try-again-button:hover,
+.network-try-again-button:focus-visible {
   background: #285c3a;
 }
 
-.offline-try-again-button:disabled {
+.network-try-again-button:disabled {
   cursor: progress;
 }
 
-.offline-try-again-button svg {
-  width: calc(18 * var(--offline-design-pixel));
-  height: calc(18 * var(--offline-design-pixel));
+.network-try-again-button svg {
+  width: calc(18 * var(--network-design-pixel));
+  height: calc(18 * var(--network-design-pixel));
   fill: none;
   stroke: #f5bf2c;
   stroke-width: 2.4;
@@ -124,67 +125,137 @@
   stroke-linejoin: round;
 }
 
-.offline-try-again-icon-spinning {
-  animation: offline-spin 800ms linear infinite;
+.network-try-again-icon-spinning {
+  animation: network-spin 800ms linear infinite;
 }
 
-@keyframes offline-spin {
+@keyframes network-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 /* "Offline · checking again in 12 seconds", red dot (offline is a serious state) */
-.offline-status {
+.network-status {
   display: flex;
   align-items: center;
-  gap: calc(8 * var(--offline-design-pixel));
-  margin-top: calc(16 * var(--offline-design-pixel));
-  font-size: calc(13 * var(--offline-design-pixel));
+  gap: calc(8 * var(--network-design-pixel));
+  margin-top: calc(16 * var(--network-design-pixel));
+  font-size: calc(13 * var(--network-design-pixel));
   color: #8a958d;
 }
 
-.offline-status-dot {
+.network-status-dot {
   flex-shrink: 0;
-  width: calc(7 * var(--offline-design-pixel));
-  height: calc(7 * var(--offline-design-pixel));
+  width: calc(7 * var(--network-design-pixel));
+  height: calc(7 * var(--network-design-pixel));
   border-radius: 50%;
   background: #d84b3c;
 }
 
-/* Tips: three white cards of 280 x 84 in a row */
-.offline-tips {
-  display: grid;
-  grid-template-columns: repeat(3, calc(280 * var(--offline-design-pixel)));
-  gap: calc(18 * var(--offline-design-pixel));
-  margin-top: calc(42 * var(--offline-design-pixel));
+/* Slow screen: progress bar 360 x 8 (gold), "Loading… 42%" left, network speed right */
+.network-progress {
+  width: calc(360 * var(--network-design-pixel));
+  max-width: 100%;
+  margin-top: calc(20 * var(--network-design-pixel));
 }
 
-.offline-tip {
+.network-progress-track {
+  height: calc(8 * var(--network-design-pixel));
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #e8eae4;
+}
+
+.network-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: #e9a23b;
+  transition: width 600ms ease;
+}
+
+.network-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(8 * var(--network-design-pixel));
+  font-size: calc(12.5 * var(--network-design-pixel));
+  color: #8a958d;
+}
+
+/* Slow screen: Try again and Keep waiting side by side */
+.network-buttons {
+  display: flex;
+  gap: calc(16 * var(--network-design-pixel));
+  margin-top: calc(24 * var(--network-design-pixel));
+}
+
+.network-buttons .network-try-again-button {
+  margin-top: 0;
+}
+
+/* Keep waiting: same size as Try again, green outline */
+.network-keep-waiting-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(190 * var(--network-design-pixel));
+  height: calc(50 * var(--network-design-pixel));
+  padding: 0 calc(26 * var(--network-design-pixel));
+  border: 1.5px solid #1f4d2e;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(16 * var(--network-design-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.network-keep-waiting-button:hover,
+.network-keep-waiting-button:focus-visible {
+  background: #f2f5f0;
+}
+
+/* Phone wording of the slow screen: its second line */
+.network-description-phone-line {
+  display: block;
+}
+
+/* Tips: three white cards of 280 x 84 in a row */
+.network-tips {
+  display: grid;
+  grid-template-columns: repeat(3, calc(280 * var(--network-design-pixel)));
+  gap: calc(18 * var(--network-design-pixel));
+  margin-top: calc(42 * var(--network-design-pixel));
+}
+
+.network-tip {
   display: flex;
   align-items: center;
-  gap: calc(14 * var(--offline-design-pixel));
-  height: calc(84 * var(--offline-design-pixel));
-  padding: 0 calc(18 * var(--offline-design-pixel));
+  gap: calc(14 * var(--network-design-pixel));
+  height: calc(84 * var(--network-design-pixel));
+  padding: 0 calc(18 * var(--network-design-pixel));
   border: 1px solid #e6eae5;
-  border-radius: calc(14 * var(--offline-design-pixel));
+  border-radius: calc(14 * var(--network-design-pixel));
   background: #ffffff;
   text-align: left;
 }
 
-.offline-tip-icon {
+.network-tip-icon {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: calc(38 * var(--offline-design-pixel));
-  height: calc(38 * var(--offline-design-pixel));
-  border-radius: calc(10 * var(--offline-design-pixel));
+  width: calc(38 * var(--network-design-pixel));
+  height: calc(38 * var(--network-design-pixel));
+  border-radius: calc(10 * var(--network-design-pixel));
   background: #e6f0e1;
 }
 
-.offline-tip-icon svg {
-  width: calc(20 * var(--offline-design-pixel));
-  height: calc(20 * var(--offline-design-pixel));
+.network-tip-icon svg {
+  width: calc(20 * var(--network-design-pixel));
+  height: calc(20 * var(--network-design-pixel));
   fill: none;
   stroke: #1f4d2e;
   stroke-width: 1.8;
@@ -192,150 +263,190 @@
   stroke-linejoin: round;
 }
 
-.offline-tip-title {
+.network-tip-title {
   display: block;
   font-family: var(--font-ubuntu), sans-serif;
-  font-size: calc(14.5 * var(--offline-design-pixel));
+  font-size: calc(14.5 * var(--network-design-pixel));
   font-weight: 700;
   color: #1b2a20;
 }
 
-.offline-tip-text {
+.network-tip-text {
   display: block;
-  margin-top: calc(3 * var(--offline-design-pixel));
-  font-size: calc(12.5 * var(--offline-design-pixel));
+  margin-top: calc(3 * var(--network-design-pixel));
+  font-size: calc(12.5 * var(--network-design-pixel));
   color: #6b7a70;
 }
 
-.offline-error-code {
-  margin-top: calc(28 * var(--offline-design-pixel));
-  font-size: calc(11.5 * var(--offline-design-pixel));
+.network-error-code {
+  margin-top: calc(28 * var(--network-design-pixel));
+  font-size: calc(11.5 * var(--network-design-pixel));
   color: #a3aca5;
 }
 
 /* Wording that differs between the desktop and phone designs */
-.offline-phone-only {
+.network-phone-only {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .offline-try-again-icon-spinning {
+  .network-try-again-icon-spinning {
     animation: none;
   }
 }
 
 /*
-  Phones (design): no logo; one line of text; the tips stacked in one card; Try again full width at the
-  bottom with "Checking again in 12 seconds" under it; no error code.
+  Phones (designs): no logo; short text; the tips stacked in one card; the buttons full width at the
+  bottom; no error code. Everything is sized with --network-phone-pixel (the screen height against an
+  860 tall phone, 0.6px to 1px), so the whole screen fits in one view without scrolling on short phones.
 */
 @media (max-width: 640px) {
-  .offline-logo,
-  .offline-description-second-line,
-  .offline-error-code,
-  .offline-desktop-only {
+  .network-screen {
+    --network-phone-pixel: clamp(0.6px, 100svh / 860, 1px);
+  }
+
+  .network-logo,
+  .network-description-second-line,
+  .network-error-code,
+  .network-desktop-only {
     display: none;
   }
 
-  .offline-phone-only {
+  .network-phone-only {
     display: inline;
   }
 
-  .offline-tip-title .offline-phone-only,
-  .offline-tip-text .offline-phone-only {
+  .network-tip-title .network-phone-only,
+  .network-tip-text .network-phone-only {
     display: block;
   }
 
-  .offline-corner-circle-top {
-    top: -150px;
+  .network-corner-circle-top {
+    top: calc(-150 * var(--network-phone-pixel));
     right: -120px;
-    width: 300px;
-    height: 300px;
+    width: calc(300 * var(--network-phone-pixel));
+    height: calc(300 * var(--network-phone-pixel));
   }
 
-  .offline-corner-circle-bottom {
+  .network-corner-circle-bottom {
     display: none;
   }
 
-  .offline-content {
-    padding: 40px 20px 20px;
+  .network-content {
+    min-height: 100%;
+    padding: calc(36 * var(--network-phone-pixel)) 20px calc(20 * var(--network-phone-pixel));
   }
 
-  .offline-picture {
-    width: min(300px, 82vw);
+  .network-picture {
+    width: min(calc(300 * var(--network-phone-pixel)), 82vw);
   }
 
-  .offline-heading {
-    margin-top: 10px;
-    font-size: 24px;
+  .network-heading {
+    margin-top: calc(8 * var(--network-phone-pixel));
+    font-size: calc(24 * var(--network-phone-pixel));
   }
 
-  .offline-description {
+  .network-description {
     max-width: 300px;
-    margin-top: 8px;
-    font-size: 14.5px;
+    margin-top: calc(8 * var(--network-phone-pixel));
+    font-size: calc(14.5 * var(--network-phone-pixel));
   }
 
-  .offline-tips {
+  .network-tips {
     order: 1;
     grid-template-columns: 1fr;
     gap: 0;
     width: 100%;
-    margin-top: 22px;
-    /* Some space above Try again when the screen is short (Try again sits at the bottom otherwise) */
-    margin-bottom: 24px;
-    padding: 4px 16px;
+    margin-top: calc(20 * var(--network-phone-pixel));
+    /* Some space above the buttons when the screen is short (they sit at the bottom otherwise) */
+    margin-bottom: calc(20 * var(--network-phone-pixel));
+    padding: calc(2 * var(--network-phone-pixel)) 16px;
     border: 1px solid #e6eae5;
     border-radius: 16px;
     background: #ffffff;
   }
 
-  .offline-tip {
+  .network-tip {
     height: auto;
-    padding: 12px 0;
+    padding: calc(11 * var(--network-phone-pixel)) 0;
     border: 0;
     border-radius: 0;
   }
 
-  .offline-tip + .offline-tip {
+  .network-tip + .network-tip {
     border-top: 1px solid #edf0ec;
   }
 
-  .offline-tip-icon {
-    width: 36px;
-    height: 36px;
+  .network-tip-icon {
+    width: calc(36 * var(--network-phone-pixel));
+    height: calc(36 * var(--network-phone-pixel));
     border-radius: 10px;
   }
 
-  .offline-tip-icon svg {
-    width: 19px;
-    height: 19px;
+  .network-tip-icon svg {
+    width: calc(19 * var(--network-phone-pixel));
+    height: calc(19 * var(--network-phone-pixel));
   }
 
-  .offline-tip-title {
-    font-size: 15px;
+  .network-tip-title {
+    font-size: calc(15 * var(--network-phone-pixel));
   }
 
-  .offline-tip-text {
-    margin-top: 2px;
-    font-size: 12.5px;
+  .network-tip-text {
+    margin-top: calc(2 * var(--network-phone-pixel));
+    font-size: calc(12.5 * var(--network-phone-pixel));
   }
 
-  .offline-try-again-button {
+  .network-try-again-button {
     order: 2;
     width: 100%;
-    height: 54px;
+    height: calc(54 * var(--network-phone-pixel));
     margin-top: auto;
-    font-size: 17px;
+    font-size: calc(17 * var(--network-phone-pixel));
   }
 
-  .offline-try-again-button svg {
-    width: 19px;
-    height: 19px;
+  .network-try-again-button svg {
+    width: calc(19 * var(--network-phone-pixel));
+    height: calc(19 * var(--network-phone-pixel));
   }
 
-  .offline-status {
+  .network-progress {
+    width: 100%;
+    margin-top: calc(16 * var(--network-phone-pixel));
+  }
+
+  .network-progress-track {
+    height: calc(7 * var(--network-phone-pixel));
+  }
+
+  .network-progress-labels {
+    margin-top: calc(6 * var(--network-phone-pixel));
+    font-size: calc(12 * var(--network-phone-pixel));
+  }
+
+  .network-buttons {
+    order: 2;
+    flex-direction: column;
+    gap: calc(10 * var(--network-phone-pixel));
+    width: 100%;
+    margin-top: auto;
+  }
+
+  .network-buttons .network-try-again-button,
+  .network-keep-waiting-button {
+    width: 100%;
+    height: calc(50 * var(--network-phone-pixel));
+    font-size: calc(16 * var(--network-phone-pixel));
+  }
+
+  /* Try again first, Keep waiting under it (design) */
+  .network-buttons .network-try-again-button {
+    order: 0;
+  }
+
+  .network-status {
     order: 3;
-    margin-top: 10px;
-    font-size: 12.5px;
+    margin-top: calc(10 * var(--network-phone-pixel));
+    font-size: calc(12.5 * var(--network-phone-pixel));
   }
 }
