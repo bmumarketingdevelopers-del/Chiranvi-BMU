@@ -1177,7 +1177,7 @@
   }
 
   .subscription-add-quantity-tip::before {
-    top: -calc(6 * var(--subscription-phone-pixel));
+    top: calc(-6 * var(--subscription-phone-pixel));
     left: calc(22 * var(--subscription-phone-pixel));
     transform: rotate(135deg);
   }

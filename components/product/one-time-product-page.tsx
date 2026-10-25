@@ -169,8 +169,9 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
     Quantity: the chosen pack's number in the cart. Not in the cart: "Add to cart" (adds one); then
     "− n +" changes the cart, and − at 1 takes it out, back to "Add to cart". Not logged in, Add to cart
     goes to the login with one pack remembered (the login adds it and comes back here). The customer then
-    checks out from the cart: Buy now (adds one first if the pack isn't in the cart yet) or the cart icon,
-    then Cart → Select address → Pay now.
+    checks out from the cart: Buy now or the cart icon, then Cart → Select address → Pay now.
+    Buy now works only once the chosen pack is in the cart: before that it is greyed, and a click makes
+    Add to cart shake and glow with an "Add to cart first" tip (like Add Quantity on the milk page).
   */
   const isLoggedIn = useIsLoggedIn();
   const cartItems = useCartItems();
@@ -179,6 +180,22 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
   const chosenPackCartId = chosenPackCartProduct?.productId ?? "";
   const quantityInCart = cartItems.find((cartItem) => cartItem.productId === chosenPackCartId)?.quantity ?? 0;
   const isChosenPackInCart = quantityInCart > 0;
+  // How many times Buy now was clicked before Add to cart; each new value restarts the hint animation
+  const [addToCartHintCount, setAddToCartHintCount] = useState(0);
+  const buyRowRef = useRef<HTMLDivElement>(null);
+  function buyNow() {
+    if (!isChosenPackInCart) {
+      setAddToCartHintCount((count) => count + 1);
+      buyRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    router.push("/cart");
+  }
+  function addChosenPackToCart() {
+    if (!chosenPackCartProduct) return;
+    addProductToCart(chosenPackCartProduct);
+    setAddToCartHintCount(0);
+  }
   // Free delivery is for the whole order, not each product (as the cart works it out): what is in the cart
   // (empty bar before the first product is added) against the one free delivery amount (₹500)
   const orderAmount = cartItems.reduce((sum, cartItem) => sum + cartItem.price * cartItem.quantity, 0);
@@ -348,7 +365,13 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
 
             {/* Quantity: Add to cart (then "− n +") and Buy now */}
             <p className={styles["one-time-section-label"]}>Quantity</p>
-            <div className={styles["one-time-buy-row"]}>
+            <div ref={buyRowRef} className={styles["one-time-buy-row"]}>
+              {/* Buy now clicked first: a tip above Add to cart (it fades after a few seconds) */}
+              {!isChosenPackInCart && addToCartHintCount > 0 && (
+                <span key={`add-to-cart-tip-${addToCartHintCount}`} className={styles["one-time-add-to-cart-tip"]} role="status">
+                  Add to cart first
+                </span>
+              )}
               {isChosenPackInCart ? (
                 <div className={styles["one-time-quantity-control"]} role="group" aria-label={`Number of ${quantityWord.many}`}>
                   <button
@@ -373,9 +396,10 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
                 </div>
               ) : isLoggedIn ? (
                 <button
+                  key={`add-to-cart-button-${addToCartHintCount}`}
                   type="button"
-                  className={styles["one-time-add-to-cart-button"]}
-                  onClick={() => chosenPackCartProduct && addProductToCart(chosenPackCartProduct)}
+                  className={`${styles["one-time-add-to-cart-button"]} ${addToCartHintCount > 0 ? styles["one-time-add-to-cart-attention"] : ""}`}
+                  onClick={addChosenPackToCart}
                 >
                   <CartIcon />
                   Add to cart
@@ -393,30 +417,15 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
                   Add to cart
                 </Link>
               )}
-              {/* Buy now: one pack if it isn't in the cart yet, then the cart */}
-              {isLoggedIn ? (
-                <button
-                  type="button"
-                  className={styles["one-time-buy-now-button"]}
-                  onClick={() => {
-                    if (!isChosenPackInCart && chosenPackCartProduct) addProductToCart(chosenPackCartProduct);
-                    router.push("/cart");
-                  }}
-                >
-                  Buy now
-                </button>
-              ) : (
-                <Link
-                  href="/login"
-                  className={styles["one-time-buy-now-button"]}
-                  onPointerDown={() => chosenPackCartProduct && rememberPendingCartProduct(chosenPackCartProduct)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && chosenPackCartProduct) rememberPendingCartProduct(chosenPackCartProduct);
-                  }}
-                >
-                  Buy now
-                </Link>
-              )}
+              {/* Buy now: the cart, once the pack is in it (greyed until then; a click shows the hint) */}
+              <button
+                type="button"
+                aria-disabled={!isChosenPackInCart}
+                className={`${styles["one-time-buy-now-button"]} ${isChosenPackInCart ? "" : styles["one-time-buy-now-button-waiting"]}`}
+                onClick={buyNow}
+              >
+                Buy now
+              </button>
             </div>
 
             {/* Free delivery: how much more to add, or that this order already has it */}
