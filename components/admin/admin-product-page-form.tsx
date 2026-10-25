@@ -544,12 +544,16 @@ export function ProductPageForm({
   /*
     Inside a product card's pop-up on Products & pricing: no dialog of its own; the card's name and photo
     are the page's (no separate fields), its cards are left to the pop-up, and the pop-up's Save changes
-    calls the save given to registerSave (true when saved).
+    calls the save given to registerSave (true when saved). The prices are set only here (the pop-up has no
+    price fields of its own): onSaved hands the saved page back so the card takes its prices, and without
+    canChangePrices a changed price is refused (prices are changed only by the owner).
   */
   embedded?: {
     registerSave: (save: () => boolean) => void;
     name: string;
     photo?: { imageSource: string; imageWidth: number; imageHeight: number };
+    onSaved?: (page: ProductPage) => void;
+    canChangePrices?: boolean;
   };
   onDelete?: () => void; // shows "Delete product" in the form (a page without a card of its own)
 }) {
@@ -651,6 +655,8 @@ export function ProductPageForm({
   const [defaultPlanIndex, setDefaultPlanIndex] = useState(
     subscriptionEditing ? Math.max(0, subscriptionEditing.plans.findIndex((plan) => plan.planId === subscriptionEditing.defaultPlanId)) : 1,
   );
+  // The tag on its product cards (one-time products use the tag of the pack shown first instead)
+  const [cardTag, setCardTag] = useState<NonNullable<SubscriptionProductPage["cardTag"]>>(subscriptionEditing?.cardTag ?? "Subscribe & save");
   const [deliveryCharge, setDeliveryCharge] = useState(textOf(subscriptionEditing?.oneTimeDeliveryCharge ?? 30));
   const [cutoffHour, setCutoffHour] = useState(textOf(subscriptionEditing?.orderCutoffHour ?? 21));
   const [deliveryByTime, setDeliveryByTime] = useState(subscriptionEditing?.deliveryByTime ?? "7 AM");
@@ -844,12 +850,22 @@ export function ProductPageForm({
         homesNote: { bold: homesBold.trim(), rest: homesRest.trim() },
         plans: builtPlans,
         defaultPlanId: builtPlans[Math.min(defaultPlanIndex, builtPlans.length - 1)]?.planId ?? "",
+        cardTag,
         oneTimeDeliveryCharge: Number(deliveryCharge) || 0,
         orderCutoffHour: Math.min(23, Math.max(0, Number(cutoffHour) || 21)),
         deliveryByTime: deliveryByTime.trim(),
         review: { quote: reviewQuote.trim(), name: reviewName.trim(), area: reviewArea.trim(), subscriberSince: subscriberSince.trim() },
       };
       page = subscriptionPage;
+    }
+
+    // Inside a card's pop-up for someone who is not the owner: the prices must stay as they were
+    if (embedded && embedded.canChangePrices === false && page && editingPage) {
+      const priceKey = (onePage: ProductPage) =>
+        onePage.kind === "one-time"
+          ? onePage.packs.map((pack) => `${pack.label}:${pack.price}:${pack.originalPrice ?? ""}`).join("|")
+          : `${onePage.price}:${onePage.originalPrice ?? ""}:${onePage.plans.map((plan) => plan.percentOff).join(",")}`;
+      if (priceKey(page) !== priceKey(editingPage)) found.push("Prices are changed only by the owner. Put the prices back as they were.");
     }
 
     if (found.length > 0 || !page) {
@@ -904,6 +920,7 @@ export function ProductPageForm({
 
     if (embedded) {
       setProblems([]);
+      embedded.onSaved?.(pageToSave);
       return true;
     }
     setSavedSlug(slug);
@@ -1013,9 +1030,12 @@ export function ProductPageForm({
         </AdminDialogField>
         )}
         {isEditing ? (
-          <AdminDialogField label="Page address (stays the same)">
-            <input className={adminInputClassName} value={`/products/${slug}`} readOnly />
-          </AdminDialogField>
+          // Inside a card's pop-up the address shows once, as the "Open /products/…" link above
+          !embedded && (
+            <AdminDialogField label="Page address (stays the same)">
+              <input className={adminInputClassName} value={`/products/${slug}`} readOnly />
+            </AdminDialogField>
+          )
         ) : (
           <AdminDialogField label={`Page address: /products/${slug || "…"}`}>
             <input className={adminInputClassName} value={slugTyped} onChange={(event) => setSlugTyped(event.target.value)} placeholder="made from the name" />
@@ -1260,6 +1280,14 @@ export function ProductPageForm({
                     {plan.label || `Plan ${index + 1}`}
                   </option>
                 ))}
+              </select>
+            </AdminDialogField>
+            <AdminDialogField label="Tag on product cards (landing page, All products)">
+              <select className={adminInputClassName} value={cardTag} onChange={(event) => setCardTag(event.target.value as typeof cardTag)}>
+                <option value="Subscribe & save">Subscribe &amp; save</option>
+                <option value="Best value">Best value</option>
+                <option value="Most popular">Most popular</option>
+                <option value="">No tag</option>
               </select>
             </AdminDialogField>
           </FormSection>

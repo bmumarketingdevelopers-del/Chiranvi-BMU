@@ -88,7 +88,7 @@ function toPageCards(pages: ProductPage[], shopProducts: ShopProduct[]): Product
       };
       if (page.kind === "subscription") {
         // "1 litre" (the card note adds "· glass bottle")
-        return [{ ...shared, cardId: page.slug, packLabel: `1 ${page.unitName}`, cartPackSize: page.packSize, price: page.price, originalPrice: page.originalPrice, tag: "Subscribe & save", isSubscription: true }];
+        return [{ ...shared, cardId: page.slug, packLabel: `1 ${page.unitName}`, cartPackSize: page.packSize, price: page.price, originalPrice: page.originalPrice, tag: page.cardTag ?? "Subscribe & save", isSubscription: true }];
       }
       const pack = page.packs.find((onePack) => onePack.packId === page.defaultPackId) ?? page.packs[0];
       if (!pack) return [];

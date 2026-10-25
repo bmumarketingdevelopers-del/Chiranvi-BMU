@@ -86,6 +86,33 @@ function photoOfCard(product: Pick<ShopProduct, "imageSource" | "imageWidth" | "
 }
 
 /*
+  A card's prices and pack come from its website page (the only place prices are set for a product with a
+  page): subscription (all milk) from its price per unit and first plan; one-time (every other product) from
+  the pack its page opens on.
+*/
+function cardPricesFromPage(page: ProductPage) {
+  if (page.kind === "subscription") {
+    const defaultPlan = page.plans.find((plan) => plan.planId === page.defaultPlanId) ?? page.plans[0];
+    return {
+      category: "Milk" as ProductCategory,
+      packSize: page.packSize,
+      price: page.price,
+      originalPrice: page.originalPrice,
+      subscriptionPrice: defaultPlan ? Math.round(page.price * (1 - defaultPlan.percentOff / 100)) : undefined,
+    };
+  }
+  const pack = page.packs.find((onePack) => onePack.packId === page.defaultPackId) ?? page.packs[0];
+  const category = CATEGORY_FROM_SHOP_CATEGORY[page.shopCategory ?? "Others"];
+  return {
+    category: category === "Milk" ? ("Others" as ProductCategory) : category,
+    packSize: pack ? `${pack.label} ${page.cartPackWord}` : "",
+    price: pack?.price ?? 0,
+    originalPrice: pack?.originalPrice,
+    subscriptionPrice: undefined,
+  };
+}
+
+/*
   A card like the rest (stock, switch, prices) for a product page that has none, e.g. one added in the code.
   It is made with the page address as its name first, so its id is the address (addProduct makes the id from
   name + pack) and the card and the page find each other without changing the page.
@@ -93,36 +120,9 @@ function photoOfCard(product: Pick<ShopProduct, "imageSource" | "imageWidth" | "
 function makeCardForPage(page: ProductPage) {
   const picture = page.pictures[0] && !page.pictures[0].imageSource.startsWith("data:") ? page.pictures[0] : undefined;
   const photo = picture ? { imageSource: picture.imageSource, imageWidth: picture.imageWidth, imageHeight: picture.imageHeight } : {};
-  const status = { stock: "in" as const, isVisible: page.status === "published" };
-  if (page.kind === "subscription") {
-    // Subscription: all milk
-    const defaultPlan = page.plans.find((plan) => plan.planId === page.defaultPlanId) ?? page.plans[0];
-    const card = addProduct({
-      name: page.slug,
-      packSize: "",
-      category: "Milk",
-      price: page.price,
-      originalPrice: page.originalPrice,
-      subscriptionPrice: defaultPlan ? Math.round(page.price * (1 - defaultPlan.percentOff / 100)) : undefined,
-      ...status,
-      ...photo,
-    });
-    updateProduct(card.productId, { name: page.name, packSize: page.packSize });
-    return;
-  }
-  // One-time purchase: every other product, priced by the pack its page opens on
-  const pack = page.packs.find((onePack) => onePack.packId === page.defaultPackId) ?? page.packs[0];
-  const category = CATEGORY_FROM_SHOP_CATEGORY[page.shopCategory ?? "Others"];
-  const card = addProduct({
-    name: page.slug,
-    packSize: "",
-    category: category === "Milk" ? "Others" : category,
-    price: pack?.price ?? 0,
-    originalPrice: pack?.originalPrice,
-    ...status,
-    ...photo,
-  });
-  updateProduct(card.productId, { name: page.name, packSize: pack ? `${pack.label} ${page.cartPackWord}` : "" });
+  const { packSize, ...prices } = cardPricesFromPage(page);
+  const card = addProduct({ name: page.slug, packSize: "", ...prices, stock: "in", isVisible: page.status === "published", ...photo });
+  updateProduct(card.productId, { name: page.name, packSize });
 }
 
 // Deleting a product: its website page and every card of it go together
@@ -219,7 +219,8 @@ function ProductsPage() {
     if (!page) return POWDER_PRODUCT_IDS.includes(product.productId) ? [product] : [];
     if (pageSlugsShown.has(page.slug)) return [];
     pageSlugsShown.add(page.slug);
-    return [{ ...product, name: page.name }];
+    // Name, pack and prices as on the website (from its page); the category stays the card's own
+    return [{ ...product, ...cardPricesFromPage(page), category: product.category, name: page.name }];
   });
   const [today] = useState(() => new Date());
   const [searchText, setSearchText] = useState("");
@@ -612,6 +613,8 @@ function ProductPopup({
   const [form, setForm] = useState<ProductForm>(() => (product ? { ...toForm(product), ...photoOfCard(product, page) } : EMPTY_FORM));
   // Saves the website page fields below (one Save changes for the card and its page)
   const pageSaveRef = useRef<(() => boolean) | null>(null);
+  // The page as just saved: the card takes its prices and pack from it
+  const savedPageRef = useRef<ProductPage | null>(null);
   const [isPageProblem, setIsPageProblem] = useState(false);
   const changedBy = useCurrentStaffAccess()?.name ?? "Chiranvi Panel";
   const team = useStaffMembers();
@@ -626,10 +629,11 @@ function ProductPopup({
   const [hasTriedSaving, setHasTriedSaving] = useState(false);
   const [photoProblem, setPhotoProblem] = useState("");
   const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
+  // With a page, the pack and prices are set in the page's fields below (checked there), not here
   const missingFields = [
     !form.name.trim() && "Product name",
-    !form.packSize.trim() && "Pack",
-    !Number(form.price) && "Selling price",
+    !page && !form.packSize.trim() && "Pack",
+    !page && !Number(form.price) && "Selling price",
   ].filter((field): field is string => Boolean(field));
   const isMissing = (field: string) => hasTriedSaving && missingFields.includes(field);
 
@@ -695,7 +699,9 @@ function ProductPopup({
       return;
     }
     const oldPrice = Number(form.originalPrice);
+    // (With a page the prices are checked by the page's own fields, which refuse a change by anyone but the owner)
     const isPriceChanged =
+      !page &&
       product &&
       (price !== product.price ||
         (Number(form.originalPrice) || undefined) !== product.originalPrice ||
@@ -710,6 +716,7 @@ function ProductPopup({
       return;
     }
     setIsPageProblem(false);
+    const savedPage = page ? savedPageRef.current : null;
     const details = {
       name: form.name.trim(),
       category: form.category,
@@ -718,6 +725,8 @@ function ProductPopup({
       originalPrice: oldPrice > price ? oldPrice : undefined,
       // Only milk can be subscribed to
       subscriptionPrice: form.category === "Milk" ? Number(form.subscriptionPrice) || undefined : undefined,
+      // With a page: pack and prices from the page just saved (the category stays the one chosen here)
+      ...(savedPage ? { ...cardPricesFromPage(savedPage), category: form.category } : {}),
       showOnBestSellers: form.showOnBestSellers,
       // An uploaded photo of a product with a page is kept on the page only (the card shows the page's
       // photo), so the browser's small storage holds it once
@@ -886,6 +895,15 @@ function ProductPopup({
               </div>
             )}
 
+            {/* With a website page the prices are set once, in its pack sizes (milk: price & plans) below */}
+            {page ? (
+              <fieldset className={styles["admin-product-popup-group"]}>
+                <legend className={styles["admin-product-group-title"]}>Price</legend>
+                <p className={styles["admin-product-one-time-note"]}>
+                  Set below in {page.kind === "subscription" ? "Price & units and Subscription plans" : "Pack sizes & prices"} (what the website shows)
+                </p>
+              </fieldset>
+            ) : (
             <fieldset className={styles["admin-product-popup-group"]}>
               <legend className={styles["admin-product-group-title"]}>Price</legend>
               <div className={styles["admin-product-field-grid"]}>
@@ -925,6 +943,7 @@ function ProductPopup({
                 </p>
               )}
             </fieldset>
+            )}
 
             <fieldset className={styles["admin-product-popup-group"]}>
               <legend className={styles["admin-product-group-title"]}>Stock</legend>
@@ -952,9 +971,12 @@ function ProductPopup({
                 <PopupField label="Product name" isWide isMissing={isMissing("Product name")}>
                   <input className={adminInputClassName} value={form.name} onChange={(changeEvent) => setForm({ ...form, name: changeEvent.target.value })} />
                 </PopupField>
-                <PopupField label="Pack" isMissing={isMissing("Pack")}>
-                  <input className={adminInputClassName} placeholder="e.g. 1 L pouch, 500 g" value={form.packSize} onChange={(changeEvent) => setForm({ ...form, packSize: changeEvent.target.value })} />
-                </PopupField>
+                {/* With a page the pack comes from its "Pack shown first" (milk: its pack) */}
+                {!page && (
+                  <PopupField label="Pack" isMissing={isMissing("Pack")}>
+                    <input className={adminInputClassName} placeholder="e.g. 1 L pouch, 500 g" value={form.packSize} onChange={(changeEvent) => setForm({ ...form, packSize: changeEvent.target.value })} />
+                  </PopupField>
+                )}
                 <PopupField label="Category">
                   <select className={adminInputClassName} value={form.category} onChange={(changeEvent) => setForm({ ...form, category: changeEvent.target.value as ProductCategory })}>
                     {PRODUCT_CATEGORIES.map((category) => (
@@ -999,6 +1021,10 @@ function ProductPopup({
               registerSave: (savePage) => {
                 pageSaveRef.current = savePage;
               },
+              onSaved: (savedPage) => {
+                savedPageRef.current = savedPage;
+              },
+              canChangePrices: isOwner,
               name: form.name,
               photo: form.imageSource
                 ? { imageSource: form.imageSource, imageWidth: form.imageWidth ?? 400, imageHeight: form.imageHeight ?? 400 }

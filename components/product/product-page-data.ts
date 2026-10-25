@@ -137,6 +137,8 @@ export type SubscriptionProductPage = ProductPageBase & {
   subscriptionFastSellingCards: FastSellingCard[]; // the row under the Subscribe & save tab
   // Milk: also sold in ½ litre bottles at half the 1 litre price (rounded up), chosen on the page
   hasHalfLitreBottle?: boolean;
+  // The tag on its product cards (All products, Best Sellers): missing = "Subscribe & save", "" = no tag
+  cardTag?: "Subscribe & save" | "Best value" | "Most popular" | "";
 };
 
 export type ProductPage = OneTimeProductPage | SubscriptionProductPage;
