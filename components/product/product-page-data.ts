@@ -545,6 +545,77 @@ const attaPage: OneTimeProductPage = {
   fastSellingCards: defaultFastSellingCards,
 };
 
+/*
+  Ragi and Jowar flour: the atta page's one-time template (the same as ghee's) with their own text. Their
+  pack pictures are still to come, so both use the site's Ragi + Jowar flours picture until one is uploaded
+  in the Chiranvi Panel (Product pages → Edit). The 1 kg pack keeps the prices their cards showed.
+*/
+const ragiFlourPage: OneTimeProductPage = {
+  ...attaPage,
+  slug: "ragi-flour",
+  name: "Ragi Flour",
+  tagline: "Stone-Ground Finger Millet, Rich in Calcium",
+  description:
+    "Made from cleaned, sun-dried ragi (finger millet) and stone-ground in small batches. Perfect for ragi mudde, dosa, rotis, porridge for little ones and healthy baking.",
+  badge: { text: "Millet goodness", colour: "cream" },
+  rating: { score: "4.6", count: "(402)" },
+  ratingNote: "Freshly milled",
+  highlights: ["Stone-ground", "100% ragi", "Gluten-free", "No preservatives"],
+  pictures: [
+    { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, alt: "Chiranvi Farm Ragi Flour pouch with ragi and a bowl of flour" },
+  ],
+  packs: [
+    { packId: "500-g", label: "500 g", size: 0.5, price: 65 },
+    { packId: "1-kg", label: "1 kg", size: 1, price: 119, originalPrice: 140, tag: "Best value" },
+  ],
+  defaultPackId: "1-kg",
+  review: { quote: "", name: "", area: "" },
+  productInformation: attaPage.productInformation.map((row) =>
+    row.label === "Ingredients"
+      ? { ...row, value: "100% ragi (finger millet)" }
+      : row.label === "Net quantity"
+        ? { ...row, value: "500 g / 1 kg" }
+        : row,
+  ),
+  nutritionFacts: [
+    { label: "Energy", value: "320 kcal" },
+    { label: "Protein", value: "7 g" },
+    { label: "Total fat", value: "1.9 g" },
+    { label: "Carbohydrate", value: "66 g" },
+    { label: "Dietary fibre", value: "11 g" },
+    { label: "Calcium", value: "344 mg" },
+  ],
+};
+
+const jowarFlourPage: OneTimeProductPage = {
+  ...ragiFlourPage,
+  slug: "jowar-flour",
+  name: "Jowar Flour",
+  tagline: "Stone-Ground Sorghum, Light & Wholesome",
+  description:
+    "Made from cleaned jowar (sorghum) grains, stone-ground in small batches for a fine, fresh flour. Makes soft jowar rotis and bhakri, and works well in dosas and baking.",
+  badge: { text: "Millet goodness", colour: "cream" },
+  rating: { score: "4.5", count: "(196)" },
+  highlights: ["Stone-ground", "100% jowar", "Gluten-free", "No preservatives"],
+  pictures: [
+    { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, alt: "Chiranvi Farm Jowar Flour pouch with jowar and a bowl of flour" },
+  ],
+  packs: [
+    { packId: "500-g", label: "500 g", size: 0.5, price: 55 },
+    { packId: "1-kg", label: "1 kg", size: 1, price: 99, originalPrice: 115, tag: "Best value" },
+  ],
+  productInformation: ragiFlourPage.productInformation.map((row) =>
+    row.label === "Ingredients" ? { ...row, value: "100% jowar (sorghum)" } : row,
+  ),
+  nutritionFacts: [
+    { label: "Energy", value: "349 kcal" },
+    { label: "Protein", value: "10 g" },
+    { label: "Total fat", value: "1.7 g" },
+    { label: "Carbohydrate", value: "73 g" },
+    { label: "Dietary fibre", value: "10 g" },
+  ],
+};
+
 const batterPage: OneTimeProductPage = {
   kind: "one-time",
   slug: "batter-powder",
@@ -809,6 +880,8 @@ export const startingProductPages: ProductPage[] = [
   butterPage,
   jerseyButterPage,
   attaPage,
+  ragiFlourPage,
+  jowarFlourPage,
   batterPage,
   moringaPage,
   turmericPage,

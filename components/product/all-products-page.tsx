@@ -134,8 +134,9 @@ function toPowderCards(shopProducts: ShopProduct[], pageSlugs: Set<string>): Pro
 }
 
 /*
-  Flours shown before their own pages exist (from the design). Their pack pictures are still to come, so
-  for now both use the site's Ragi + Jowar flours picture; Jowar is out of stock (Notify me).
+  Ragi and Jowar flour have their own pages now (product-page-data.ts). These cards show only if one of
+  those pages is deleted in the panel: both use the site's Ragi + Jowar flours picture; Jowar is out of
+  stock (Notify me).
 */
 const FLOURS_PICTURE = { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276 };
 const UPCOMING_FLOUR_CARDS: ProductCard[] = [

@@ -160,6 +160,41 @@
   stroke-linejoin: round;
 }
 
+/* "Missed something? Add products" at the right end of the title row */
+.checkout-add-more {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--checkout-design-pixel));
+  margin-left: auto;
+}
+
+.checkout-add-more-question {
+  font-size: calc(13 * var(--checkout-design-pixel));
+  color: #6e7a72;
+  white-space: nowrap;
+}
+
+.checkout-add-more-button {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(7 * var(--checkout-design-pixel)) calc(14 * var(--checkout-design-pixel));
+  border: 1.5px solid #285c3a;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--checkout-design-pixel));
+  font-weight: 700;
+  color: #285c3a;
+  white-space: nowrap;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.checkout-add-more-button:hover,
+.checkout-add-more-button:focus-visible {
+  background: #285c3a;
+  color: #ffffff;
+}
+
 .checkout-subtitle {
   margin-top: calc(6 * var(--checkout-design-pixel));
   font-size: calc(13 * var(--checkout-design-pixel));
@@ -1165,6 +1200,17 @@
 }
 
 /* The plan next to the product name: "6 Months" on Chiranvi green */
+/* The plan in the cart stands out from the one-time items: green border on light green */
+.subscription-cart-card-highlighted {
+  border-color: #2f6b3a;
+  background: #e6f0e1;
+}
+
+/* Its "Delivered every morning" note turns white, so it still shows on the light green */
+.subscription-cart-card-highlighted .checkout-fresh-note {
+  background: #ffffff;
+}
+
 .subscription-cart-plan-badge {
   display: inline-flex;
   align-items: center;
@@ -1559,6 +1605,15 @@
   .checkout-summary {
     position: static;
   }
+
+  /* Tablets and phones: the price shows once (under the pack); "− quantity +" at the right end of the row */
+  .checkout-item {
+    grid-template-columns: calc(64 * var(--checkout-design-pixel)) minmax(0, 1fr) auto;
+  }
+
+  .checkout-item > .checkout-item-total {
+    display: none;
+  }
 }
 
 /* ---------- Phones ---------- */
@@ -1605,43 +1660,124 @@
     display: none;
   }
 
+  /*
+    Phones: back arrow, "Cart", "Missed something?" and "Add products" on one line, and the line under it.
+    They share one unit (1px, smaller on narrow phones), so they shrink together and keep their proportions.
+    The cards use a smaller design unit, so they are compact all round (text, buttons and gaps).
+  */
   .checkout-content {
+    --checkout-title-row-pixel: min(1px, calc((100vw - 28px) / 340));
+    --checkout-design-pixel: 0.8px;
     padding: 20px 14px 120px;
   }
 
+  .checkout-title-row {
+    gap: calc(10 * var(--checkout-title-row-pixel));
+  }
+
+  .checkout-subtitle {
+    margin-top: calc(4 * var(--checkout-title-row-pixel));
+    font-size: calc(10.5 * var(--checkout-title-row-pixel));
+  }
+
+  .checkout-back-button {
+    width: calc(34 * var(--checkout-title-row-pixel));
+    height: calc(34 * var(--checkout-title-row-pixel));
+  }
+
+  .checkout-back-button svg {
+    width: calc(17 * var(--checkout-title-row-pixel));
+    height: calc(17 * var(--checkout-title-row-pixel));
+  }
+
+  .checkout-title {
+    font-size: calc(24 * var(--checkout-title-row-pixel));
+  }
+
+  .checkout-add-more {
+    gap: calc(7 * var(--checkout-title-row-pixel));
+  }
+
+  .checkout-add-more-question {
+    font-size: calc(11.5 * var(--checkout-title-row-pixel));
+  }
+
+  .checkout-add-more-button {
+    padding: calc(5 * var(--checkout-title-row-pixel)) calc(10 * var(--checkout-title-row-pixel));
+    border-width: 1.2px;
+    font-size: calc(11.5 * var(--checkout-title-row-pixel));
+  }
+
   .checkout-card {
-    padding: 16px 14px;
-    border-radius: 14px;
+    padding: 11px;
+    border-radius: 12px;
+  }
+
+  /*
+    The plan's row: picture, then name, price and the plan total under each other. The picture lines up
+    with the top of the name; the same space above and below the row.
+  */
+  .subscription-cart-item {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 3px 10px;
+    padding: 10px 0;
+  }
+
+  .subscription-cart-item .checkout-item-image-area {
+    grid-row: 1 / 3;
+    align-self: start;
+    width: 44px;
+    height: 44px;
+  }
+
+  .subscription-cart-item-total {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .checkout-fresh-note {
+    margin-top: 10px;
+    padding: 7px 9px;
   }
 
   .checkout-muted-note {
     display: none;
   }
 
-  /* Item: picture, name and price; the quantity and line total on a row underneath */
+  /*
+    Item, on one row: picture, then name, pack and price, and "− quantity +" on the right. The line total
+    is left out here (the price shows once; the order summary adds them up).
+  */
   .checkout-item {
-    grid-template-columns: 56px minmax(0, 1fr) auto;
-    grid-template-rows: auto auto;
-    gap: 8px 12px;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
   }
 
   .checkout-item-image-area {
     grid-row: 1 / 3;
-    width: 56px;
-    height: 56px;
+    align-self: start;
+    width: 44px;
+    height: 44px;
+  }
+
+  .checkout-item .checkout-item-image-area {
+    grid-row: 1;
   }
 
   .checkout-item-details {
-    grid-column: 2 / 4;
+    grid-column: 2;
   }
 
   .checkout-quantity {
-    grid-column: 2;
-    justify-self: start;
+    grid-column: 3;
   }
 
-  .checkout-item-total {
-    grid-column: 3;
+  .checkout-item > .checkout-item-total {
+    display: none;
   }
 
   .checkout-address-grid {
@@ -1978,18 +2114,6 @@
   .subscription-cart-switch-text,
   .subscription-cart-switch-button {
     font-size: 12.5px;
-  }
-
-  .subscription-cart-item {
-    grid-template-columns: 56px minmax(0, 1fr);
-  }
-
-  .subscription-cart-item-total {
-    grid-column: 2;
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: flex-start;
-    gap: 8px;
   }
 
   .address-pick-heading-row {

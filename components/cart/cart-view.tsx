@@ -51,11 +51,12 @@ import styles from "./cart-view.module.css";
     Set as Default, Edit, Remove, Add new address). Picking one ticks Address and the button becomes
     "Pay now · ₹…". Razorpay is not connected yet, so Pay now places the order straight away (nothing is
     charged), ticks Payment and shows "Your order has been placed" with Track your order.
-  Milk subscription ("Start subscription" on the milk page): the same page, but the cart shows only the
-  plan ("Your subscription"; only the one-time cart offers a switch, to a subscription) and the
-  summary shows the plan at the one-time price, the subscription saving, any coupon (All products, Milk or
-  Milk plans codes) and free delivery.
-  The one-time items wait in the cart until then. The paid plan shows on My Subscription.
+  Milk subscription ("Start subscription" on the milk page): the same page, with the plan ("Your
+  subscription", highlighted in green) above the one-time items, if any. One address and one payment for
+  both: the summary shows the plan at the one-time price and its saving, the items at MRP and their
+  discount, any coupon (checked on the plan first, then on the items) and free delivery (the items come
+  with the plan's deliveries). Paying places two orders: the plan (My Subscription) and the items (My Orders).
+  The milk chosen with Add Quantity is the plan's bottles a day, so it is not listed as a one-time item.
   A coupon used here counts as a use in the panel. Not logged in: Pay goes to the login first, then back.
   Phones: one column, with the total and the step's button kept at the bottom of the screen.
 */
@@ -261,8 +262,11 @@ function SameAddressPlanDialog({
 
 export default function CartView() {
   const cartItems = useCartItems();
-  // A milk plan from "Start subscription" (checked out on its own, before the one-time items)
+  // A milk plan from "Start subscription" (checked out together with the one-time items)
   const cartSubscription = useCartSubscription();
+  // The one-time items: while a plan waits, its milk from Add Quantity (the plan's bottles a day) is left out
+  const oneTimeItems = cartSubscription ? cartItems.filter((item) => item.productId !== cartSubscription.product.productId) : cartItems;
+  const [placedItemsOrder, setPlacedItemsOrder] = useState<Order | null>(null);
   const products = useShopProducts();
   const coupons = useCoupons();
   const isLoggedIn = useIsLoggedIn();
@@ -318,30 +322,43 @@ export default function CartView() {
   const chosenAddress =
     addresses.find((address) => address.id === (chosenAddressId ?? defaultAddressId)) ?? addresses[0] ?? null;
   // The milk bought one-time (the cart then offers "Switch to subscription")
-  const milkInCart = cartItems.some((item) => item.productId === MILK_PRODUCT_ID);
+  const milkInCart = oneTimeItems.some((item) => item.productId === MILK_PRODUCT_ID);
   // Products in the cart (as in the design: "4 items" and the count next to "Your items")
-  const itemCount = cartItems.length;
+  const itemCount = oneTimeItems.length;
 
-  // Money: MRP, the products' own discount, the coupon, delivery
-  const itemTotalAtMrp = cartItems.reduce((sum, item) => sum + Math.max(item.originalPrice, item.price) * item.quantity, 0);
-  const itemTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Money for the one-time items: MRP, the products' own discount, the coupon, delivery
+  const itemTotalAtMrp = oneTimeItems.reduce((sum, item) => sum + Math.max(item.originalPrice, item.price) * item.quantity, 0);
+  const itemTotal = oneTimeItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountOnMrp = itemTotalAtMrp - itemTotal;
-  const cartLines = cartItems.map((item) => ({
+  const cartLines = oneTimeItems.map((item) => ({
     amount: item.price * item.quantity,
     category: products.find((product) => product.productId === item.productId)?.category ?? "Others",
   }));
-  // A code is checked against the plan (subscription) or the items; again whenever the cart changes
+  // A code is checked against the plan first, then the items; again whenever the cart changes
   function checkCoupon(code: string) {
-    return cartSubscription ? checkCouponForSubscription(code, coupons, cartSubscription) : checkCouponForCart(code, coupons, cartLines);
+    if (!cartSubscription) return checkCouponForCart(code, coupons, cartLines);
+    const planCheck = checkCouponForSubscription(code, coupons, cartSubscription);
+    if ("coupon" in planCheck || oneTimeItems.length === 0) return planCheck;
+    const itemsCheck = checkCouponForCart(code, coupons, cartLines);
+    return "coupon" in itemsCheck ? itemsCheck : planCheck;
   }
   const couponCheck = appliedCode ? checkCoupon(appliedCode) : null;
   const appliedCoupon = couponCheck && "coupon" in couponCheck ? couponCheck : null;
-  const couponDiscount = appliedCoupon ? Math.min(appliedCoupon.discount, cartSubscription ? cartSubscription.planTotal : itemTotal) : 0;
-  const afterDiscounts = itemTotal - couponDiscount;
-  const isDeliveryFree = afterDiscounts >= FREE_DELIVERY_FROM;
+  const isCouponForPlan = Boolean(
+    cartSubscription && appliedCoupon && "coupon" in checkCouponForSubscription(appliedCoupon.coupon.code, coupons, cartSubscription),
+  );
+  const couponDiscount = appliedCoupon ? Math.min(appliedCoupon.discount, isCouponForPlan && cartSubscription ? cartSubscription.planTotal : itemTotal) : 0;
+  const planCouponDiscount = isCouponForPlan ? couponDiscount : 0;
+  const itemsCouponDiscount = isCouponForPlan ? 0 : couponDiscount;
+  const afterDiscounts = itemTotal - itemsCouponDiscount;
+  // With a plan the items come with its deliveries, so their delivery is free too
+  const isDeliveryFree = Boolean(cartSubscription) || afterDiscounts >= FREE_DELIVERY_FROM;
   const deliveryFee = isDeliveryFree ? 0 : DELIVERY_FEE;
   const toPay = afterDiscounts + deliveryFee;
-  const youSave = discountOnMrp + couponDiscount + (isDeliveryFree ? DELIVERY_FEE : 0);
+  const youSave = discountOnMrp + itemsCouponDiscount + (isDeliveryFree ? DELIVERY_FEE : 0);
+  // The plan's part
+  const planToPay = cartSubscription ? cartSubscription.planTotal - planCouponDiscount : 0;
+  const planSaving = cartSubscription ? cartSubscription.oneTimeTotal - cartSubscription.planTotal + planCouponDiscount : 0;
 
   function applyCoupon() {
     if (!couponInput.trim()) {
@@ -428,7 +445,7 @@ export default function CartView() {
     With a running plan given, it extends that plan (same address) instead of starting a new one.
   */
   function placeSubscriptionOrder(deliverTo: string, planToExtend?: RunningPlan) {
-    if (!cartSubscription) return;
+    if (!cartSubscription) return null;
     const subscriptionOrder = placeOrder(
       [
         {
@@ -439,9 +456,9 @@ export default function CartView() {
         },
       ],
       {
-        total: cartSubscription.planTotal - couponDiscount,
-        couponCode: appliedCoupon?.coupon.code,
-        couponDiscount: couponDiscount || undefined,
+        total: cartSubscription.planTotal - planCouponDiscount,
+        couponCode: isCouponForPlan ? appliedCoupon?.coupon.code : undefined,
+        couponDiscount: planCouponDiscount || undefined,
         deliveryFee: 0,
         deliverTo: planToExtend ? planToExtend.deliverTo : deliverTo,
         subscription: {
@@ -457,54 +474,64 @@ export default function CartView() {
         },
       },
     );
-    if (appliedCoupon) {
+    if (appliedCoupon && isCouponForPlan) {
       const deliverToName = (planToExtend ? planToExtend.deliverTo : deliverTo).split(" · ")[0];
       recordCouponUse(appliedCoupon.coupon.code, {
         customerName: deliverToName,
         area: chosenAddress?.area ?? "",
         orderNumber: `#${subscriptionOrder.orderId}`,
-        discount: couponDiscount,
+        discount: planCouponDiscount,
         orderValue: cartSubscription.planTotal,
       });
-      setAppliedCode(null);
     }
-    // The milk's quantity (kept from Add Quantity while the plan waited) is paid for by the plan now
-    removeCartItem(cartSubscription.product.productId);
-    setCartSubscription(null);
-    setPlanAtPickedAddress(null);
-    setIsAddressPickerOpen(false);
-    setHasPickedAddress(false);
-    setPlacedOrder(subscriptionOrder);
-    window.scrollTo({ top: 0 });
+    return subscriptionOrder;
   }
 
-  function placeTheOrder() {
-    if (cartSubscription) {
-      if (planBeingExtended) placeSubscriptionOrder(planBeingExtended.deliverTo, planBeingExtended);
-      else if (chosenAddress) placeSubscriptionOrder(`${chosenAddress.name} · ${formatAddressLine(chosenAddress)}`);
-      return;
-    }
-    if (!chosenAddress) return;
-    const order = placeOrder(cartItems, {
+  // The one-time items as their own order (same address as the plan, when there is one)
+  function placeItemsOrder(deliverTo: string) {
+    const order = placeOrder(oneTimeItems, {
       total: toPay,
-      couponCode: appliedCoupon?.coupon.code,
-      couponDiscount: couponDiscount || undefined,
+      couponCode: appliedCoupon && !isCouponForPlan ? appliedCoupon.coupon.code : undefined,
+      couponDiscount: itemsCouponDiscount || undefined,
       deliveryFee,
-      deliverTo: `${chosenAddress.name} · ${formatAddressLine(chosenAddress)}`,
+      deliverTo,
     });
-    if (appliedCoupon) {
+    if (appliedCoupon && !isCouponForPlan) {
       recordCouponUse(appliedCoupon.coupon.code, {
-        customerName: chosenAddress.name,
-        area: chosenAddress.area,
+        customerName: deliverTo.split(" · ")[0],
+        area: chosenAddress?.area ?? "",
         orderNumber: `#${order.orderId}`,
-        discount: couponDiscount,
+        discount: itemsCouponDiscount,
         orderValue: itemTotal,
       });
     }
+    return order;
+  }
+
+  // Pay now: the plan and the items in one go (two orders), then the cart is emptied
+  function placeTheOrder() {
+    const deliverTo = planBeingExtended
+      ? planBeingExtended.deliverTo
+      : chosenAddress
+        ? `${chosenAddress.name} · ${formatAddressLine(chosenAddress)}`
+        : null;
+    if (!deliverTo) return;
+    const planOrder = placeSubscriptionOrder(deliverTo, planBeingExtended ?? undefined);
+    const itemsOrder = oneTimeItems.length > 0 ? placeItemsOrder(deliverTo) : null;
+    // Also takes out the milk's quantity from Add Quantity (the plan pays for those bottles now)
     emptyTheCart();
+    setPlanAtPickedAddress(null);
+    setIsAddressPickerOpen(false);
     setHasPickedAddress(false);
-    setPlacedOrder(order);
+    setPlacedOrder(planOrder ?? itemsOrder);
+    setPlacedItemsOrder(planOrder ? itemsOrder : null);
     window.scrollTo({ top: 0 });
+  }
+
+  // Remove the plan: its milk from Add Quantity goes too (it was the plan's bottles a day, not a purchase)
+  function removeSubscriptionFromCart() {
+    if (cartSubscription) removeCartItem(cartSubscription.product.productId);
+    setCartSubscription(null);
   }
 
   // Tomorrow before 7 AM
@@ -569,8 +596,9 @@ export default function CartView() {
     ? (runningPlans.find((plan) => plan.orderId === (placedOrder.subscription?.extendsOrderId ?? placedOrder.orderId)) ?? null)
     : null;
 
-  // What Pay now charges: the plan's total for a subscription, otherwise the cart's
-  const amountToPay = cartSubscription ? cartSubscription.planTotal - couponDiscount : toPay;
+  // What Pay now charges: the plan and the one-time items together
+  const amountToPay = planToPay + (oneTimeItems.length > 0 ? toPay : 0);
+  const amountSaved = planSaving + (oneTimeItems.length > 0 ? youSave : 0);
 
   if (!placedOrder && (!isCartLoaded || (cartItems.length === 0 && !cartSubscription))) {
     return (
@@ -660,6 +688,13 @@ export default function CartView() {
                   ? `${placedOrder.subscription.planName} · ${placedOrder.subscription.bottlesPerDay} × ${placedOrder.subscription.bottleLabel ?? "1 L"} every morning · ${placedOrder.subscription.bottleCount.toLocaleString("en-IN")} bottles`
                   : "Thank you for shopping with Chiranvi Farm"}
             </p>
+            {/* Paid together with the plan: the one-time items' own order */}
+            {placedItemsOrder && (
+              <p className={styles["order-placed-text"]}>
+                Your {placedItemsOrder.items.length} {placedItemsOrder.items.length === 1 ? "item arrives" : "items arrive"} (order {placedItemsOrder.orderId}) tomorrow by 7 AM ·{" "}
+                <Link href="/account/orders">Track them</Link>
+              </p>
+            )}
             <dl className={styles["order-placed-details"]}>
               <div>
                 <dt>Order</dt>
@@ -667,7 +702,7 @@ export default function CartView() {
               </div>
               <div>
                 <dt>Paid</dt>
-                <dd>{rupees(placedOrder.total)}</dd>
+                <dd>{rupees(placedOrder.total + (placedItemsOrder?.total ?? 0))}</dd>
               </div>
               <div>
                 <dt>{placedOrder.subscription?.extendsOrderId ? "Plan runs until" : placedOrder.subscription ? "First delivery" : "Delivery"}</dt>
@@ -700,25 +735,35 @@ export default function CartView() {
                 </svg>
               </button>
               <h1 className={styles["checkout-title"]}>Cart</h1>
+              {/* Right end of the row: back to the products to add more (phones show only the button) */}
+              <div className={styles["checkout-add-more"]}>
+                <span className={styles["checkout-add-more-question"]}>Missed something?</span>
+                <Link href="/products" className={styles["checkout-add-more-button"]}>
+                  Add products
+                </Link>
+              </div>
             </div>
             <p className={styles["checkout-subtitle"]}>
               {planBeingExtended
                 ? `Extending your ${planBeingExtended.planName} plan (currently ends on ${formatPlanDate(planBeingExtended.endsOn)})`
                 : cartSubscription
-                ? `${cartSubscription.planName} subscription · First delivery tomorrow by 7 AM`
+                ? `${cartSubscription.planName} subscription${itemCount > 0 ? ` + ${itemCount} ${itemCount === 1 ? "item" : "items"}` : ""} · First delivery tomorrow by 7 AM`
                 : `${itemCount} ${itemCount === 1 ? "item" : "items"} · ${deliveryLine}`}
             </p>
 
             <div className={styles["checkout-columns"]}>
-              {cartSubscription ? (
-                /* Step 1 for a subscription: the plan */
-                <div className={styles["checkout-left-column"]}>
-                  <section className={styles["checkout-card"]} aria-labelledby="checkout-subscription-heading">
+              {/* Step 1: the plan (highlighted), then the one-time items, then the delivery address */}
+              <div className={styles["checkout-left-column"]}>
+                {cartSubscription && (
+                  <section
+                    className={`${styles["checkout-card"]} ${styles["subscription-cart-card-highlighted"]}`}
+                    aria-labelledby="checkout-subscription-heading"
+                  >
                     <div className={styles["checkout-card-heading-row"]}>
                       <h2 id="checkout-subscription-heading" className={styles["checkout-card-heading"]}>
                         {planBeingExtended ? "Extend your plan" : "Your subscription"}
                       </h2>
-                      <button type="button" className={`${styles["checkout-text-button"]} ${styles["subscription-cart-remove-button"]}`} onClick={() => setCartSubscription(null)}>
+                      <button type="button" className={`${styles["checkout-text-button"]} ${styles["subscription-cart-remove-button"]}`} onClick={removeSubscriptionFromCart}>
                         Remove
                       </button>
                     </div>
@@ -768,23 +813,20 @@ export default function CartView() {
                         ? `Same delivery address: ${planBeingExtended.deliverTo}`
                         : "Delivered every morning by 7 AM · Pause anytime · Free delivery"}
                     </p>
-
                   </section>
-                  {deliveryAddressCard}
-                </div>
-              ) : (
-                /* Step 1: the cart */
-                <div className={styles["checkout-left-column"]}>
+                )}
+
+                {oneTimeItems.length > 0 && (
                   <section className={styles["checkout-card"]} aria-labelledby="checkout-items-heading">
                     <div className={styles["checkout-card-heading-row"]}>
                       <h2 id="checkout-items-heading" className={styles["checkout-card-heading"]}>
-                        Your items <span className={styles["checkout-count-pill"]}>{cartItems.length}</span>
+                        Your items <span className={styles["checkout-count-pill"]}>{oneTimeItems.length}</span>
                       </h2>
                       <span className={styles["checkout-muted-note"]}>Prices include all taxes</span>
                     </div>
 
                     <ul className={styles["checkout-item-list"]}>
-                      {cartItems.map((item) => (
+                      {oneTimeItems.map((item) => (
                         <li key={item.productId} className={styles["checkout-item"]}>
                           <span className={styles["checkout-item-image-area"]}>
                             <Image src={item.imageSource} alt={item.name} width={item.imageWidth} height={item.imageHeight} sizes="64px" className={styles["checkout-item-image"]} />
@@ -831,9 +873,9 @@ export default function CartView() {
                       </div>
                     )}
                   </section>
-                  {deliveryAddressCard}
-                </div>
-              )}
+                )}
+                {deliveryAddressCard}
+              </div>
 
                             {/* Order summary */}
               <aside className={`${styles["checkout-card"]} ${styles["checkout-summary"]}`} aria-labelledby="checkout-summary-heading">
@@ -882,47 +924,37 @@ export default function CartView() {
                   <p className={styles["checkout-coupon-error"]}>{couponCheck.error}</p>
                 )}
 
-                {cartSubscription ? (
-                  /* Subscription: the plan at the one-time price, the saving, the coupon, free delivery */
-                  <dl className={styles["checkout-bill"]}>
-                    <div>
-                      <dt>
-                        {cartSubscription.bottleCount.toLocaleString("en-IN")} bottles at {rupees(cartSubscription.product.price)}
-                      </dt>
-                      <dd>{rupees(cartSubscription.oneTimeTotal)}</dd>
-                    </div>
-                    {cartSubscription.oneTimeTotal > cartSubscription.planTotal && (
-                      <div>
-                        <dt>Subscription saving</dt>
-                        <dd className={styles["checkout-bill-saving"]}>−{rupees(cartSubscription.oneTimeTotal - cartSubscription.planTotal)}</dd>
-                      </div>
-                    )}
-                    {appliedCoupon && (
-                      <div>
-                        <dt>Coupon {appliedCoupon.coupon.code}</dt>
-                        <dd className={styles["checkout-bill-saving"]}>−{rupees(couponDiscount)}</dd>
-                      </div>
-                    )}
-                    <div>
-                      <dt>Delivery fee</dt>
-                      <dd>
-                        <s className={styles["checkout-bill-struck"]}>{rupees(DELIVERY_FEE)}</s>{" "}
-                        <span className={styles["checkout-bill-saving"]}>FREE</span>
-                      </dd>
-                    </div>
-                  </dl>
-                ) : (
-                <>
+                {/* The plan at the one-time price and its saving, then the items at MRP and their discount */}
                 <dl className={styles["checkout-bill"]}>
-                  <div>
-                    <dt>Item total (MRP)</dt>
-                    <dd>{rupees(itemTotalAtMrp)}</dd>
-                  </div>
-                  {discountOnMrp > 0 && (
-                    <div>
-                      <dt>Discount on MRP</dt>
-                      <dd className={styles["checkout-bill-saving"]}>−{rupees(discountOnMrp)}</dd>
-                    </div>
+                  {cartSubscription && (
+                    <>
+                      <div>
+                        <dt>
+                          {cartSubscription.bottleCount.toLocaleString("en-IN")} bottles at {rupees(cartSubscription.product.price)}
+                        </dt>
+                        <dd>{rupees(cartSubscription.oneTimeTotal)}</dd>
+                      </div>
+                      {cartSubscription.oneTimeTotal > cartSubscription.planTotal && (
+                        <div>
+                          <dt>Subscription saving</dt>
+                          <dd className={styles["checkout-bill-saving"]}>−{rupees(cartSubscription.oneTimeTotal - cartSubscription.planTotal)}</dd>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {oneTimeItems.length > 0 && (
+                    <>
+                      <div>
+                        <dt>Item total (MRP)</dt>
+                        <dd>{rupees(itemTotalAtMrp)}</dd>
+                      </div>
+                      {discountOnMrp > 0 && (
+                        <div>
+                          <dt>Discount on MRP</dt>
+                          <dd className={styles["checkout-bill-saving"]}>−{rupees(discountOnMrp)}</dd>
+                        </div>
+                      )}
+                    </>
                   )}
                   {appliedCoupon && (
                     <div>
@@ -949,20 +981,16 @@ export default function CartView() {
                     Add {rupees(FREE_DELIVERY_FROM - afterDiscounts)} more for free delivery
                   </p>
                 )}
-                </>
-                )}
 
                 <p className={styles["checkout-to-pay"]}>
                   <span>To pay</span>
                   <span className={styles["checkout-to-pay-amount"]}>{rupees(amountToPay)}</span>
                 </p>
-                {cartSubscription
-                  ? cartSubscription.oneTimeTotal - amountToPay > 0 && (
-                      <p className={styles["checkout-you-save"]}>
-                        You save {rupees(cartSubscription.oneTimeTotal - amountToPay)} on this plan
-                      </p>
-                    )
-                  : youSave > 0 && <p className={styles["checkout-you-save"]}>You save {rupees(youSave)} on this order</p>}
+                {amountSaved > 0 && (
+                  <p className={styles["checkout-you-save"]}>
+                    You save {rupees(amountSaved)} on this {cartSubscription && oneTimeItems.length === 0 ? "plan" : "order"}
+                  </p>
+                )}
 
                 <div className={styles["checkout-place-row"]}>
                   <span className={styles["checkout-place-row-total"]}>
