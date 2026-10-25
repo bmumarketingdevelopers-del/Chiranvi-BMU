@@ -513,6 +513,8 @@
 /* Quantity: "-" (light) 1 "+" (green), then Add to cart (green) and Buy now (outlined) */
 
 .one-time-buy-row {
+  /* The "Add to cart first" tip is placed against this row */
+  position: relative;
   display: flex;
   align-items: center;
   gap: calc(12 * var(--one-time-product-design-pixel));
@@ -615,6 +617,106 @@
 .one-time-buy-now-button:hover,
 .one-time-buy-now-button:focus-visible {
   background: #e6f0e1;
+}
+
+/* Buy now before the pack is in the cart: greyed (a click points to Add to cart instead) */
+.one-time-buy-now-button.one-time-buy-now-button-waiting,
+.one-time-buy-now-button.one-time-buy-now-button-waiting:hover {
+  border-color: #b9c7bd;
+  background: #ffffff;
+  color: #9fb3a5;
+  cursor: not-allowed;
+}
+
+/* ---------- "Add to cart first" hint (Buy now clicked first), like Add Quantity on the milk page ---------- */
+
+/* Add to cart: a short shake, then a gold ring pulses twice */
+.one-time-add-to-cart-attention {
+  animation:
+    one-time-add-to-cart-shake 500ms ease-in-out,
+    one-time-add-to-cart-glow 900ms ease-out 450ms 2;
+}
+
+@keyframes one-time-add-to-cart-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes one-time-add-to-cart-glow {
+  from {
+    box-shadow: 0 0 0 0 rgba(245, 191, 44, 0.9);
+  }
+  to {
+    box-shadow: 0 0 0 10px rgba(245, 191, 44, 0);
+  }
+}
+
+/* Tip bubble above Add to cart, its arrow pointing down at it; fades out after about 3 seconds */
+.one-time-add-to-cart-tip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
+  z-index: 2;
+  padding: calc(7 * var(--one-time-product-design-pixel)) calc(12 * var(--one-time-product-design-pixel));
+  border: 1px solid #f5bf2c;
+  border-radius: calc(8 * var(--one-time-product-design-pixel));
+  background: #fbf3e1;
+  font-size: calc(13 * var(--one-time-product-design-pixel));
+  font-weight: 600;
+  color: #1f4d2e;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: one-time-add-to-cart-tip-show 3.2s ease forwards;
+}
+
+.one-time-add-to-cart-tip::before {
+  position: absolute;
+  bottom: -6px;
+  left: 22px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid #f5bf2c;
+  border-bottom: 1px solid #f5bf2c;
+  background: #fbf3e1;
+  content: "";
+  transform: rotate(45deg);
+}
+
+@keyframes one-time-add-to-cart-tip-show {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .one-time-add-to-cart-attention {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(245, 191, 44, 0.9);
+  }
+
+  .one-time-add-to-cart-tip {
+    animation: none;
+  }
 }
 
 /* ✓ Free delivery on this order, with a full green bar under it */
@@ -1109,6 +1211,13 @@
     height: calc(46 * var(--one-time-phone-pixel));
     border-radius: calc(10 * var(--one-time-phone-pixel));
     font-size: calc(15 * var(--one-time-phone-pixel));
+  }
+
+  .one-time-add-to-cart-tip {
+    bottom: calc(100% + calc(10 * var(--one-time-phone-pixel)));
+    padding: calc(6 * var(--one-time-phone-pixel)) calc(10 * var(--one-time-phone-pixel));
+    border-radius: calc(8 * var(--one-time-phone-pixel));
+    font-size: calc(12.5 * var(--one-time-phone-pixel));
   }
 
   .one-time-add-to-cart-icon {
