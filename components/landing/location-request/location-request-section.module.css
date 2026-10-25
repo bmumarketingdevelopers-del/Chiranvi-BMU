@@ -194,8 +194,8 @@
 /*
   Products inside the pin's white circle (centre 1178, 605; radius 158, just inside the dashed ring).
   The circle crops them, so each product slides in from the left edge, stays in the middle, and
-  slides out to the right as the next one slides in behind it: a new product every 2 seconds
-  (the delays are set in the component), 12 seconds for all six, with no gap.
+  slides out to the right as the next one slides in behind it: a new product every 2 seconds, with no
+  gap. The component marks which one is shown and which is leaving (as many products as the panel has).
 */
 .location-request-pin-products {
   position: absolute;
@@ -208,6 +208,7 @@
   border-radius: 50%;
 }
 
+/* Waiting off to the left (jumps back here without sliding) */
 .location-request-pin-product {
   position: absolute;
   inset: 16%;
@@ -215,32 +216,25 @@
   height: 68%;
   object-fit: contain;
   transform: translateX(-150%);
-  animation: location-request-pin-product-slide 12s ease-in-out infinite both;
 }
 
-@keyframes location-request-pin-product-slide {
-  /* slides in from the left */
-  0% {
-    transform: translateX(-150%);
-  }
-  /* in the middle */
-  5%,
-  16.67% {
-    transform: translateX(0);
-  }
-  /* slides out to the right, while the next one slides in */
-  21.67%,
-  100% {
-    transform: translateX(150%);
-  }
+/* Slides in from the left and stays in the middle */
+.location-request-pin-product-shown {
+  transform: translateX(0);
+  transition: transform 0.6s ease-in-out;
+}
+
+/* Slides out to the right, while the next one slides in */
+.location-request-pin-product-leaving {
+  transform: translateX(150%);
+  transition: transform 0.6s ease-in-out;
 }
 
 /* Visitors who turn off motion in their system settings: clouds stay in place, no vehicles, first product shown */
 @media (prefers-reduced-motion: reduce) {
   .location-request-cloud,
   .location-request-vehicle,
-  .location-request-vehicle-image,
-  .location-request-pin-product {
+  .location-request-vehicle-image {
     animation: none;
   }
 
@@ -254,10 +248,6 @@
 
   .location-request-vehicle {
     display: none;
-  }
-
-  .location-request-pin-product:first-child {
-    transform: none;
   }
 }
 

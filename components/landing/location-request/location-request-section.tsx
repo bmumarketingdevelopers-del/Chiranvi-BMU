@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { POWDER_PRODUCT_IDS, useProductCards } from "@/components/product/all-products-page";
 import styles from "./location-request-section.module.css";
 
 /*
@@ -13,21 +14,48 @@ import styles from "./location-request-section.module.css";
   City animation (always running, see the CSS file): clouds drift behind the buildings without a gap,
   the van (left to right) and the scooter (right to left) keep riding past behind the pin, and our
   products slide through the pin's circle from left to right, one after another.
+  The pin's products follow the Chiranvi Panel (Products & pricing): every product on the website, in the
+  All products page's order. A deleted product drops out, a new one joins; with none left the Chiranvi
+  logo shows instead.
 */
 
-// Products that slide through the pin (the Best Sellers products), a new one every 2 seconds.
-const pinProducts = [
-  { imageSource: "/images/products/a2-cow-milk-1-litre-bottle.webp", imageWidth: 232, imageHeight: 500 },
-  { imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204 },
-  { imageSource: "/images/products/fresh-paneer-200g-box.webp", imageWidth: 604, imageHeight: 444 },
-  { imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516 },
-  { imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548 },
-  { imageSource: "/images/products/red-chilli-powder-pouch.webp", imageWidth: 360, imageHeight: 548 },
-];
 const pinProductSeconds = 2;
+
+type PinPicture = { imageSource: string; imageWidth: number; imageHeight: number; isServedAsIs?: boolean };
+
+// The products on the website (from the panel), each picture once: the three milks share one bottle, so
+// it would otherwise seem to stand still for 6 seconds. The "coming soon" flours are not in the panel.
+function usePinPictures() {
+  const productCards = useProductCards();
+  return useMemo(() => {
+    const pictures: PinPicture[] = [];
+    productCards.forEach((card) => {
+      const isInPanel = card.hasPage || POWDER_PRODUCT_IDS.includes(card.cardId);
+      if (!isInPanel || !card.picture || pictures.some((picture) => picture.imageSource === card.picture?.imageSource)) return;
+      pictures.push(card.picture);
+    });
+    return pictures;
+  }, [productCards]);
+}
+
+const chiranviLogo: PinPicture = { imageSource: "/images/brand/chiranvi-farm-logo.webp", imageWidth: 516, imageHeight: 240 };
 
 export default function LocationRequestSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const productPictures = usePinPictures();
+  // Two products: each is listed twice, so one can wait on the left while the other slides out
+  const pinPictures = productPictures.length === 2 ? [...productPictures, ...productPictures] : productPictures;
+  // Counts up every 2 seconds; the product shown is this, round the list
+  const [pinStep, setPinStep] = useState(0);
+
+  // One product, or none (the logo): nothing slides
+  useEffect(() => {
+    if (pinPictures.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const pinTimer = window.setInterval(() => setPinStep((step) => step + 1), pinProductSeconds * 1000);
+    return () => window.clearInterval(pinTimer);
+  }, [pinPictures.length]);
+  const shownIndex = pinPictures.length ? pinStep % pinPictures.length : 0;
+  const leavingIndex = pinStep > 0 && pinPictures.length > 1 ? (pinStep - 1) % pinPictures.length : -1;
   // "visible": shown normally (also the server-rendered state, so nothing is hidden without JavaScript).
   // "waiting": hidden, ready to animate. "revealed": animated into view.
   const [revealState, setRevealState] = useState<"visible" | "waiting" | "revealed">("visible");
@@ -125,20 +153,38 @@ export default function LocationRequestSection() {
             className={styles["location-request-pin"]}
           />
 
-          {/* Inside the pin's white circle: one product at a time */}
+          {/* Inside the pin's white circle: one product at a time (no products: the Chiranvi logo) */}
           <div className={styles["location-request-pin-products"]} aria-hidden="true">
-            {pinProducts.map((product, productIndex) => (
+            {pinPictures.length === 0 ? (
               <Image
-                key={product.imageSource}
-                src={product.imageSource}
+                src={chiranviLogo.imageSource}
                 alt=""
-                width={product.imageWidth}
-                height={product.imageHeight}
+                width={chiranviLogo.imageWidth}
+                height={chiranviLogo.imageHeight}
                 sizes="100px"
-                className={styles["location-request-pin-product"]}
-                style={{ animationDelay: `${productIndex * pinProductSeconds}s` }}
+                className={`${styles["location-request-pin-product"]} ${styles["location-request-pin-product-shown"]}`}
               />
-            ))}
+            ) : (
+              pinPictures.map((picture, pictureIndex) => (
+                <Image
+                  key={`${pictureIndex}-${picture.imageSource}`}
+                  src={picture.imageSource}
+                  alt=""
+                  width={picture.imageWidth}
+                  height={picture.imageHeight}
+                  sizes="100px"
+                  // Photos uploaded in the panel (data: addresses) are shown as they are
+                  unoptimized={picture.isServedAsIs || picture.imageSource.startsWith("data:")}
+                  className={`${styles["location-request-pin-product"]} ${
+                    pictureIndex === shownIndex
+                      ? styles["location-request-pin-product-shown"]
+                      : pictureIndex === leavingIndex
+                        ? styles["location-request-pin-product-leaving"]
+                        : ""
+                  }`}
+                />
+              ))
+            )}
           </div>
         </div>
 
