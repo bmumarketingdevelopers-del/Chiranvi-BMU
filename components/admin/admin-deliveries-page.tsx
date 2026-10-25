@@ -324,9 +324,7 @@ function DeliveriesPage() {
                   <th scope="col">Slot</th>
                   <th scope="col">Status</th>
                   <th scope="col">Call</th>
-                  <th scope="col">
-                    <span className={dashboardStyles["admin-visually-hidden"]}>Actions</span>
-                  </th>
+                  <th scope="col" className={dashboardStyles["admin-orders-actions"]}>Actions</th>
                 </tr>
               </thead>
               <tbody>

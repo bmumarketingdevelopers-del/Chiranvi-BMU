@@ -145,6 +145,57 @@
   gap: calc(6 * var(--account-design-pixel));
 }
 
+/* Email and the addresses take the whole row */
+.profile-form-field-wide {
+  grid-column: 1 / -1;
+}
+
+/* A new customer's note above the banner: light yellow with a gold edge */
+.profile-required-notice {
+  margin-top: calc(18 * var(--account-design-pixel));
+  padding: calc(12 * var(--account-design-pixel)) calc(16 * var(--account-design-pixel));
+  border: 1px solid #c99a1e;
+  border-radius: calc(12 * var(--account-design-pixel));
+  background: #fbf3e1;
+  font-size: calc(13 * var(--account-design-pixel));
+  line-height: 1.5;
+  color: #1e2a22;
+}
+
+.profile-required-notice strong {
+  color: #1f4d2e;
+}
+
+/* "Please fill in" list after Save with missing details (red: an error) */
+.profile-form-problems {
+  margin-top: calc(12 * var(--account-design-pixel));
+  padding: calc(10 * var(--account-design-pixel)) calc(14 * var(--account-design-pixel));
+  border-radius: calc(10 * var(--account-design-pixel));
+  background: #fdecea;
+  font-size: calc(13 * var(--account-design-pixel));
+  color: #a93226;
+}
+
+.profile-form-problems ul {
+  margin-top: calc(4 * var(--account-design-pixel));
+  padding-left: calc(18 * var(--account-design-pixel));
+  list-style: disc;
+}
+
+/* (Two classes so it wins over the field box's own border, defined further down) */
+.profile-form-input.profile-form-input-missing {
+  border-color: #c0392b;
+}
+
+/* "More about you (optional)": Ubuntu Bold 14 */
+.profile-form-subheading {
+  margin-top: calc(20 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
 /* Field label: Ubuntu Regular 12, #6E7A72 */
 .profile-form-label {
   font-family: var(--font-ubuntu), sans-serif;
@@ -208,6 +259,52 @@
   color: #2f6b3f;
 }
 
+/* The fields' wrapper (no frame of its own); disabled while the saved details are only shown */
+.profile-form-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* Shown, not editable: the same boxes, a soft green-white fill, no example text */
+.profile-form-fieldset:disabled .profile-form-input {
+  background-color: #f7faf6;
+  color: #1e2a22;
+  opacity: 1;
+  cursor: default;
+  -webkit-text-fill-color: #1e2a22;
+}
+
+.profile-form-fieldset:disabled .profile-form-input::placeholder,
+.profile-form-fieldset:disabled .profile-form-select-empty {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.profile-form-fieldset:disabled .profile-form-select {
+  background-image: none;
+}
+
+/* Cancel (while editing): white with a green outline, beside Save changes */
+.profile-cancel-button {
+  width: calc(120 * var(--account-design-pixel));
+  height: calc(42 * var(--account-design-pixel));
+  border: 1px solid #2f6b3f;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+  cursor: pointer;
+}
+
+.profile-cancel-button:hover,
+.profile-cancel-button:focus-visible {
+  background: #e6f0e1;
+}
+
 /* Save changes: 150 x 42, green #2F6B3F, Ubuntu Bold 14, white */
 .profile-save-button {
   width: calc(150 * var(--account-design-pixel));
@@ -226,6 +323,106 @@
 .profile-save-button:hover,
 .profile-save-button:focus-visible {
   background: #245433;
+}
+
+/* Order history: delivered orders, one row each, with "Order again" */
+.profile-order-history-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--account-design-pixel));
+}
+
+.profile-order-history-all-link {
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 600;
+  color: #2f6b3f;
+}
+
+.profile-order-history-all-link:hover {
+  text-decoration: underline;
+}
+
+.profile-order-history-list {
+  margin-top: calc(10 * var(--account-design-pixel));
+}
+
+.profile-order-history-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: calc(14 * var(--account-design-pixel));
+  padding: calc(12 * var(--account-design-pixel)) 0;
+  border-bottom: 1px solid #e8ece6;
+}
+
+.profile-order-history-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.profile-order-history-pictures {
+  display: flex;
+  gap: calc(4 * var(--account-design-pixel));
+}
+
+.profile-order-history-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(44 * var(--account-design-pixel));
+  height: calc(44 * var(--account-design-pixel));
+  border-radius: calc(8 * var(--account-design-pixel));
+  background: #f4f3ee;
+}
+
+.profile-order-history-picture img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.profile-order-history-text {
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--account-design-pixel));
+  min-width: 0;
+  font-size: calc(12 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.profile-order-history-text strong {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.profile-order-history-amount {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+/* Order again: white with a green outline */
+.profile-order-again-button {
+  height: calc(36 * var(--account-design-pixel));
+  padding: 0 calc(16 * var(--account-design-pixel));
+  border: 1px solid #2f6b3f;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  color: #2f6b3f;
+  cursor: pointer;
+}
+
+.profile-order-again-button:hover,
+.profile-order-again-button:focus-visible {
+  background: #e6f0e1;
 }
 
 /* Notification rows with on / off switches */

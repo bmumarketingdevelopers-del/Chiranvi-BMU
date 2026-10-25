@@ -481,7 +481,7 @@ export function useAdminToast() {
   return { showToast: setMessage, toast };
 }
 
-// The "•••" button with a small menu of actions for one row
+// The "Actions" button with a small menu of actions for one row
 export function AdminRowMenu({
   label,
   title,
@@ -499,7 +499,7 @@ export function AdminRowMenu({
   const canCreate = useAdminCan("create");
   const allowed = { view: true, edit: canEdit, delete: canDelete, create: canCreate, export: true };
   const shownOptions = options.filter((option) => allowed[option.permission ?? "edit"]);
-  // Nothing this role can do here: no "..." button at all
+  // Nothing this role can do here: no "Actions" button at all
   if (shownOptions.length === 0) return null;
   return (
     <div ref={menuRef} className={dashboardStyles["admin-popup-anchor"]}>
@@ -510,7 +510,10 @@ export function AdminRowMenu({
         aria-expanded={isOpen}
         onClick={() => setIsOpen((wasOpen) => !wasOpen)}
       >
-        •••
+        Actions
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
       {isOpen && (
         <div className={`${dashboardStyles["admin-popup"]} ${dashboardStyles["admin-order-menu"]}`}>

@@ -130,7 +130,7 @@ function PaymentsPage() {
   const collectedFrom = (type: PaymentType) =>
     moneyIn.filter((payment) => payment.type === type).reduce((sum, payment) => sum + payment.amount, 0);
   const cashToCollect = orders.filter(
-    (order) => order.payment === "Cash" && (order.status === "Pending" || order.status === "Out for delivery"),
+    (order) => order.payment === "Cash" && (order.status === "Pending" || order.status === "Packed" || order.status === "Out for delivery"),
   );
   const pendingDues = cashToCollect.reduce((sum, order) => sum + order.amount, 0);
   const isLastSevenDays =
@@ -269,9 +269,7 @@ function PaymentsPage() {
                   <th scope="col">Method</th>
                   <th scope="col">Amount</th>
                   <th scope="col">Status</th>
-                  <th scope="col">
-                    <span className={dashboardStyles["admin-visually-hidden"]}>Actions</span>
-                  </th>
+                  <th scope="col" className={dashboardStyles["admin-orders-actions"]}>Actions</th>
                 </tr>
               </thead>
               <tbody>

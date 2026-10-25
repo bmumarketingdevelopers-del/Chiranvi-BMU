@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
-  PRODUCT_CATEGORIES,
   addProduct,
   getDiscountPercent,
   getStartingPhoto,
@@ -11,6 +10,7 @@ import {
   markRestocked,
   removeProduct,
   updateProduct,
+  useProductCategories,
   useShopProducts,
   type ProductCategory,
   type ShopProduct,
@@ -18,10 +18,12 @@ import {
 } from "@/store/products-store";
 import { useCurrentStaffAccess, useStaffMembers } from "@/store/staff-access-store";
 import { AdminFeatureGate } from "./admin-panel-layout";
-import type { ProductPage, ShopCategory } from "@/components/product/product-page-data";
+import type { ProductKind, ProductPage, ShopCategory } from "@/components/product/product-page-data";
 import { POWDER_PRODUCT_IDS } from "@/components/product/all-products-page";
 import { deleteProductPage, isStartingProductPage, useProductPages } from "@/store/product-pages-store";
-import AddProductPageForm, {
+import {
+  CategoryPicker,
+  ChooseProductKindDialog,
   PICTURE_TOO_BIG_MESSAGE,
   ProductPageCardActions,
   ProductPageForm,
@@ -117,12 +119,13 @@ function cardPricesFromPage(page: ProductPage) {
   It is made with the page address as its name first, so its id is the address (addProduct makes the id from
   name + pack) and the card and the page find each other without changing the page.
 */
-function makeCardForPage(page: ProductPage) {
+function makeCardForPage(page: ProductPage): string {
   const picture = page.pictures[0] && !page.pictures[0].imageSource.startsWith("data:") ? page.pictures[0] : undefined;
   const photo = picture ? { imageSource: picture.imageSource, imageWidth: picture.imageWidth, imageHeight: picture.imageHeight } : {};
   const { packSize, ...prices } = cardPricesFromPage(page);
   const card = addProduct({ name: page.slug, packSize: "", ...prices, stock: "in", isVisible: page.status === "published", ...photo });
   updateProduct(card.productId, { name: page.name, packSize });
+  return card.productId;
 }
 
 // Deleting a product: its website page and every card of it go together
@@ -232,6 +235,8 @@ function ProductsPage() {
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
   // "Add product": asks subscription or one-time, then the product's details and its website page
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  // The new product being filled in (after its kind is chosen)
+  const [newProduct, setNewProduct] = useState<{ kind: ProductKind; category: ProductCategory } | null>(null);
   const { showToast, toast } = useAdminToast();
 
   const words = searchText.trim().toLowerCase();
@@ -287,6 +292,8 @@ function ProductsPage() {
       window.setTimeout(() => gridRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
     }
   }
+  // The tabs: the standard categories and any the admin added
+  const categories = useProductCategories();
   const countIn = (category: ProductCategory) =>
     matching.filter((product) => product.category === category).length +
     pagesWithoutCardMatching.filter((page) => pageCategory(page) === category).length;
@@ -347,7 +354,7 @@ function ProductsPage() {
             onSelect={setTab}
             tabs={[
               { key: "all", label: `All ${matching.length + pagesWithoutCardMatching.length}` },
-              ...PRODUCT_CATEGORIES.map((category) => ({ key: category, label: `${category} ${countIn(category)}` })),
+              ...categories.map((category) => ({ key: category, label: `${category} ${countIn(category)}` })),
             ]}
           />
         }
@@ -566,7 +573,19 @@ function ProductsPage() {
         </AdminDialog>
       )}
 
-      {isAddingProduct && <AddProductPageForm onClose={() => setIsAddingProduct(false)} showToast={showToast} />}
+      {/* Add product: the kind first, then the same pop-up as editing a product */}
+      {isAddingProduct && (
+        <ChooseProductKindDialog
+          onClose={() => setIsAddingProduct(false)}
+          onChosen={(kind, category) => {
+            setIsAddingProduct(false);
+            setNewProduct({ kind, category });
+          }}
+        />
+      )}
+      {newProduct && (
+        <ProductPopup key="new-product" product={null} newProduct={newProduct} onClose={() => setNewProduct(null)} showToast={showToast} />
+      )}
 
       {toast}
     </div>
@@ -594,23 +613,31 @@ function ProductPhoto({ product, className, sizes }: { product: Pick<ShopProduct
 }
 
 /*
-  The product pop-up (Add product uses it too, empty). The page behind is blurred.
+  The product pop-up. The page behind is blurred. Add product uses it too (newProduct: the chosen kind and
+  category): the same photo, stock and details, and the website page's fields below, empty; saving
+  creates the page and its card together.
   Old price + discount work together: change the discount and the price follows, change the price and
   the discount follows.
 */
 function ProductPopup({
   product,
   page,
+  newProduct,
   onClose,
   showToast,
 }: {
   product: ShopProduct | null;
   page?: ProductPage; // its website page, when it has one (Open / Edit page / Delete page in the pop-up)
+  newProduct?: { kind: ProductKind; category: ProductCategory };
   onClose: () => void;
   showToast: (message: string) => void;
 }) {
+  // The website page's fields show for a product with a page, and for a new product (its page is made)
+  const hasPageForm = Boolean(page || newProduct);
   // The photo starts as the one the website shows (its page's first picture), so both always match
-  const [form, setForm] = useState<ProductForm>(() => (product ? { ...toForm(product), ...photoOfCard(product, page) } : EMPTY_FORM));
+  const [form, setForm] = useState<ProductForm>(() =>
+    product ? { ...toForm(product), ...photoOfCard(product, page) } : { ...EMPTY_FORM, category: newProduct?.category ?? EMPTY_FORM.category },
+  );
   // Saves the website page fields below (one Save changes for the card and its page)
   const pageSaveRef = useRef<(() => boolean) | null>(null);
   // The page as just saved: the card takes its prices and pack from it
@@ -632,8 +659,8 @@ function ProductPopup({
   // With a page, the pack and prices are set in the page's fields below (checked there), not here
   const missingFields = [
     !form.name.trim() && "Product name",
-    !page && !form.packSize.trim() && "Pack",
-    !page && !Number(form.price) && "Selling price",
+    !hasPageForm && !form.packSize.trim() && "Pack",
+    !hasPageForm && !Number(form.price) && "Selling price",
   ].filter((field): field is string => Boolean(field));
   const isMissing = (field: string) => hasTriedSaving && missingFields.includes(field);
 
@@ -696,6 +723,8 @@ function ProductPopup({
     const price = Number(form.price);
     if (missingFields.length) {
       setHasTriedSaving(true);
+      // With a website page its check still runs, so everything missing is listed together at the end
+      if (hasPageForm && pageSaveRef.current && !pageSaveRef.current()) setIsPageProblem(true);
       return;
     }
     const oldPrice = Number(form.originalPrice);
@@ -711,12 +740,12 @@ function ProductPopup({
       return;
     }
     // The page is saved first: if one of its fields is missing, nothing is saved yet
-    if (page && pageSaveRef.current && !pageSaveRef.current()) {
+    if (hasPageForm && pageSaveRef.current && !pageSaveRef.current()) {
       setIsPageProblem(true);
       return;
     }
     setIsPageProblem(false);
-    const savedPage = page ? savedPageRef.current : null;
+    const savedPage = hasPageForm ? savedPageRef.current : null;
     const details = {
       name: form.name.trim(),
       category: form.category,
@@ -736,8 +765,21 @@ function ProductPopup({
     };
 
     if (!product) {
-      addProduct({ ...details, stock: form.stock, isVisible: form.isVisible && form.stock !== "out" });
-      showToast(`${details.name} added`);
+      if (savedPage) {
+        // A new product: its page is saved; its card (id = the page address) takes the stock, switch,
+        // Best Sellers and category chosen here
+        const cardId = makeCardForPage(savedPage);
+        updateProduct(cardId, {
+          category: form.category,
+          stock: form.stock,
+          isVisible: form.isVisible && form.stock !== "out",
+          showOnBestSellers: form.showOnBestSellers,
+        });
+        showToast(`${savedPage.name} added · /products/${savedPage.slug}`);
+      } else {
+        addProduct({ ...details, stock: form.stock, isVisible: form.isVisible && form.stock !== "out" });
+        showToast(`${details.name} added`);
+      }
       onClose();
       return;
     }
@@ -799,6 +841,12 @@ function ProductPopup({
                 ? `${product.packSize} · ${product.category}${product.updatedAt ? ` · last changed ${formatWhen(product.updatedAt)}` : ""}`
                 : "Fill in the details; it shows on the website once saved"}
             </p>
+            {/* The product's ID for the database (its page address; each pack's ID adds the pack, e.g. -1-litre) */}
+            {product && (
+              <p className={styles["admin-product-popup-subtitle"]}>
+                Product ID: <strong>{page?.slug ?? product.productId}</strong>
+              </p>
+            )}
           </div>
           <button type="button" className={styles["admin-product-popup-close"]} aria-label="Close" onClick={onClose}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -896,11 +944,12 @@ function ProductPopup({
             )}
 
             {/* With a website page the prices are set once, in its pack sizes (milk: price & plans) below */}
-            {page ? (
+            {hasPageForm ? (
               <fieldset className={styles["admin-product-popup-group"]}>
                 <legend className={styles["admin-product-group-title"]}>Price</legend>
                 <p className={styles["admin-product-one-time-note"]}>
-                  Set below in {page.kind === "subscription" ? "Price & units and Subscription plans" : "Pack sizes & prices"} (what the website shows)
+                  Set below in {(page?.kind ?? newProduct?.kind) === "subscription" ? "Price & units and Subscription plans" : "Pack sizes & prices"}{" "}
+                  (what the website shows)
                 </p>
               </fieldset>
             ) : (
@@ -972,17 +1021,14 @@ function ProductPopup({
                   <input className={adminInputClassName} value={form.name} onChange={(changeEvent) => setForm({ ...form, name: changeEvent.target.value })} />
                 </PopupField>
                 {/* With a page the pack comes from its "Pack shown first" (milk: its pack) */}
-                {!page && (
+                {!hasPageForm && (
                   <PopupField label="Pack" isMissing={isMissing("Pack")}>
                     <input className={adminInputClassName} placeholder="e.g. 1 L pouch, 500 g" value={form.packSize} onChange={(changeEvent) => setForm({ ...form, packSize: changeEvent.target.value })} />
                   </PopupField>
                 )}
                 <PopupField label="Category">
-                  <select className={adminInputClassName} value={form.category} onChange={(changeEvent) => setForm({ ...form, category: changeEvent.target.value as ProductCategory })}>
-                    {PRODUCT_CATEGORIES.map((category) => (
-                      <option key={category}>{category}</option>
-                    ))}
-                  </select>
+                  {/* The categories, and "+ Add new category…" */}
+                  <CategoryPicker value={form.category} onChange={(category) => setForm((latestForm) => ({ ...latestForm, category }))} />
                 </PopupField>
               </div>
             </fieldset>
@@ -1012,7 +1058,7 @@ function ProductPopup({
         </div>
 
         {/* The website page's fields (description, packs, information …); name and photo come from above */}
-        {page && (
+        {hasPageForm && (
           <ProductPageForm
             editingPage={page}
             onClose={onClose}
@@ -1025,6 +1071,8 @@ function ProductPopup({
                 savedPageRef.current = savedPage;
               },
               canChangePrices: isOwner,
+              newKind: newProduct?.kind,
+              category: form.category,
               name: form.name,
               photo: form.imageSource
                 ? { imageSource: form.imageSource, imageWidth: form.imageWidth ?? 400, imageHeight: form.imageHeight ?? 400 }
@@ -1035,10 +1083,11 @@ function ProductPopup({
 
         {isPageProblem && (
           <p className={styles["admin-product-save-problem"]} role="alert">
-            Fill in the missing website page details (listed in red under Website page) to save.
+            Fill in the details listed above to {product ? "save" : "add the product"}.
           </p>
         )}
-        {hasTriedSaving && missingFields.length > 0 && (
+        {/* (With a website page, its list above already names these) */}
+        {hasTriedSaving && missingFields.length > 0 && !hasPageForm && (
           <p className={styles["admin-product-save-problem"]} role="alert">
             Fill in {missingFields.join(", ").replace(/, ([^,]*)$/, " and $1")} to {product ? "save" : "add the product"}.
           </p>

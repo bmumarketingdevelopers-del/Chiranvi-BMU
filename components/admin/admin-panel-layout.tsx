@@ -14,6 +14,7 @@ import { useCurrentStaffAccess, type PanelModule, type StaffAccess } from "@/sto
 import { usePauseRequests } from "@/store/admin-pause-requests-store";
 import { useComplaintTickets } from "@/store/admin-complaints-store";
 import { useTodayDeliveries } from "@/store/admin-deliveries-store";
+import { useNewCustomerCount } from "@/store/admin-customers-store";
 import { AdminModuleProvider } from "./admin-shared";
 import styles from "./admin-panel.module.css";
 
@@ -198,6 +199,8 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
     (ticket) => ticket.status === "Open" && ticket.priority === "High",
   ).length;
   const missedDeliveries = useTodayDeliveries().filter((delivery) => delivery.status === "Missed").length;
+  // Customers who signed up on the website since the Customers page was last opened
+  const newCustomers = useNewCustomerCount();
   // Phones and tablets: the sidebar as a slide-in menu
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPathname, setMenuPathname] = useState(pathname);
@@ -238,7 +241,7 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
   }
 
   const currentPage = panelPageGroups.flatMap((group) => group.pages).find((page) => page.href === pathname);
-  const waitingCount = waitingPauseRequests + urgentComplaints + missedDeliveries;
+  const waitingCount = waitingPauseRequests + urgentComplaints + missedDeliveries + newCustomers;
 
   return (
     <div className={styles["admin-panel"]}>
@@ -292,7 +295,9 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
                         ? { count: urgentComplaints, tone: "red" as const }
                         : page.href === "/admin/deliveries"
                           ? { count: missedDeliveries, tone: "red" as const }
-                          : null;
+                          : page.href === "/admin/customers"
+                            ? { count: newCustomers, tone: "green" as const }
+                            : null;
                   const badge = liveCount ? (liveCount.count > 0 ? liveCount : undefined) : page.badge;
                   return (
                     <Link

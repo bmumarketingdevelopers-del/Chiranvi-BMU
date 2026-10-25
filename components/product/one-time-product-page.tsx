@@ -9,6 +9,7 @@ import SiteFooter from "@/components/footer/site-footer";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { addProductToCart, changeCartItemQuantity, rememberPendingCartProduct, useCartItems, type CartProduct } from "@/store/cart-store";
 import { getDiscountPercent } from "@/store/products-store";
+import { FREE_DELIVERY_FROM } from "./product-page-data";
 import type { DeliveryStepIcon, FastSellingCard, OneTimePack, OneTimeProductPage as OneTimePageData, PictureFit } from "./product-page-data";
 import { ProductCardTile, useProductCards } from "./all-products-page";
 import styles from "./one-time-product-page.module.css";
@@ -178,9 +179,10 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
   const chosenPackCartId = chosenPackCartProduct?.productId ?? "";
   const quantityInCart = cartItems.find((cartItem) => cartItem.productId === chosenPackCartId)?.quantity ?? 0;
   const isChosenPackInCart = quantityInCart > 0;
-  // Free delivery: always, or the chosen pack × quantity (one before any is added) against the product's amount
-  const orderAmount = (chosenPack?.price ?? 0) * Math.max(1, quantityInCart);
-  const freeDeliveryFromAmount = page.freeDelivery.kind === "from" ? page.freeDelivery.amount : 0;
+  // Free delivery is for the whole order, not each product (as the cart works it out): what is in the cart
+  // (empty bar before the first product is added) against the one free delivery amount (₹500)
+  const orderAmount = cartItems.reduce((sum, cartItem) => sum + cartItem.price * cartItem.quantity, 0);
+  const freeDeliveryFromAmount = page.freeDelivery.kind === "from" ? FREE_DELIVERY_FROM : 0;
   const amountLeftForFreeDelivery = Math.max(0, freeDeliveryFromAmount - orderAmount);
   const freeDeliveryProgressPercent =
     freeDeliveryFromAmount > 0 ? Math.min(100, (orderAmount / freeDeliveryFromAmount) * 100) : 100;

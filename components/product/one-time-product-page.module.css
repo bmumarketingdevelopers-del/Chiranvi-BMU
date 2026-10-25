@@ -634,7 +634,7 @@
   font-weight: 700;
 }
 
-/* Grey track; the bar fills in yellow up to ₹499, then turns green (free delivery reached) */
+/* Grey track; the bar fills in yellow up to ₹500 (the whole cart), then turns green (free delivery reached) */
 .one-time-free-delivery-track {
   display: block;
   align-self: stretch;

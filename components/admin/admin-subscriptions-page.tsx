@@ -271,9 +271,7 @@ function SubscriptionsPage() {
                 <th scope="col">Plan</th>
                 <th scope="col">Since</th>
                 <th scope="col">Status</th>
-                <th scope="col">
-                  <span className={dashboardStyles["admin-visually-hidden"]}>Actions</span>
-                </th>
+                <th scope="col" className={dashboardStyles["admin-orders-actions"]}>Actions</th>
               </tr>
             </thead>
             <tbody>

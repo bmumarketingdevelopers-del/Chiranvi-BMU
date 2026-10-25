@@ -1,35 +1,54 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AccountPageHeading } from "../account-dashboard-layout";
-import { saveAccountProfile, useAccountProfile, type AccountProfile } from "../account-profile";
+import { useAccountProfile } from "../account-profile";
+import { saveCustomerProfile, type CustomerProfile, type CustomerProfileDetails } from "@/store/customer-profiles-store";
+import { useOrders, type Order } from "@/store/orders-store";
+import { addProductToCart } from "@/store/cart-store";
+import { BENGALURU_LOCATIONS } from "./bengaluru-locations";
 import styles from "./profile-details-page.module.css";
 
 /*
-  "My Profile" dashboard page (design): welcome banner with the order numbers, the personal details
-  form (Save changes keeps the new details until the page is refreshed) and the notification switches.
-  Member since, customer ID, the banner numbers and the switches are placeholders from the design.
-  The form starts empty, with the design values as grey example text; "Save changes" stores only the
-  fields that were filled in (the sidebar name and welcome banner follow the saved name).
+  "My Profile" dashboard page (design): welcome banner, the personal details form and the notification
+  switches. A new customer lands here after logging in: until they save, a note asks them to fill in
+  their details (needed for smooth ordering and delivery). Required: first and last name, email,
+  primary address, location and pincode (picking a location fills in its pincode). The secondary
+  mobile and address, and "More about you", are optional. The primary mobile is the login number.
+  Saving keeps the details in this browser (store/customer-profiles-store.ts) and gives the customer
+  a Customer ID; they then show on the Chiranvi Panel's Customers page.
+  The banner numbers and the switches are placeholders from the design.
 */
 
-// Grey example text in the empty fields (values from the design).
-const fieldExamples: AccountProfile = {
-  fullName: "Priya Sharma",
-  mobileNumber: "+91 98450 12345",
-  email: "priya.sharma@example.com",
-  dateOfBirth: "14 / 08 / 1992",
-  familySize: "3 – 4 members",
-  preferredPlanType: "Weekly",
-};
+type ProfileForm = Omit<CustomerProfileDetails, "primaryMobile">;
 
-const emptyForm: AccountProfile = {
-  fullName: "",
-  mobileNumber: "",
+const emptyForm: ProfileForm = {
+  firstName: "",
+  lastName: "",
+  secondaryMobile: "",
   email: "",
+  primaryAddress: "",
+  secondaryAddress: "",
+  location: "",
+  pincode: "",
   dateOfBirth: "",
   familySize: "",
   preferredPlanType: "",
+};
+
+// Grey example text in the empty fields
+const fieldExamples = {
+  firstName: "Priya",
+  lastName: "Sharma",
+  secondaryMobile: "Optional, e.g. 98450 67890",
+  email: "priya.sharma@example.com",
+  primaryAddress: "House / flat no., street, landmark",
+  secondaryAddress: "Optional: office or another home",
+  pincode: "560011",
+  dateOfBirth: "14 / 08 / 1992",
 };
 
 const familySizeOptions = ["1 – 2 members", "3 – 4 members", "5 – 6 members", "7+ members"];
@@ -62,33 +81,24 @@ const welcomeBannerNumbers = [
   { value: "₹1,240", label: "Saved" },
 ];
 
+// The form starts from the saved details (empty for a new customer)
+function toForm(profile: CustomerProfile | null): ProfileForm {
+  if (!profile) return emptyForm;
+  return Object.fromEntries(Object.keys(emptyForm).map((field) => [field, profile[field as keyof ProfileForm] ?? ""])) as ProfileForm;
+}
+
 export default function ProfileDetailsPage() {
   const accountProfile = useAccountProfile();
-  // The form's own copy, saved to the account details with "Save changes".
-  const [formValues, setFormValues] = useState<AccountProfile>(emptyForm);
-  // The date box shows its example text until clicked, then becomes a date picker.
-  const [isDateFieldFocused, setIsDateFieldFocused] = useState(false);
+  const savedProfile = accountProfile.savedProfile;
   const [isSavedMessageShown, setIsSavedMessageShown] = useState(false);
   const [switchedOnNotifications, setSwitchedOnNotifications] = useState(
     () => new Set(notificationSettings.filter((setting) => setting.isOnAtStart).map((setting) => setting.id)),
   );
 
   const firstName = accountProfile.fullName.trim().split(/\s+/)[0] ?? "";
-
-  function updateFormValue(field: keyof AccountProfile, value: string) {
-    setFormValues((previousValues) => ({ ...previousValues, [field]: value }));
-    setIsSavedMessageShown(false);
-  }
-
-  function saveChanges(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // Only the filled-in fields replace the saved details.
-    const filledInFields = Object.fromEntries(
-      Object.entries(formValues).filter(([, fieldValue]) => fieldValue.trim() !== ""),
-    );
-    saveAccountProfile({ ...accountProfile, ...filledInFields });
-    setIsSavedMessageShown(true);
-  }
+  const memberSince = savedProfile
+    ? new Date(savedProfile.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+    : "";
 
   function toggleNotification(settingId: string) {
     setSwitchedOnNotifications((previousSettings) => {
@@ -103,14 +113,27 @@ export default function ProfileDetailsPage() {
     <>
       <AccountPageHeading title="My Profile" description="Your details, used for delivery and order updates." />
 
+      {/* A new customer who has not saved their details yet */}
+      {!savedProfile && (
+        <p className={styles["profile-required-notice"]} role="status">
+          <strong>Please fill in your details below.</strong> They are important for a smooth experience when you buy and
+          for getting your deliveries right.
+        </p>
+      )}
+
       <section className={styles["profile-welcome-banner"]} aria-label="Your account summary">
         <span className={styles["profile-welcome-banner-ring"]} aria-hidden="true" />
         <span className={styles["profile-welcome-banner-circle"]} aria-hidden="true" />
         <div className={styles["profile-welcome-banner-text"]}>
           <h2 className={styles["profile-welcome-heading"]}>
-            Welcome back, <span className={styles["profile-welcome-name"]}>{firstName}</span>
+            {savedProfile ? "Welcome back, " : "Welcome, "}
+            <span className={styles["profile-welcome-name"]}>{firstName}</span>
           </h2>
-          <p className={styles["profile-welcome-member-details"]}>Member since March 2025 · Customer ID CF-20418</p>
+          <p className={styles["profile-welcome-member-details"]}>
+            {savedProfile
+              ? `Member since ${memberSince} · Customer ID ${savedProfile.customerId}`
+              : "Save your details to get your Customer ID"}
+          </p>
         </div>
         <dl className={styles["profile-welcome-numbers"]}>
           {welcomeBannerNumbers.map((bannerNumber) => (
@@ -122,101 +145,17 @@ export default function ProfileDetailsPage() {
         </dl>
       </section>
 
-      <form className={styles["profile-card"]} onSubmit={saveChanges}>
-        <h2 className={styles["profile-card-heading"]}>Personal details</h2>
+      {/* Starts again from the saved details whenever they change (also once they load after a refresh) */}
+      <PersonalDetailsForm
+        key={savedProfile?.updatedAt ?? "new"}
+        primaryMobileNumber={accountProfile.mobileNumber}
+        savedProfile={savedProfile}
+        isSavedMessageShown={isSavedMessageShown}
+        onSaved={() => setIsSavedMessageShown(true)}
+        onEdited={() => setIsSavedMessageShown(false)}
+      />
 
-        <div className={styles["profile-form-grid"]}>
-          <label className={styles["profile-form-field"]}>
-            <span className={styles["profile-form-label"]}>Full name</span>
-            <input
-              className={styles["profile-form-input"]}
-              value={formValues.fullName}
-              autoComplete="name"
-              placeholder={fieldExamples.fullName}
-              onChange={(event) => updateFormValue("fullName", event.target.value)}
-            />
-          </label>
-          <label className={styles["profile-form-field"]}>
-            <span className={styles["profile-form-label"]}>Mobile number</span>
-            {/* The number used to log in: shown, not editable (changing it would change the account) */}
-            <input
-              className={styles["profile-form-input"]}
-              type="tel"
-              value={accountProfile.mobileNumber}
-              readOnly
-              title="This is the number you log in with"
-            />
-          </label>
-          <label className={styles["profile-form-field"]}>
-            <span className={styles["profile-form-label"]}>Email</span>
-            <input
-              className={styles["profile-form-input"]}
-              type="email"
-              value={formValues.email}
-              autoComplete="email"
-              placeholder={fieldExamples.email}
-              onChange={(event) => updateFormValue("email", event.target.value)}
-            />
-          </label>
-          <label className={styles["profile-form-field"]}>
-            <span className={styles["profile-form-label"]}>Date of birth</span>
-            <input
-              className={styles["profile-form-input"]}
-              type={isDateFieldFocused || formValues.dateOfBirth ? "date" : "text"}
-              value={formValues.dateOfBirth}
-              placeholder={fieldExamples.dateOfBirth}
-              onFocus={() => setIsDateFieldFocused(true)}
-              onBlur={() => setIsDateFieldFocused(false)}
-              onChange={(event) => updateFormValue("dateOfBirth", event.target.value)}
-            />
-          </label>
-          <label className={styles["profile-form-field"]}>
-            <span className={styles["profile-form-label"]}>Family size</span>
-            <select
-              className={`${styles["profile-form-input"]} ${styles["profile-form-select"]} ${
-                formValues.familySize ? "" : styles["profile-form-select-empty"]
-              }`}
-              value={formValues.familySize}
-              onChange={(event) => updateFormValue("familySize", event.target.value)}
-            >
-              <option value="" disabled hidden>
-                {fieldExamples.familySize}
-              </option>
-              {familySizeOptions.map((familySize) => (
-                <option key={familySize}>{familySize}</option>
-              ))}
-            </select>
-          </label>
-          <label className={styles["profile-form-field"]}>
-            <span className={styles["profile-form-label"]}>Preferred plan type</span>
-            <select
-              className={`${styles["profile-form-input"]} ${styles["profile-form-select"]} ${
-                formValues.preferredPlanType ? "" : styles["profile-form-select-empty"]
-              }`}
-              value={formValues.preferredPlanType}
-              onChange={(event) => updateFormValue("preferredPlanType", event.target.value)}
-            >
-              <option value="" disabled hidden>
-                {fieldExamples.preferredPlanType}
-              </option>
-              {planTypeOptions.map((planType) => (
-                <option key={planType}>{planType}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className={styles["profile-form-actions"]}>
-          {isSavedMessageShown && (
-            <p className={styles["profile-form-saved-message"]} role="status">
-              Changes saved
-            </p>
-          )}
-          <button type="submit" className={styles["profile-save-button"]}>
-            Save changes
-          </button>
-        </div>
-      </form>
+      <OrderHistory />
 
       <section className={styles["profile-card"]} aria-labelledby="profile-notifications-heading">
         <h2 id="profile-notifications-heading" className={styles["profile-card-heading"]}>
@@ -249,5 +188,315 @@ export default function ProfileDetailsPage() {
         </ul>
       </section>
     </>
+  );
+}
+
+/*
+  Order history: the customer's delivered orders (kept with their account, so the Chiranvi Panel sees the
+  same list on their Customers details), newest first, each with "Order again" (the same products and
+  quantities go into the cart, which opens). Shown once there is at least one delivered order.
+*/
+function OrderHistory() {
+  const orders = useOrders();
+  const router = useRouter();
+  const deliveredOrders = orders.filter((order) => order.status === "delivered");
+  if (deliveredOrders.length === 0) return null;
+
+  function orderAgain(order: Order) {
+    for (const orderItem of order.items) {
+      const { quantity, ...product } = orderItem;
+      for (let packNumber = 0; packNumber < quantity; packNumber += 1) addProductToCart(product);
+    }
+    router.push("/cart");
+  }
+
+  const formatDay = (time: number) => new Date(time).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  return (
+    <section className={styles["profile-card"]} aria-labelledby="profile-order-history-heading">
+      <div className={styles["profile-order-history-heading-row"]}>
+        <h2 id="profile-order-history-heading" className={styles["profile-card-heading"]}>
+          Order history
+        </h2>
+        <Link href="/account/orders" className={styles["profile-order-history-all-link"]}>
+          View all orders
+        </Link>
+      </div>
+      <ul className={styles["profile-order-history-list"]}>
+        {deliveredOrders.map((order) => (
+          <li key={order.orderId} className={styles["profile-order-history-row"]}>
+            <span className={styles["profile-order-history-pictures"]} aria-hidden="true">
+              {order.items.slice(0, 3).map((item) => (
+                <span key={item.productId} className={styles["profile-order-history-picture"]}>
+                  <Image src={item.imageSource} alt="" width={item.imageWidth} height={item.imageHeight} sizes="40px" />
+                </span>
+              ))}
+            </span>
+            <span className={styles["profile-order-history-text"]}>
+              <strong>{order.items.map((item) => (item.quantity > 1 ? `${item.name} × ${item.quantity}` : item.name)).join(", ")}</strong>
+              <span>
+                Order {order.orderId} · Delivered {formatDay(order.statusChangedAt?.delivered ?? order.promisedAt ?? order.placedAt)}
+              </span>
+            </span>
+            <span className={styles["profile-order-history-amount"]}>₹{order.total.toLocaleString("en-IN")}</span>
+            <button type="button" className={styles["profile-order-again-button"]} onClick={() => orderAgain(order)}>
+              Order again
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function PersonalDetailsForm({
+  primaryMobileNumber,
+  savedProfile,
+  isSavedMessageShown,
+  onSaved,
+  onEdited,
+}: {
+  primaryMobileNumber: string; // "+91 98450 12345"
+  savedProfile: CustomerProfile | null;
+  isSavedMessageShown: boolean;
+  onSaved: () => void;
+  onEdited: () => void;
+}) {
+  const [formValues, setFormValues] = useState<ProfileForm>(() => toForm(savedProfile));
+  // Saved details are shown locked, with "Edit details"; a new customer starts with the form open
+  const [isEditing, setIsEditing] = useState(!savedProfile);
+  // After a Save with missing details, the list (and the red boxes) update as each one is filled in
+  const [hasTriedSaving, setHasTriedSaving] = useState(false);
+  // The date box shows its example text until clicked, then becomes a date picker.
+  const [isDateFieldFocused, setIsDateFieldFocused] = useState(false);
+  const primaryMobileDigits = primaryMobileNumber.replace(/\D/g, "").slice(-10);
+
+  function updateFormValue(field: keyof ProfileForm, value: string) {
+    setFormValues((previousValues) => ({ ...previousValues, [field]: value }));
+    onEdited();
+  }
+
+  // Picking a location fills in its pincode
+  function chooseLocation(locationName: string) {
+    const location = BENGALURU_LOCATIONS.find((oneLocation) => oneLocation.name === locationName);
+    setFormValues((previousValues) => ({ ...previousValues, location: locationName, pincode: location?.pincode ?? previousValues.pincode }));
+    onEdited();
+  }
+
+  const trimmed = Object.fromEntries(Object.entries(formValues).map(([field, value]) => [field, value.trim()])) as ProfileForm;
+  const missingDetails: string[] = [];
+  if (!trimmed.firstName) missingDetails.push("First name");
+  if (!trimmed.lastName) missingDetails.push("Last name");
+  if (trimmed.secondaryMobile && trimmed.secondaryMobile.length !== 10) missingDetails.push("Secondary mobile number: 10 digits (or leave it empty)");
+  if (trimmed.secondaryMobile && trimmed.secondaryMobile === primaryMobileDigits) missingDetails.push("Secondary mobile number: a different number from your primary one");
+  if (!/^\S+@\S+\.\S+$/.test(trimmed.email)) missingDetails.push("A valid email");
+  if (!trimmed.primaryAddress) missingDetails.push("Primary address");
+  if (!trimmed.location) missingDetails.push("Location");
+  if (!/^\d{6}$/.test(trimmed.pincode)) missingDetails.push("Pincode: 6 digits");
+  const problems = hasTriedSaving ? missingDetails : [];
+
+  function saveChanges(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setHasTriedSaving(true);
+    if (missingDetails.length > 0) return;
+    saveCustomerProfile({ ...trimmed, primaryMobile: primaryMobileDigits });
+    onSaved();
+    setIsEditing(false);
+  }
+
+  function startEditing() {
+    setIsEditing(true);
+    onEdited();
+  }
+
+  // Cancel: back to the saved details, locked again
+  function cancelEditing() {
+    setFormValues(toForm(savedProfile));
+    setHasTriedSaving(false);
+    setIsEditing(false);
+  }
+
+  const isMissing = (field: string) => problems.some((problem) => problem.startsWith(field));
+  const inputClassName = (field: string) => `${styles["profile-form-input"]} ${isMissing(field) ? styles["profile-form-input-missing"] : ""}`;
+  const selectClassName = (isEmpty: boolean, field = "") =>
+    `${inputClassName(field)} ${styles["profile-form-select"]} ${isEmpty ? styles["profile-form-select-empty"] : ""}`;
+
+  return (
+    <form className={styles["profile-card"]} onSubmit={saveChanges} noValidate>
+      <h2 className={styles["profile-card-heading"]}>Personal details</h2>
+
+      {problems.length > 0 && (
+        <div className={styles["profile-form-problems"]} role="alert">
+          <strong>Please fill in:</strong>
+          <ul>
+            {problems.map((problem) => (
+              <li key={problem}>{problem}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Locked (shown, not editable) until "Edit details" is pressed */}
+      <fieldset className={styles["profile-form-fieldset"]} disabled={!isEditing}>
+      <div className={styles["profile-form-grid"]}>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>First name *</span>
+          <input
+            className={inputClassName("First name")}
+            value={formValues.firstName}
+            autoComplete="given-name"
+            placeholder={fieldExamples.firstName}
+            onChange={(event) => updateFormValue("firstName", event.target.value)}
+          />
+        </label>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Last name *</span>
+          <input
+            className={inputClassName("Last name")}
+            value={formValues.lastName}
+            autoComplete="family-name"
+            placeholder={fieldExamples.lastName}
+            onChange={(event) => updateFormValue("lastName", event.target.value)}
+          />
+        </label>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Primary mobile number</span>
+          {/* The number used to log in: shown, not editable (changing it would change the account) */}
+          <input className={styles["profile-form-input"]} type="tel" value={primaryMobileNumber} readOnly title="This is the number you log in with" />
+        </label>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Secondary mobile number</span>
+          <input
+            className={inputClassName("Secondary mobile number")}
+            type="tel"
+            inputMode="numeric"
+            value={formValues.secondaryMobile}
+            placeholder={fieldExamples.secondaryMobile}
+            onChange={(event) => updateFormValue("secondaryMobile", event.target.value.replace(/\D/g, "").slice(0, 10))}
+          />
+        </label>
+        <label className={`${styles["profile-form-field"]} ${styles["profile-form-field-wide"]}`}>
+          <span className={styles["profile-form-label"]}>Email *</span>
+          <input
+            className={inputClassName("A valid email")}
+            type="email"
+            value={formValues.email}
+            autoComplete="email"
+            placeholder={fieldExamples.email}
+            onChange={(event) => updateFormValue("email", event.target.value)}
+          />
+        </label>
+        <label className={`${styles["profile-form-field"]} ${styles["profile-form-field-wide"]}`}>
+          <span className={styles["profile-form-label"]}>Primary address *</span>
+          <input
+            className={inputClassName("Primary address")}
+            value={formValues.primaryAddress}
+            autoComplete="street-address"
+            placeholder={fieldExamples.primaryAddress}
+            onChange={(event) => updateFormValue("primaryAddress", event.target.value)}
+          />
+        </label>
+        <label className={`${styles["profile-form-field"]} ${styles["profile-form-field-wide"]}`}>
+          <span className={styles["profile-form-label"]}>Secondary address</span>
+          <input
+            className={styles["profile-form-input"]}
+            value={formValues.secondaryAddress}
+            placeholder={fieldExamples.secondaryAddress}
+            onChange={(event) => updateFormValue("secondaryAddress", event.target.value)}
+          />
+        </label>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Location *</span>
+          <select className={selectClassName(!formValues.location, "Location")} value={formValues.location} onChange={(event) => chooseLocation(event.target.value)}>
+            <option value="" disabled hidden>
+              Choose your area in Bengaluru
+            </option>
+            {BENGALURU_LOCATIONS.map((location) => (
+              <option key={location.name}>{location.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Pincode *</span>
+          <input
+            className={inputClassName("Pincode")}
+            inputMode="numeric"
+            value={formValues.pincode}
+            autoComplete="postal-code"
+            placeholder={fieldExamples.pincode}
+            onChange={(event) => updateFormValue("pincode", event.target.value.replace(/\D/g, "").slice(0, 6))}
+          />
+        </label>
+      </div>
+
+      {/* Optional extras */}
+      <h3 className={styles["profile-form-subheading"]}>More about you (optional)</h3>
+      <div className={styles["profile-form-grid"]}>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Date of birth</span>
+          <input
+            className={styles["profile-form-input"]}
+            type={isDateFieldFocused || formValues.dateOfBirth ? "date" : "text"}
+            value={formValues.dateOfBirth}
+            placeholder={fieldExamples.dateOfBirth}
+            onFocus={() => setIsDateFieldFocused(true)}
+            onBlur={() => setIsDateFieldFocused(false)}
+            onChange={(event) => updateFormValue("dateOfBirth", event.target.value)}
+          />
+        </label>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Family size</span>
+          <select className={selectClassName(!formValues.familySize)} value={formValues.familySize} onChange={(event) => updateFormValue("familySize", event.target.value)}>
+            <option value="" disabled hidden>
+              3 – 4 members
+            </option>
+            {familySizeOptions.map((familySize) => (
+              <option key={familySize}>{familySize}</option>
+            ))}
+          </select>
+        </label>
+        <label className={styles["profile-form-field"]}>
+          <span className={styles["profile-form-label"]}>Preferred plan type</span>
+          <select
+            className={selectClassName(!formValues.preferredPlanType)}
+            value={formValues.preferredPlanType}
+            onChange={(event) => updateFormValue("preferredPlanType", event.target.value)}
+          >
+            <option value="" disabled hidden>
+              Weekly
+            </option>
+            {planTypeOptions.map((planType) => (
+              <option key={planType}>{planType}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      </fieldset>
+
+      <div className={styles["profile-form-actions"]}>
+        {isSavedMessageShown && !isEditing && (
+          <p className={styles["profile-form-saved-message"]} role="status">
+            Changes saved
+          </p>
+        )}
+        {!isEditing ? (
+          // Saved details: unlock them to change anything
+          <button type="button" className={styles["profile-save-button"]} onClick={startEditing}>
+            Edit details
+          </button>
+        ) : (
+          <>
+            {savedProfile && (
+              <button type="button" className={styles["profile-cancel-button"]} onClick={cancelEditing}>
+                Cancel
+              </button>
+            )}
+            <button type="submit" className={styles["profile-save-button"]}>
+              {savedProfile ? "Save changes" : "Save details"}
+            </button>
+          </>
+        )}
+      </div>
+    </form>
   );
 }

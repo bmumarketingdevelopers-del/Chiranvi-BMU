@@ -798,9 +798,11 @@
   font-weight: 700;
 }
 
+/* The Actions column: its heading and button on the right */
 .admin-orders-actions {
-  width: calc(40 * var(--admin-pixel));
+  width: calc(110 * var(--admin-pixel));
   text-align: right;
+  white-space: nowrap;
 }
 
 .admin-orders-empty {
@@ -843,19 +845,113 @@
   color: #c0392b;
 }
 
-.admin-more-button {
-  padding: calc(2 * var(--admin-pixel)) calc(6 * var(--admin-pixel));
-  border: none;
-  border-radius: calc(6 * var(--admin-pixel));
-  background: none;
+/* Packed (an order's step between Pending and Out for delivery): light green with a green edge */
+.admin-status-packed {
+  background: #e6f0e1;
+  box-shadow: inset 0 0 0 1px #2f6b3a;
+  color: #1f4d2e;
+}
+
+/* An ordered item's Product ID, small under its name (order details, a customer's order history) */
+.admin-order-item-product-id {
+  display: block;
+  margin-top: calc(1 * var(--admin-pixel));
+  font-size: calc(11 * var(--admin-pixel));
+  color: #6e7a72;
+}
+
+/* A customer's order history (Customers → View details): order line on top, items and payment under it */
+.admin-customer-order-history-row {
+  align-items: flex-start;
+}
+
+.admin-customer-order-history-row > span {
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--admin-pixel));
+}
+
+.admin-customer-order-history-item {
   font-size: calc(12 * var(--admin-pixel));
-  letter-spacing: 0.05em;
-  color: #5c655e;
+  color: #6e7a72;
+}
+
+/* An order's steps in its details pop-up (Placed -> Packed -> Out for delivery -> Delivered), with times */
+.admin-order-steps {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--admin-pixel));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-order-steps li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+  font-size: calc(13 * var(--admin-pixel));
+  color: #8a948c;
+}
+
+.admin-order-step-dot {
+  width: calc(12 * var(--admin-pixel));
+  height: calc(12 * var(--admin-pixel));
+  border: 2px solid #c9d3cb;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.admin-order-step-done {
+  color: #1b2a20;
+}
+
+.admin-order-step-done .admin-order-step-dot {
+  border-color: #2f6b3a;
+  background: #2f6b3a;
+}
+
+.admin-order-step-name {
+  font-weight: 600;
+}
+
+.admin-order-step-time {
+  font-size: calc(12 * var(--admin-pixel));
+}
+
+/* A row's "Actions" button (opens its menu): small outlined pill with a down arrow */
+.admin-more-button {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(4 * var(--admin-pixel));
+  padding: calc(7 * var(--admin-pixel)) calc(11 * var(--admin-pixel)) calc(7 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+  color: #1f4d2e;
   cursor: pointer;
 }
 
-.admin-more-button:hover {
-  background: #f1f1ec;
+.admin-more-button svg {
+  width: calc(14 * var(--admin-pixel));
+  height: calc(14 * var(--admin-pixel));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-more-button:hover,
+.admin-more-button[aria-expanded="true"] {
+  border-color: #2f6b3a;
+  background: #e6f0e1;
 }
 
 .admin-visually-hidden {

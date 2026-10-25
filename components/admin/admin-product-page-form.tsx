@@ -22,6 +22,7 @@ import {
   type ShopCategory,
   type SubscriptionPlanSetting,
   type SubscriptionProductPage,
+  FREE_DELIVERY_FROM,
 } from "@/components/product/product-page-data";
 import {
   addProductPage,
@@ -32,7 +33,7 @@ import {
   updateProductPage,
   useHiddenStartingProductSlugs,
 } from "@/store/product-pages-store";
-import { PRODUCT_CATEGORIES, addProduct, removeProduct, useShopProducts, type ProductCategory } from "@/store/products-store";
+import { addProduct, addProductCategory, removeProduct, useProductCategories, useShopProducts, type ProductCategory } from "@/store/products-store";
 import { AdminDialog, AdminDialogField, adminInputClassName } from "./admin-shared";
 import styles from "./admin-product-page-form.module.css";
 
@@ -80,8 +81,8 @@ const PICTURE_SHAPES: { value: string; label: string; fit: PictureFit }[] = [
   { value: "square", label: "Square (pack with props)", fit: { widthPercent: 78, heightPercent: 88 } },
 ];
 
-// Products & pricing category → the All products page's filter
-const SHOP_CATEGORY_FROM_PANEL_CATEGORY: Record<ProductCategory, ShopCategory> = {
+// Products & pricing category → the All products page's filter (an added category: none, so "Others")
+const SHOP_CATEGORY_FROM_PANEL_CATEGORY: Partial<Record<ProductCategory, ShopCategory>> = {
   Milk: "Milk",
   Paneer: "Paneer",
   "Ghee & butter": "Ghee",
@@ -554,6 +555,9 @@ export function ProductPageForm({
     photo?: { imageSource: string; imageWidth: number; imageHeight: number };
     onSaved?: (page: ProductPage) => void;
     canChangePrices?: boolean;
+    // Adding a brand-new product in the pop-up (no editingPage): its kind and Products & pricing category
+    newKind?: ProductKind;
+    category?: ProductCategory;
   };
   onDelete?: () => void; // shows "Delete product" in the form (a page without a card of its own)
 }) {
@@ -563,8 +567,9 @@ export function ProductPageForm({
   const shopProducts = useShopProducts();
   const linkedCard = shopProducts.find((product) => editingPage?.panelCardIds?.includes(product.productId));
 
-  const [step, setStep] = useState<Step>(isEditing ? "details" : "kind");
-  const [kind, setKind] = useState<ProductKind>(editingPage?.kind ?? "one-time");
+  // A new product added in the pop-up already has its kind, so it starts at the details
+  const [step, setStep] = useState<Step>(isEditing || embedded?.newKind ? "details" : "kind");
+  const [kind, setKind] = useState<ProductKind>(editingPage?.kind ?? embedded?.newKind ?? "one-time");
   const [category, setCategory] = useState<ProductCategory>(linkedCard?.category ?? "Others");
   const [problems, setProblems] = useState<string[]>([]);
   const [savedSlug, setSavedSlug] = useState("");
@@ -572,11 +577,11 @@ export function ProductPageForm({
   // ---- Both kinds ----
   const [name, setName] = useState(editingPage?.name ?? "");
   const [slugTyped, setSlugTyped] = useState("");
-  const slug = editingPage ? editingPage.slug : toProductSlug(slugTyped || name);
+  const slug = editingPage ? editingPage.slug : toProductSlug(slugTyped || (embedded ? embedded.name : name));
   const [tagline, setTagline] = useState(editingPage?.tagline ?? "");
   const [description, setDescription] = useState(editingPage?.description ?? "");
   const [badgeText, setBadgeText] = useState(editingPage?.badge.text ?? "");
-  const [badgeColour, setBadgeColour] = useState<BadgeColour>(editingPage?.badge.colour ?? "green");
+  const [badgeColour, setBadgeColour] = useState<BadgeColour>(editingPage?.badge.colour ?? (embedded?.newKind === "subscription" ? "grey" : "green"));
   const [ratingScore, setRatingScore] = useState(editingPage?.rating.score ?? "4.8");
   const [ratingCount, setRatingCount] = useState(editingPage?.rating.count ?? "");
   const [highlightsText, setHighlightsText] = useState(editingPage?.highlights.join(", ") ?? "");
@@ -589,7 +594,16 @@ export function ProductPageForm({
   // Editing: "keep" leaves the picture size exactly as it is
   const [pictureShape, setPictureShape] = useState(isEditing ? "keep" : "auto");
   const [hasPictureShadow, setHasPictureShadow] = useState(editingPage?.hasPictureShadow ?? false);
-  const [middleStep, setMiddleStep] = useState({ title: editingPage?.deliverySteps[1]?.title ?? "", detail: editingPage?.deliverySteps[1]?.detail ?? "" });
+  // A new product added in the pop-up starts with the chosen kind's usual middle step (as chooseKind sets)
+  const [middleStep, setMiddleStep] = useState(
+    editingPage
+      ? { title: editingPage.deliverySteps[1]?.title ?? "", detail: editingPage.deliverySteps[1]?.detail ?? "" }
+      : embedded?.newKind === "subscription"
+        ? { title: "Milked at 5 AM", detail: "Chilled within minutes" }
+        : embedded?.newKind === "one-time"
+          ? { title: "Packed fresh", detail: "This week’s batch" }
+          : { title: "", detail: "" },
+  );
   const [lastStepDetail, setLastStepDetail] = useState(editingPage?.deliverySteps[2]?.detail ?? "By 7 AM");
   const [reviewQuote, setReviewQuote] = useState(editingPage?.review.quote ?? "");
   const [reviewName, setReviewName] = useState(editingPage?.review.name ?? "");
@@ -622,9 +636,6 @@ export function ProductPageForm({
   const [noteText, setNoteText] = useState(oneTimeEditing?.note.text ?? "");
   const [noteTone, setNoteTone] = useState<"fresh" | "warning">(oneTimeEditing?.note.tone ?? "fresh");
   const [freeDeliveryKind, setFreeDeliveryKind] = useState<"from" | "always">(oneTimeEditing?.freeDelivery.kind ?? "from");
-  const [freeDeliveryAmount, setFreeDeliveryAmount] = useState(
-    oneTimeEditing?.freeDelivery.kind === "from" ? String(oneTimeEditing.freeDelivery.amount) : "499",
-  );
   const [informationRows, setInformationRows] = useState<InformationRow[]>(oneTimeEditing?.productInformation ?? startingInformationRows);
   const [nutritionRows, setNutritionRows] = useState<InformationRow[]>(oneTimeEditing?.nutritionFacts ?? startingNutritionRows);
   const [nutritionBasis, setNutritionBasis] = useState(oneTimeEditing?.nutritionBasis ?? "per 100 g (approx.)");
@@ -730,7 +741,8 @@ export function ProductPageForm({
     const pageName = embedded ? embedded.name : name;
     const found: string[] = [];
     if (!pageName.trim()) found.push("Product name");
-    if (!slug) found.push("Page address");
+    // (The address is made from the name, so it is only listed when a name is there)
+    if (!slug && pageName.trim()) found.push("Page address");
     else if (!isEditing && isProductSlugTaken(slug)) found.push(`Page address: /products/${slug} is already used`);
     const built = buildPicturesAndFit();
     const embeddedPhoto = embedded?.photo;
@@ -745,11 +757,16 @@ export function ProductPageForm({
         ? fitForPicture(embeddedPhoto.imageWidth, embeddedPhoto.imageHeight)
         : built.fit;
     if (pictureList.length === 0) found.push("A picture (upload one or type its address)");
+    // Product pictures are WebP only (fast to load); uploads are turned into WebP automatically
+    if (pictureAddress.trim() && !/\.webp(\?.*)?$/i.test(pictureAddress.trim())) {
+      found.push("Picture address: a .webp picture (or upload the photo, it is turned into WebP)");
+    }
 
     const base = {
       slug,
       // The All products filter: kept on Edit; on Add, from the Products & pricing category
-      shopCategory: editingPage?.shopCategory ?? SHOP_CATEGORY_FROM_PANEL_CATEGORY[category],
+      // (A category the admin added shows under "Others" in the website's filters)
+      shopCategory: editingPage?.shopCategory ?? SHOP_CATEGORY_FROM_PANEL_CATEGORY[embedded?.category ?? category] ?? "Others",
       status,
       name: pageName.trim(),
       tagline: tagline.trim(),
@@ -806,7 +823,7 @@ export function ProductPageForm({
         cartPackWord: packWord.trim() || "pack",
         quantityWord: oneTimeEditing && oneTimeEditing.cartPackWord === packWord.trim() ? oneTimeEditing.quantityWord : { one: packWord.trim() || "pack", many: `${packWord.trim() || "pack"}s` },
         note: { text: noteText.trim(), tone: noteTone },
-        freeDelivery: freeDeliveryKind === "always" ? { kind: "always" } : { kind: "from", amount: Number(freeDeliveryAmount) || 0 },
+        freeDelivery: freeDeliveryKind === "always" ? { kind: "always" } : { kind: "from", amount: FREE_DELIVERY_FROM },
         review: { quote: reviewQuote.trim(), name: reviewName.trim(), area: reviewArea.trim() },
         // Rows with both a label and a value (empty ones are left out of the page)
         productInformation: informationRows.map((row) => ({ label: row.label.trim(), value: row.value.trim() })).filter((row) => row.label && row.value),
@@ -956,11 +973,7 @@ export function ProductPageForm({
           ))}
         </fieldset>
         <AdminDialogField label="Category on Products & pricing" isWide>
-          <select className={adminInputClassName} value={category} onChange={(event) => setCategory(event.target.value as ProductCategory)}>
-            {PRODUCT_CATEGORIES.map((productCategory) => (
-              <option key={productCategory}>{productCategory}</option>
-            ))}
-          </select>
+          <CategoryPicker value={category} onChange={setCategory} />
         </AdminDialogField>
       </AdminDialog>
     );
@@ -1011,17 +1024,6 @@ export function ProductPageForm({
 
   return formFrame(
     <>
-      {problems.length > 0 && (
-        <div className={styles["admin-product-page-problems"]} role="alert">
-          <strong>Please fill in:</strong>
-          <ul>
-            {problems.map((problem) => (
-              <li key={problem}>{problem}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       <FormSection number={nextSection()} title="Basic details">
         {/* Inside a card's pop-up the card's Product name is used */}
         {!embedded && (
@@ -1141,7 +1143,19 @@ export function ProductPageForm({
         <>
           <FormSection number={nextSection()} title="Pack sizes & prices">
             <div className={styles["admin-product-page-rows"]}>
-              <span className={styles["admin-product-page-row-heading"]}>Size name · Size · Price ₹ · Old price ₹ · Tag{priceShownPer === "item-count" ? " · Items" : ""}</span>
+              {/* Phones: one line (the boxes wrap two a row); larger screens: each label above its own box */}
+              <span className={`${styles["admin-product-page-row-heading"]} ${styles["admin-product-page-row-heading-phone"]}`}>
+                Size name · Size · Price ₹ · Old price ₹ · Tag{priceShownPer === "item-count" ? " · Items" : ""}
+              </span>
+              <div className={`${styles["admin-product-page-pack-row"]} ${styles["admin-product-page-row-labels"]}`} aria-hidden="true">
+                <span>Size name</span>
+                <span>Size</span>
+                <span>Price ₹</span>
+                <span>Old price ₹</span>
+                <span>Tag</span>
+                {priceShownPer === "item-count" && <span>Items</span>}
+                <span className={styles["admin-product-page-row-labels-spacer"]} />
+              </div>
               {packs.map((pack, index) => (
                 <div key={index} className={styles["admin-product-page-pack-row"]}>
                   <input className={adminInputClassName} aria-label={`Pack ${index + 1} size name`} value={pack.label} onChange={(event) => setPack(index, { label: event.target.value })} placeholder="500 g" />
@@ -1205,17 +1219,13 @@ export function ProductPageForm({
                 <input className={adminInputClassName} value={taxNote} onChange={(event) => setTaxNote(event.target.value)} />
               </AdminDialogField>
             )}
+            {/* Free delivery is for the whole order (everything in the cart), from one amount for all products */}
             <AdminDialogField label="Free delivery">
               <select className={adminInputClassName} value={freeDeliveryKind} onChange={(event) => setFreeDeliveryKind(event.target.value as "from" | "always")}>
-                <option value="from">From an order amount</option>
+                <option value="from">On whole orders from ₹{FREE_DELIVERY_FROM}</option>
                 <option value="always">Always free</option>
               </select>
             </AdminDialogField>
-            {freeDeliveryKind === "from" && (
-              <AdminDialogField label="Free delivery from ₹">
-                <input className={adminInputClassName} inputMode="decimal" value={freeDeliveryAmount} onChange={(event) => setFreeDeliveryAmount(event.target.value)} />
-              </AdminDialogField>
-            )}
             <AdminDialogField label="Line under the pack sizes" isWide>
               <input className={adminInputClassName} value={noteText} onChange={(event) => setNoteText(event.target.value)} placeholder="Milled this week · resealable zip pouch" />
             </AdminDialogField>
@@ -1258,7 +1268,16 @@ export function ProductPageForm({
 
           <FormSection number={nextSection()} title="Subscription plans">
             <div className={styles["admin-product-page-rows"]}>
-              <span className={styles["admin-product-page-row-heading"]}>Plan · Months · Days · % off · Tag</span>
+              <span className={`${styles["admin-product-page-row-heading"]} ${styles["admin-product-page-row-heading-phone"]}`}>
+                Plan · Months · Days · % off · Tag
+              </span>
+              <div className={`${styles["admin-product-page-plan-row"]} ${styles["admin-product-page-row-labels"]}`} aria-hidden="true">
+                <span>Plan</span>
+                <span>Months</span>
+                <span>Days</span>
+                <span>% off</span>
+                <span>Tag</span>
+              </div>
               {plans.map((plan, index) => (
                 <div key={index} className={styles["admin-product-page-plan-row"]}>
                   <input className={adminInputClassName} aria-label={`Plan ${index + 1} name`} value={plan.label} onChange={(event) => setPlan(index, { label: event.target.value })} />
@@ -1362,7 +1381,8 @@ export function ProductPageForm({
         </AdminDialogField>
       </FormSection>
 
-      {!isEditing && (
+      {/* (Inside the pop-up the kind was chosen before it opened) */}
+      {!isEditing && !embedded && (
         <button type="button" className={styles["admin-product-page-back-button"]} onClick={() => setStep("kind")}>
           ← Change kind
         </button>
@@ -1371,6 +1391,18 @@ export function ProductPageForm({
         <button type="button" className={styles["admin-product-page-delete-button"]} onClick={onDelete}>
           Delete product
         </button>
+      )}
+
+      {/* What is still missing, at the end of the form, right above the Save button */}
+      {problems.length > 0 && (
+        <div className={styles["admin-product-page-problems"]} role="alert">
+          <strong>Please fill in:</strong>
+          <ul>
+            {problems.map((problem) => (
+              <li key={problem}>{problem}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </>,
   );
@@ -1414,6 +1446,118 @@ function InformationRowsEditor({
         + {addLabel}
       </button>
     </div>
+  );
+}
+
+/*
+  The category drop-down used on Products & pricing (Add product, a product's pop-up): the standard
+  categories, any the admin added, and "+ Add new category…", which shows a name box and an Add button;
+  the new category is saved (it shows in the tabs and every picker) and chosen.
+*/
+const NEW_CATEGORY_CHOICE = "__new-category__";
+
+export function CategoryPicker({ value, onChange }: { value: ProductCategory; onChange: (category: ProductCategory) => void }) {
+  const categories = useProductCategories();
+  const [isAdding, setIsAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  function addCategory() {
+    if (!newName.trim()) return;
+    onChange(addProductCategory(newName));
+    setNewName("");
+    setIsAdding(false);
+  }
+
+  return (
+    <div className={styles["admin-product-category-picker"]}>
+      <select
+        className={adminInputClassName}
+        value={isAdding ? NEW_CATEGORY_CHOICE : value}
+        onChange={(event) => {
+          if (event.target.value === NEW_CATEGORY_CHOICE) setIsAdding(true);
+          else {
+            setIsAdding(false);
+            onChange(event.target.value);
+          }
+        }}
+      >
+        {categories.map((category) => (
+          <option key={category}>{category}</option>
+        ))}
+        <option value={NEW_CATEGORY_CHOICE}>+ Add new category…</option>
+      </select>
+      {isAdding && (
+        <span className={styles["admin-product-category-new-row"]}>
+          <input
+            className={adminInputClassName}
+            value={newName}
+            placeholder="New category name, e.g. Sweets"
+            aria-label="New category name"
+            autoFocus
+            onChange={(event) => setNewName(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter adds the category instead of saving the whole form
+              if (event.key === "Enter") {
+                event.preventDefault();
+                addCategory();
+              }
+            }}
+          />
+          <button type="button" className={styles["admin-product-category-add-button"]} onClick={addCategory} disabled={!newName.trim()}>
+            Add
+          </button>
+        </span>
+      )}
+    </div>
+  );
+}
+
+/*
+  Add product, step 1 on Products & pricing: what kind of product and its category. The product is then
+  filled in in the same pop-up as editing one (photo, stock, details and its website page).
+*/
+export function ChooseProductKindDialog({
+  onChosen,
+  onClose,
+}: {
+  onChosen: (kind: ProductKind, category: ProductCategory) => void;
+  onClose: () => void;
+}) {
+  const [kind, setKind] = useState<ProductKind>("one-time");
+  // Subscriptions are milk; one-time products start under Others (changeable)
+  const [category, setCategory] = useState<ProductCategory>("Others");
+  return (
+    <AdminDialog title="Add product" onClose={onClose} onSubmit={() => onChosen(kind, category)} submitLabel="Next">
+      <fieldset className={styles["admin-product-page-kind-choices"]}>
+        <legend className={styles["admin-product-page-section-title"]}>What kind of product is it?</legend>
+        {(
+          [
+            { value: "subscription", title: "Subscription", detail: "Delivered every morning on a plan (3 / 6 / 12 months), with a one-time option too. Like milk." },
+            { value: "one-time", title: "One-time purchase", detail: "Bought when needed, in pack sizes (e.g. 250 ml / 500 ml / 1 litre). Like ghee, paneer or atta." },
+          ] as const
+        ).map((choice) => (
+          <label key={choice.value} className={`${styles["admin-product-page-kind-choice"]} ${kind === choice.value ? styles["admin-product-page-kind-choice-chosen"] : ""}`}>
+            <input
+              type="radio"
+              name="new-product-kind"
+              value={choice.value}
+              checked={kind === choice.value}
+              onChange={() => {
+                setKind(choice.value);
+                if (choice.value === "subscription") setCategory("Milk");
+              }}
+            />
+            <span>
+              <strong>{choice.title}</strong>
+              <span>{choice.detail}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      <AdminDialogField label="Category on Products & pricing" isWide>
+        <CategoryPicker value={category} onChange={setCategory} />
+      </AdminDialogField>
+    </AdminDialog>
   );
 }
 

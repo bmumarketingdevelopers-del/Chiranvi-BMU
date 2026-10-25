@@ -1,17 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getNameInitials } from "@/components/account/account-profile";
 import {
   INACTIVE_AFTER_DAYS,
   addCustomer,
+  getCustomerPlanKind,
   getCustomerStatus,
+  markCustomersSeen,
   removeCustomer,
   setCustomerPaused,
   useAdminCustomers,
   type AdminCustomer,
   type CustomerStatus,
 } from "@/store/admin-customers-store";
+import { getPlanLength, getSubscriptionStatus, useAdminSubscriptions } from "@/store/admin-subscriptions-store";
+import { useAdminOrders } from "@/store/admin-orders-store";
 import { AdminFeatureGate } from "./admin-panel-layout";
 import {
   AdminDialog,
@@ -30,28 +34,35 @@ import {
 } from "./admin-shared";
 import dashboardStyles from "./admin-dashboard.module.css";
 import sharedStyles from "./admin-shared.module.css";
+// The label / value list and green box of the Leads page's details pop-up, reused for a customer's details
+import leadStyles from "./admin-leads-page.module.css";
 
 /*
   Customers (/admin/customers), from the design 05-customers: everyone who orders from Chiranvi.
   (The design's wallet column, card and tab are left out: Chiranvi does not use a wallet.)
     top        search (name, phone or area), Add customer (pop-up form), Custom range, Export
     numbers    total customers (new this month), active, average lifetime value, inactive
-    table      All / Active / Paused / Inactive tabs; 14 a page; initials, phone, plan, lifetime value,
-               orders, last order, status; "..." pauses, resumes or removes a customer
-  Inactive: no order for more than 30 days. Customers come from store/admin-customers-store.ts.
+    table      All / New / Active / Paused / Inactive tabs; 14 a page; name with Customer ID, mobile,
+               location, plan (subscription / one-time), orders, last order, status; "View details"
+               opens everything they filled in on their Profile page and, for a subscription, the milk
+               they subscribe to; "..." pauses, resumes or removes a customer
+  New: signed up on the website (Profile saved) with no order yet; opening this page clears the sidebar
+  badge. Inactive: no order for more than 30 days. Customers come from store/admin-customers-store.ts.
 */
 
 const PAGE_SIZE = 14;
 
 const STATUS_CLASS_NAMES: Record<CustomerStatus, string> = {
+  New: dashboardStyles["admin-status-out-for-delivery"],
   Active: dashboardStyles["admin-status-delivered"],
   Paused: dashboardStyles["admin-status-pending"],
   Inactive: sharedStyles["admin-status-cancelled"],
 };
 
-type CustomerTab = "all" | "active" | "paused" | "inactive";
+type CustomerTab = "all" | "new" | "active" | "paused" | "inactive";
 
-function lastOrderText(daysAgo: number) {
+function lastOrderText(daysAgo: number, orderCount = 1) {
+  if (orderCount === 0) return "—";
   if (daysAgo === 0) return "Today";
   if (daysAgo === 1) return "Yesterday";
   const date = new Date(Date.now() - daysAgo * 86400000);
@@ -82,6 +93,14 @@ function CustomersPage() {
   const { showToast, toast } = useAdminToast();
   // Sensitive actions only the owner can do (Roles & permissions)
   const isOwner = useIsPanelOwner();
+  // The customer whose full details are open ("View details")
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const viewing = customers.find((customer) => customer.id === viewingId);
+
+  // Opening this page counts as seeing the new customers: the sidebar badge clears
+  useEffect(() => {
+    markCustomersSeen();
+  }, []);
 
   const matchingSearch = useMemo(() => {
     const words = searchText.trim().toLowerCase();
@@ -89,7 +108,7 @@ function CustomersPage() {
     const digits = words.replace(/\D/g, "");
     return customers.filter(
       (customer) =>
-        `${customer.name} ${customer.area}`.toLowerCase().includes(words) ||
+        `${customer.name} ${customer.area} ${customer.id}`.toLowerCase().includes(words) ||
         (digits.length >= 3 && customer.phone.replace(/\D/g, "").includes(digits)),
     );
   }, [customers, searchText]);
@@ -125,17 +144,45 @@ function CustomersPage() {
 
   function exportCustomers() {
     downloadCsv(`chiranvi-customers-${toDateFileName(today)}.csv`, [
-      ["Customer", "Area", "Phone", "Plan", "Lifetime value (₹)", "Orders", "Last order", "Status"],
-      ...shown.map((customer: AdminCustomer) => [
-        customer.name,
-        customer.area,
-        customer.phone,
-        customer.plan,
-        customer.lifetimeValue,
-        customer.orderCount,
-        lastOrderText(customer.lastOrderDaysAgo),
-        getCustomerStatus(customer),
-      ]),
+      [
+        "Customer ID",
+        "First name",
+        "Last name",
+        "Primary mobile",
+        "Secondary mobile",
+        "Email",
+        "Primary address",
+        "Secondary address",
+        "Location",
+        "Pincode",
+        "Plan",
+        "Plan details",
+        "Lifetime value (₹)",
+        "Orders",
+        "Last order",
+        "Status",
+      ],
+      ...shown.map((customer: AdminCustomer) => {
+        const profile = customer.profile;
+        return [
+          customer.id,
+          profile?.firstName ?? customer.name,
+          profile?.lastName ?? "",
+          customer.phone,
+          profile?.secondaryMobile ?? "",
+          profile?.email ?? "",
+          profile?.primaryAddress ?? "",
+          profile?.secondaryAddress ?? "",
+          customer.area,
+          profile?.pincode ?? "",
+          getCustomerPlanKind(customer),
+          customer.plan,
+          customer.lifetimeValue,
+          customer.orderCount,
+          lastOrderText(customer.lastOrderDaysAgo, customer.orderCount),
+          getCustomerStatus(customer),
+        ];
+      }),
     ]);
   }
 
@@ -201,7 +248,7 @@ function CustomersPage() {
             <h2 id="admin-customers-heading" className={dashboardStyles["admin-card-title"]}>
               Customers
             </h2>
-            <p className={dashboardStyles["admin-card-subtitle"]}>Search by name, phone or area</p>
+            <p className={dashboardStyles["admin-card-subtitle"]}>Search by name, mobile, location or Customer ID</p>
           </div>
           <AdminFilterTabs
             label="Show customers"
@@ -212,6 +259,7 @@ function CustomersPage() {
             }}
             tabs={[
               { key: "all", label: "All" },
+              { key: "new", label: "New" },
               { key: "active", label: "Active" },
               { key: "paused", label: "Paused" },
               { key: "inactive", label: "Inactive" },
@@ -224,15 +272,13 @@ function CustomersPage() {
             <thead>
               <tr>
                 <th scope="col">Customer</th>
-                <th scope="col">Phone</th>
+                <th scope="col">Mobile</th>
+                <th scope="col">Location</th>
                 <th scope="col">Plan</th>
-                <th scope="col">Lifetime value</th>
                 <th scope="col">Orders</th>
                 <th scope="col">Last order</th>
                 <th scope="col">Status</th>
-                <th scope="col">
-                  <span className={dashboardStyles["admin-visually-hidden"]}>Actions</span>
-                </th>
+                <th scope="col" className={dashboardStyles["admin-orders-actions"]}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -252,7 +298,7 @@ function CustomersPage() {
                         </span>
                         <span>
                           <span className={dashboardStyles["admin-orders-customer"]}>{customer.name}</span>
-                          <span className={dashboardStyles["admin-orders-area"]}>{customer.area}</span>
+                          <span className={dashboardStyles["admin-orders-area"]}>{customer.id}</span>
                         </span>
                       </span>
                     </td>
@@ -261,10 +307,10 @@ function CustomersPage() {
                         {customer.phone}
                       </a>
                     </td>
-                    <td>{customer.plan}</td>
-                    <td className={dashboardStyles["admin-orders-amount"]}>₹{customer.lifetimeValue.toLocaleString("en-IN")}</td>
+                    <td>{customer.area}</td>
+                    <td>{getCustomerPlanKind(customer)}</td>
                     <td>{customer.orderCount}</td>
-                    <td className={dashboardStyles["admin-orders-muted"]}>{lastOrderText(customer.lastOrderDaysAgo)}</td>
+                    <td className={dashboardStyles["admin-orders-muted"]}>{lastOrderText(customer.lastOrderDaysAgo, customer.orderCount)}</td>
                     <td>
                       <span className={`${dashboardStyles["admin-status"]} ${STATUS_CLASS_NAMES[status]}`}>{status}</span>
                     </td>
@@ -273,6 +319,7 @@ function CustomersPage() {
                         label={`Actions for ${customer.name}`}
                         title="Customer"
                         options={[
+                          { label: "View details", onSelect: () => setViewingId(customer.id) },
                           customer.isPaused
                             ? {
                                 label: "Resume deliveries",
@@ -321,6 +368,8 @@ function CustomersPage() {
         <AdminPagination page={page} pageSize={PAGE_SIZE} total={shown.length} onPageChange={setPage} itemName="customers" />
       </section>
 
+      {viewing && <CustomerDetailsDialog customer={viewing} onClose={() => setViewingId(null)} />}
+
       {isAddOpen && (
         <AdminDialog title="Add customer" submitLabel="Add customer" onClose={() => setIsAddOpen(false)} onSubmit={saveNewCustomer}>
           <AdminDialogField label="Name">
@@ -365,5 +414,196 @@ function CustomersPage() {
 
       {toast}
     </div>
+  );
+}
+
+/*
+  "View details": everything the customer filled in on their Profile page (customers added in the panel or
+  from before sign-up show what is known), their Customer ID, orders, last order, status and plan, and
+  for a subscription the milk they subscribe to (Subscriptions page, matched by name and area).
+*/
+function CustomerDetailsDialog({ customer, onClose }: { customer: AdminCustomer; onClose: () => void }) {
+  const subscriptions = useAdminSubscriptions();
+  const orders = useAdminOrders();
+  // Taken once when the pop-up opens (to turn "joined N days ago" into a date)
+  const [openedAt] = useState(() => Date.now());
+  const profile = customer.profile;
+  const status = getCustomerStatus(customer);
+  const planKind = getCustomerPlanKind(customer);
+  const subscribedMilk =
+    planKind === "Subscription"
+      ? subscriptions.filter((subscription) => subscription.customerName === customer.name && subscription.area === customer.area)
+      : [];
+  const joinedOn = new Date(customer.registeredAt ?? openedAt - customer.joinedDaysAgo * 86400000).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  // Order history: their orders on the Orders page, newest first. Website orders carry the Customer ID and
+  // login number; sample orders from before sign-up only have a name and area.
+  const customerDigits = customer.phone.replace(/\D/g, "");
+  const orderHistory = orders
+    .filter((order) =>
+      order.customerId || order.customerMobile
+        ? order.customerId === customer.id || order.customerMobile === customerDigits
+        : order.customerName === customer.name && order.area === customer.area
+    )
+    .sort((first, second) => second.placedAt.localeCompare(first.placedAt));
+  const formatTime = (isoTime: string) =>
+    new Date(isoTime).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+  const shown = (value: string | undefined) => (value && value.trim() ? value : "—");
+  const phoneLink = (phone: string) => (
+    <a href={`tel:+91${phone.replace(/\D/g, "")}`}>{phone}</a>
+  );
+
+  return (
+    <AdminDialog title={customer.name} submitLabel="Close" onClose={onClose} onSubmit={onClose}>
+      <dl className={leadStyles["admin-lead-details"]}>
+        <div>
+          <dt>Customer ID</dt>
+          <dd>{customer.id}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <span className={`${dashboardStyles["admin-status"]} ${STATUS_CLASS_NAMES[status]}`}>{status}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>First name</dt>
+          <dd>{shown(profile?.firstName ?? customer.name.split(" ")[0])}</dd>
+        </div>
+        <div>
+          <dt>Last name</dt>
+          <dd>{shown(profile ? profile.lastName : customer.name.split(" ").slice(1).join(" "))}</dd>
+        </div>
+        <div>
+          <dt>Primary mobile</dt>
+          <dd>{phoneLink(customer.phone)}</dd>
+        </div>
+        <div>
+          <dt>Secondary mobile</dt>
+          <dd>{profile?.secondaryMobile ? phoneLink(`${profile.secondaryMobile.slice(0, 5)} ${profile.secondaryMobile.slice(5)}`) : "—"}</dd>
+        </div>
+        <div className={leadStyles["admin-lead-details-wide"]}>
+          <dt>Email</dt>
+          <dd>{profile?.email ? <a href={`mailto:${profile.email}`}>{profile.email}</a> : "—"}</dd>
+        </div>
+        <div className={leadStyles["admin-lead-details-wide"]}>
+          <dt>Primary address</dt>
+          <dd>{shown(profile?.primaryAddress)}</dd>
+        </div>
+        <div className={leadStyles["admin-lead-details-wide"]}>
+          <dt>Secondary address</dt>
+          <dd>{shown(profile?.secondaryAddress)}</dd>
+        </div>
+        <div>
+          <dt>Location</dt>
+          <dd>{shown(customer.area)}</dd>
+        </div>
+        <div>
+          <dt>Pincode</dt>
+          <dd>{shown(profile?.pincode)}</dd>
+        </div>
+        <div>
+          <dt>Joined</dt>
+          <dd>{joinedOn}</dd>
+        </div>
+        <div>
+          <dt>Orders</dt>
+          <dd>{customer.orderCount}</dd>
+        </div>
+        <div>
+          <dt>Last order</dt>
+          <dd>{lastOrderText(customer.lastOrderDaysAgo, customer.orderCount)}</dd>
+        </div>
+        <div>
+          <dt>Lifetime value</dt>
+          <dd>₹{customer.lifetimeValue.toLocaleString("en-IN")}</dd>
+        </div>
+        <div>
+          <dt>Plan</dt>
+          <dd>{planKind}</dd>
+        </div>
+        {profile?.dateOfBirth && (
+          <div>
+            <dt>Date of birth</dt>
+            <dd>{new Date(profile.dateOfBirth).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</dd>
+          </div>
+        )}
+        {profile?.familySize && (
+          <div>
+            <dt>Family size</dt>
+            <dd>{profile.familySize}</dd>
+          </div>
+        )}
+        {profile?.preferredPlanType && (
+          <div>
+            <dt>Preferred plan type</dt>
+            <dd>{profile.preferredPlanType}</dd>
+          </div>
+        )}
+      </dl>
+
+      {/* A subscription: the milk they subscribe to */}
+      {planKind === "Subscription" && (
+        <div className={leadStyles["admin-lead-bulk-order"]}>
+          <h3>Subscribed products</h3>
+          <ul>
+            {subscribedMilk.length > 0 ? (
+              subscribedMilk.map((subscription) => (
+                <li key={subscription.id}>
+                  <span>
+                    {subscription.milkType} Milk {subscription.quantity} · {subscription.container} · {subscription.frequency} ·{" "}
+                    {getPlanLength(subscription)}
+                  </span>
+                  <strong>{getSubscriptionStatus(subscription)}</strong>
+                </li>
+              ))
+            ) : (
+              <li>
+                <span>{customer.plan}</span>
+                <strong>{customer.isPaused ? "Paused" : "Active"}</strong>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {/* Order history: every order, with its items (and Product IDs), amount, payment and delivery */}
+      <div className={leadStyles["admin-lead-bulk-order"]}>
+        <h3>Order history</h3>
+        <ul>
+          {orderHistory.length > 0 ? (
+            orderHistory.map((order) => (
+              <li key={order.orderNumber} className={dashboardStyles["admin-customer-order-history-row"]}>
+                <span>
+                  <strong>
+                    {order.orderNumber} · {formatTime(order.placedAt)}
+                  </strong>
+                  {order.itemList && order.itemList.length > 0
+                    ? order.itemList.map((item) => (
+                        <span key={`${item.name}-${item.packSize}`} className={dashboardStyles["admin-customer-order-history-item"]}>
+                          {item.name} {item.packSize} × {item.quantity} · ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                          {item.productId && ` · Product ID ${item.productId}`}
+                        </span>
+                      ))
+                    : <span className={dashboardStyles["admin-customer-order-history-item"]}>{order.items}</span>}
+                  <span className={dashboardStyles["admin-customer-order-history-item"]}>
+                    ₹{order.amount.toLocaleString("en-IN")} paid by {order.payment}
+                    {order.statusChangedAt?.Delivered && ` · Delivered ${formatTime(order.statusChangedAt.Delivered)}`}
+                  </span>
+                </span>
+                <strong>{order.status}</strong>
+              </li>
+            ))
+          ) : (
+            <li>
+              <span>No orders yet</span>
+            </li>
+          )}
+        </ul>
+      </div>
+    </AdminDialog>
   );
 }

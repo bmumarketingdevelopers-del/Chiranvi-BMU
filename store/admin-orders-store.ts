@@ -1,25 +1,59 @@
 import { useSyncExternalStore } from "react";
+import { setCustomerOrderStatus, type OrderStatus } from "./orders-store";
+import { customerIdForMobile } from "./admin-customers-store";
 
 /*
   Orders seen in the Chiranvi Panel (Orders page, and "Recent orders" on the dashboard), until real
   orders come from the database (Supabase).
   The first time, 412 sample orders from the last seven days are made (newest first, like the design);
   after that the list is saved in this browser, so status changes and new orders stay after a refresh.
+  Orders customers pay for on the website are added here too (addWebsiteOrder), with their Customer ID,
+  items, promised delivery and payment method; moving one along (Packed, Out for delivery, Delivered)
+  also moves the customer's own order, so their Orders page tracks it.
+  Later this is an "orders" table (with "order_items") in Supabase, with the same fields.
 */
 
-export type AdminOrderStatus = "Pending" | "Out for delivery" | "Delivered" | "Cancelled";
-export const ADMIN_ORDER_STATUSES: AdminOrderStatus[] = ["Pending", "Out for delivery", "Delivered", "Cancelled"];
+// The order's steps: Pending (placed, waiting) -> Packed -> Out for delivery -> Delivered (or Cancelled)
+export type AdminOrderStatus = "Pending" | "Packed" | "Out for delivery" | "Delivered" | "Cancelled";
+export const ADMIN_ORDER_STATUSES: AdminOrderStatus[] = ["Pending", "Packed", "Out for delivery", "Delivered", "Cancelled"];
+// Still to be delivered
+export const OPEN_ORDER_STATUSES: AdminOrderStatus[] = ["Pending", "Packed", "Out for delivery"];
+
+// How customers pay on the website (no cash on delivery); "Cash" is only for orders taken in the panel
+export type OrderPaymentMethod = "UPI" | "Net banking" | "Card";
+
+/*
+  One product in an order. productId: the pack's Product ID (the product's page address + the pack, e.g.
+  "a2-desi-ghee-1-litre"), the same ID the products and the cart use, for the database's order_items.
+*/
+export type AdminOrderItem = { productId?: string; name: string; packSize: string; quantity: number; price: number; imageSource?: string };
 
 export type AdminOrder = {
   orderNumber: string; // #CF-2041
   placedAt: string; // ISO date and time
   customerName: string;
   area: string;
-  items: string;
+  items: string; // "Milk 1 L × 2, Paneer 200 g"
   amount: number;
-  payment: "UPI" | "Cash" | "Card";
+  payment: OrderPaymentMethod | "Cash";
   slot: string; // 6–7 AM
   status: AdminOrderStatus;
+  // Orders paid for on the website
+  websiteOrderId?: string; // CF-48213, the customer's own order (its status follows this one)
+  customerId?: string; // CUS-6384
+  customerMobile?: string; // 10 digits, their login number
+  itemList?: AdminOrderItem[];
+  deliverTo?: string; // "Name · address line"
+  promisedAt?: string; // ISO: when Chiranvi promised to deliver it (next day by 7 AM)
+  statusChangedAt?: Partial<Record<AdminOrderStatus, string>>; // ISO time each step was reached
+};
+
+const TO_CUSTOMER_STATUS: Record<AdminOrderStatus, OrderStatus> = {
+  Pending: "placed",
+  Packed: "packed",
+  "Out for delivery": "out-for-delivery",
+  Delivered: "delivered",
+  Cancelled: "cancelled",
 };
 
 const STORAGE_KEY = "chiranvi-admin-orders";
@@ -101,6 +135,8 @@ function getOrders() {
       ? saved.map((order: Omit<AdminOrder, "payment"> & { payment: string }) => ({
           ...order,
           payment: (order.payment === "Wallet" ? "UPI" : order.payment) as AdminOrder["payment"],
+          // A website order's Customer ID comes from the customer's mobile number (older ones were numbered)
+          customerId: order.customerMobile ? customerIdForMobile(order.customerMobile) : order.customerId,
         }))
       : makeSampleOrders();
   } catch {
@@ -119,14 +155,67 @@ function saveOrders(newOrders: AdminOrder[]) {
   listeners.forEach((onChange) => onChange());
 }
 
+// Moving an order along; a website order's customer sees the same step on their Orders page
 export function changeAdminOrderStatus(orderNumber: string, status: AdminOrderStatus) {
-  saveOrders(getOrders().map((order) => (order.orderNumber === orderNumber ? { ...order, status } : order)));
+  const now = new Date().toISOString();
+  let websiteOrderId: string | undefined;
+  saveOrders(
+    getOrders().map((order) => {
+      if (order.orderNumber !== orderNumber) return order;
+      websiteOrderId = order.websiteOrderId;
+      return { ...order, status, statusChangedAt: { ...order.statusChangedAt, [status]: now } };
+    }),
+  );
+  if (websiteOrderId) setCustomerOrderStatus(websiteOrderId, TO_CUSTOMER_STATUS[status]);
 }
 
-// A new order goes to the top, numbered after the newest one
+/*
+  A customer paid for an order on the website: it joins the panel's orders (Pending) under the same order
+  ID, with their Customer ID, items, address, promised delivery and payment method.
+*/
+export function addWebsiteOrder(order: {
+  websiteOrderId: string;
+  placedAt: number;
+  customerId?: string;
+  customerMobile: string;
+  customerName: string;
+  area: string;
+  itemList: AdminOrderItem[];
+  amount: number;
+  payment: OrderPaymentMethod;
+  deliverTo: string;
+  promisedAt: number;
+}) {
+  const placedAt = new Date(order.placedAt).toISOString();
+  const newOrder: AdminOrder = {
+    orderNumber: `#${order.websiteOrderId}`,
+    placedAt,
+    customerName: order.customerName,
+    area: order.area,
+    items: order.itemList.map((item) => `${item.name} ${item.packSize}${item.quantity > 1 ? ` × ${item.quantity}` : ""}`).join(", "),
+    amount: order.amount,
+    payment: order.payment,
+    slot: "By 7 AM",
+    status: "Pending",
+    websiteOrderId: order.websiteOrderId,
+    customerId: order.customerId,
+    customerMobile: order.customerMobile,
+    itemList: order.itemList,
+    deliverTo: order.deliverTo,
+    promisedAt: new Date(order.promisedAt).toISOString(),
+    statusChangedAt: { Pending: placedAt },
+  };
+  saveOrders([newOrder, ...getOrders()]);
+  return newOrder;
+}
+
+// A new order goes to the top, numbered after the newest one (website orders keep their own IDs)
 export function addAdminOrder(order: Omit<AdminOrder, "orderNumber" | "placedAt" | "status">) {
   const orders = getOrders();
-  const highestNumber = Math.max(0, ...orders.map((existing) => Number(existing.orderNumber.replace(/\D/g, ""))));
+  const highestNumber = Math.max(
+    0,
+    ...orders.filter((existing) => !existing.websiteOrderId).map((existing) => Number(existing.orderNumber.replace(/\D/g, ""))),
+  );
   const newOrder: AdminOrder = {
     ...order,
     orderNumber: `#CF-${highestNumber + 1}`,
@@ -139,8 +228,16 @@ export function addAdminOrder(order: Omit<AdminOrder, "orderNumber" | "placedAt"
 
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
+  // A customer's order placed in another tab (the website open next to the panel)
+  function followOtherTabs(event: StorageEvent) {
+    if (event.key !== STORAGE_KEY) return;
+    adminOrders = null;
+    onChange();
+  }
+  window.addEventListener("storage", followOtherTabs);
   return () => {
     listeners.delete(onChange);
+    window.removeEventListener("storage", followOtherTabs);
   };
 }
 

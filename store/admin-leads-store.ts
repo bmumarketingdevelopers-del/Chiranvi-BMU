@@ -151,8 +151,16 @@ export function removeLead(id: string) {
 
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
+  // A lead (e.g. a bulk quote from the website) saved in another tab or browser (shared data)
+  function followOtherTabs(event: StorageEvent) {
+    if (event.key !== STORAGE_KEY) return;
+    leads = null;
+    onChange();
+  }
+  window.addEventListener("storage", followOtherTabs);
   return () => {
     listeners.delete(onChange);
+    window.removeEventListener("storage", followOtherTabs);
   };
 }
 

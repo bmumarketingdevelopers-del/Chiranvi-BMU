@@ -32,7 +32,10 @@ import {
 } from "@/store/cart-store";
 import { checkCouponForCart, checkCouponForSubscription, recordCouponUse, useCoupons } from "@/store/coupons-store";
 import { findRunningPlans, formatPlanDate, placeOrder, useOrders, type Order, type RunningPlan } from "@/store/orders-store";
+import type { OrderPaymentMethod } from "@/store/admin-orders-store";
 import { useShopProducts } from "@/store/products-store";
+// Free delivery for the whole order from ₹500 (the product pages use the same amount)
+import { FREE_DELIVERY_FROM } from "@/components/product/product-page-data";
 import styles from "./cart-view.module.css";
 
 /*
@@ -45,7 +48,7 @@ import styles from "./cart-view.module.css";
       left   Your items ("- quantity +", the "packed fresh" note), then Delivery address (the default
              address until one is confirmed);
       right  Order summary: coupon code (from the Chiranvi Panel's Coupons & offers), item total at MRP,
-             discount on MRP, coupon, delivery fee (₹30, free from ₹499 after discounts), To pay, the
+             discount on MRP, coupon, delivery fee (₹30, free from ₹500 for the whole order after discounts), To pay, the
              saving, and "Select address".
     "Select address" (or the address card) opens the address pop-up (same cards as My Addresses: pick,
     Set as Default, Edit, Remove, Add new address). Picking one ticks Address and the button becomes
@@ -64,7 +67,6 @@ import styles from "./cart-view.module.css";
 const DELIVERY_FEE = 30;
 // The only product sold as a subscription (its page has the plans)
 const MILK_PRODUCT_ID = "a2-desi-milk";
-const FREE_DELIVERY_FROM = 499;
 
 const rupees = (amount: number) => `₹${Math.round(amount).toLocaleString("en-IN")}`;
 
@@ -287,6 +289,8 @@ export default function CartView() {
   // The address pop-up, and whether an address was confirmed there (ticks Address; the button becomes Pay now)
   const [isAddressPickerOpen, setIsAddressPickerOpen] = useState(false);
   const [hasPickedAddress, setHasPickedAddress] = useState(false);
+  // How the customer pays (kept on the order; Razorpay takes the payment once connected). No cash on delivery.
+  const [paymentMethod, setPaymentMethod] = useState<OrderPaymentMethod>("UPI");
   /*
     Buying a plan while one is still running:
       a plan from "Extend Plan" (My Subscription) extends the plan it names, at that plan's address;
@@ -461,6 +465,8 @@ export default function CartView() {
         couponDiscount: planCouponDiscount || undefined,
         deliveryFee: 0,
         deliverTo: planToExtend ? planToExtend.deliverTo : deliverTo,
+        area: chosenAddress?.area,
+        paymentMethod,
         subscription: {
           planName: cartSubscription.planName,
           months: cartSubscription.months,
@@ -494,7 +500,13 @@ export default function CartView() {
       couponCode: appliedCoupon && !isCouponForPlan ? appliedCoupon.coupon.code : undefined,
       couponDiscount: itemsCouponDiscount || undefined,
       deliveryFee,
+<<<<<<< HEAD
       deliverTo,
+=======
+      deliverTo: `${chosenAddress.name} · ${formatAddressLine(chosenAddress)}`,
+      area: chosenAddress.area,
+      paymentMethod,
+>>>>>>> 8c15463 (Customer and Order flow set - V1)
     });
     if (appliedCoupon && !isCouponForPlan) {
       recordCouponUse(appliedCoupon.coupon.code, {
@@ -991,6 +1003,20 @@ export default function CartView() {
                     You save {rupees(amountSaved)} on this {cartSubscription && oneTimeItems.length === 0 ? "plan" : "order"}
                   </p>
                 )}
+
+                {/* How to pay (no cash on delivery) */}
+                <fieldset className={styles["checkout-payment-methods"]}>
+                  <legend className={styles["checkout-payment-methods-title"]}>Pay with</legend>
+                  {(["UPI", "Net banking", "Card"] as OrderPaymentMethod[]).map((method) => (
+                    <label
+                      key={method}
+                      className={`${styles["checkout-payment-method"]} ${paymentMethod === method ? styles["checkout-payment-method-chosen"] : ""}`}
+                    >
+                      <input type="radio" name="payment-method" value={method} checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />
+                      {method}
+                    </label>
+                  ))}
+                </fieldset>
 
                 <div className={styles["checkout-place-row"]}>
                   <span className={styles["checkout-place-row-total"]}>

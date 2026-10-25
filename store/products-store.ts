@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+// The same products, customers and orders in every browser (until the database is connected)
+import "./shared-data-sync";
 
 /*
   The product list shared by the Chiranvi Panel and the website, until real product data comes from
@@ -13,7 +15,8 @@ import { useSyncExternalStore } from "react";
   Milk has a subscription price as well; every other product is one-time only.
 */
 
-export type ProductCategory = "Milk" | "Paneer" | "Ghee & butter" | "Others";
+// The four standard categories, or one the admin added ("+ Add new category" on Products & pricing)
+export type ProductCategory = "Milk" | "Paneer" | "Ghee & butter" | "Others" | (string & {});
 export type StockLevel = "in" | "low" | "out";
 
 export type ShopProduct = {
@@ -50,6 +53,57 @@ export type RestockNotice = {
 };
 
 export const PRODUCT_CATEGORIES: ProductCategory[] = ["Milk", "Paneer", "Ghee & butter", "Others"];
+
+/*
+  Categories the admin added on Products & pricing, saved in this browser. The full list (the standard
+  four, then the added ones, then any a product already uses) is what the category tabs and pickers show.
+*/
+const CATEGORIES_STORAGE_KEY = "chiranvi-product-categories";
+let addedCategories: ProductCategory[] | null = null;
+const categoryListeners = new Set<() => void>();
+
+function getAddedCategories() {
+  if (addedCategories) return addedCategories;
+  if (typeof window === "undefined") return [];
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(CATEGORIES_STORAGE_KEY) ?? "null");
+    addedCategories = Array.isArray(saved) ? saved.filter((name): name is string => typeof name === "string") : [];
+  } catch {
+    addedCategories = [];
+  }
+  return addedCategories as ProductCategory[];
+}
+
+// Adds a category (if new) and returns its name as stored (an existing one keeps its own spelling)
+export function addProductCategory(name: string): ProductCategory {
+  const cleanName = name.trim().replace(/\s+/g, " ");
+  const existing = [...PRODUCT_CATEGORIES, ...getAddedCategories()].find((category) => category.toLowerCase() === cleanName.toLowerCase());
+  if (existing || !cleanName) return existing ?? "Others";
+  addedCategories = [...getAddedCategories(), cleanName];
+  try {
+    window.localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(addedCategories));
+  } catch {
+    // Storage blocked: the category lasts until the page is refreshed.
+  }
+  categoryListeners.forEach((onChange) => onChange());
+  return cleanName;
+}
+
+function subscribeToCategories(onChange: () => void) {
+  categoryListeners.add(onChange);
+  return () => {
+    categoryListeners.delete(onChange);
+  };
+}
+
+const NO_ADDED_CATEGORIES: ProductCategory[] = [];
+
+export function useProductCategories(): ProductCategory[] {
+  const added = useSyncExternalStore(subscribeToCategories, getAddedCategories, () => NO_ADDED_CATEGORIES);
+  const products = useShopProducts();
+  const all = [...PRODUCT_CATEGORIES, ...added, ...products.map((product) => product.category)];
+  return all.filter((category, index) => category && all.indexOf(category) === index);
+}
 
 const STORAGE_KEY = "chiranvi-products";
 const NOTICES_STORAGE_KEY = "chiranvi-restock-notices";

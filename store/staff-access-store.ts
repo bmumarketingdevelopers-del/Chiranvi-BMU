@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { rememberLogin, useLoggedInMobileNumber } from "@/components/login/login-status";
 import { PANEL_FEATURES, type PanelFeature } from "./panel-features";
+// The same team, roles and panel data in every browser (until the database is connected)
+import "./shared-data-sync";
 
 /*
   Who can open the Chiranvi Panel (/admin) and what they can do there, until real accounts exist

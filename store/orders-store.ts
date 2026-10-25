@@ -1,11 +1,21 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+// The same orders in every browser (until the database is connected)
+import "./shared-data-sync";
+import { useLoggedInMobileNumber } from "@/components/login/login-status";
 import type { CartItem } from "./cart-store";
+import { addWebsiteOrder, type OrderPaymentMethod } from "./admin-orders-store";
+import { recordCustomerOrder } from "./admin-customers-store";
+import { getCustomerProfile } from "./customer-profiles-store";
 
 /*
-  The customer's orders, until a real order service exists.
-  "Place order" on the cart page (checkout) places an order from the cart (Razorpay is not connected
-  yet, so nothing is charged). Saved in this browser (localStorage), like the cart and the login, so
-  "Track your order" still finds it after a refresh; Logout starts again with no orders.
+  Customers' orders, until a real order service exists.
+  "Pay now" on the cart page (checkout) places an order from the cart (Razorpay is not connected yet, so
+  nothing is charged; the payment method chosen, UPI / Net banking / Card, is kept). Saved in this
+  browser (localStorage) under the customer's login number: each customer sees only their own orders
+  on My Orders, and they stay after logging out and in again.
+  Each order also goes to the Chiranvi Panel's Orders page (with the Customer ID and the promised
+  delivery: the next day by 7 AM), and counts on the customer's record there. When the panel moves an
+  order along (Packed, Out for delivery, Delivered), the customer's tracker here follows.
 
   Order steps, in order: placed -> packed -> out-for-delivery -> delivered (or cancelled).
   A new order starts at "placed".
@@ -25,6 +35,12 @@ export type Order = {
   deliveryFee?: number;
   deliverTo?: string; // "Priya Raman · 12, 4th Cross, Jayanagar 4th Block, Bengaluru 560011"
   subscription?: OrderSubscription; // only on a milk subscription order
+  // Who ordered, how they paid, and when it was promised (orders placed before these were added have none)
+  customerMobile?: string; // 10 digits, the login number
+  customerId?: string; // CUS-6384 (once their profile is saved)
+  paymentMethod?: OrderPaymentMethod;
+  promisedAt?: number; // time in milliseconds: the next day by 7 AM
+  statusChangedAt?: Partial<Record<OrderStatus, number>>; // when each step was reached
 };
 
 // The plan bought with a subscription order (shown on My Subscription)
@@ -47,6 +63,8 @@ export type CheckoutDetails = {
   couponDiscount?: number;
   deliveryFee: number;
   deliverTo: string;
+  area?: string; // the delivery address's area (for the panel's Location)
+  paymentMethod?: OrderPaymentMethod;
   subscription?: OrderSubscription;
 };
 
@@ -82,18 +100,55 @@ function saveOrders(newOrders: Order[]) {
 
 function subscribeToOrders(onChange: () => void) {
   ordersListeners.add(onChange);
+  // A step changed in the Chiranvi Panel open in another tab
+  function followOtherTabs(event: StorageEvent) {
+    if (event.key !== ORDERS_STORAGE_KEY) return;
+    hasReadSavedOrders = false;
+    onChange();
+  }
+  window.addEventListener("storage", followOtherTabs);
   return () => {
     ordersListeners.delete(onChange);
+    window.removeEventListener("storage", followOtherTabs);
   };
 }
 
-// Orders, newest first. On the server there are none.
+// The logged-in customer's orders, newest first. Logged out, and on the server, there are none.
 export function useOrders() {
-  return useSyncExternalStore(
-    subscribeToOrders,
-    getOrders,
-    () => noOrders,
+  const allOrders = useSyncExternalStore(subscribeToOrders, getOrders, () => noOrders);
+  const mobileNumber = useLoggedInMobileNumber();
+  return useMemo(
+    () => (mobileNumber ? allOrders.filter((order) => order.customerMobile === mobileNumber) : noOrders),
+    [allOrders, mobileNumber],
   );
+}
+
+// The panel moved an order along: the customer's tracker shows the same step
+export function setCustomerOrderStatus(orderId: string, status: OrderStatus) {
+  const now = Date.now();
+  saveOrders(
+    getOrders().map((order) =>
+      order.orderId === orderId ? { ...order, status, statusChangedAt: { ...order.statusChangedAt, [status]: now } } : order,
+    ),
+  );
+}
+
+// The delivery promised for an order placed at this time: the next day by 7 AM
+function promisedDeliveryFor(placedAt: number) {
+  const promised = new Date(placedAt);
+  promised.setDate(promised.getDate() + 1);
+  promised.setHours(7, 0, 0, 0);
+  return promised.getTime();
+}
+
+// The logged-in number, read from the login saved in this browser
+function readLoggedInMobileNumber(): string | null {
+  try {
+    const savedLogin = JSON.parse(window.localStorage.getItem("chiranvi-login") ?? "null");
+    return typeof savedLogin?.mobileNumber === "string" ? savedLogin.mobileNumber : null;
+  } catch {
+    return null;
+  }
 }
 
 // Orders still on their way (shown as the badge next to "Orders" in the dashboard sidebar).
@@ -101,16 +156,57 @@ export function countActiveOrders(orderList: Order[]) {
   return orderList.filter((order) => order.status !== "delivered" && order.status !== "cancelled").length;
 }
 
-// "Place order": turns the cart into a new order (with the checkout's total, coupon and address).
+/*
+  "Pay now": turns the cart into a new order for the logged-in customer (with the checkout's total,
+  coupon, address and payment method), sends it to the Chiranvi Panel's Orders page and counts it on
+  the customer's record there.
+*/
 export function placeOrder(cartItems: CartItem[], checkout: CheckoutDetails) {
+  const placedAt = Date.now();
+  const customerMobile = readLoggedInMobileNumber() ?? "";
+  const profile = customerMobile ? getCustomerProfile(customerMobile) : null;
+  const { area, ...orderDetails } = checkout;
   const newOrder: Order = {
     orderId: `CF-${Math.floor(10000 + Math.random() * 90000)}`,
-    placedAt: Date.now(),
+    placedAt,
     items: cartItems,
     status: "placed",
-    ...checkout,
+    ...orderDetails,
+    paymentMethod: checkout.paymentMethod ?? "UPI",
+    customerMobile,
+    customerId: profile?.customerId,
+    promisedAt: promisedDeliveryFor(placedAt),
+    statusChangedAt: { placed: placedAt },
   };
   saveOrders([newOrder, ...getOrders()]);
+
+  const customerName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : checkout.deliverTo.split(" · ")[0];
+  addWebsiteOrder({
+    websiteOrderId: newOrder.orderId,
+    placedAt,
+    customerId: profile?.customerId,
+    customerMobile,
+    customerName,
+    area: area || profile?.location || "",
+    itemList: cartItems.map((item) => ({
+      productId: item.productId,
+      name: item.name,
+      packSize: item.packSize,
+      quantity: item.quantity,
+      price: item.price,
+      imageSource: item.imageSource,
+    })),
+    amount: checkout.total,
+    payment: newOrder.paymentMethod ?? "UPI",
+    deliverTo: checkout.deliverTo,
+    promisedAt: newOrder.promisedAt ?? promisedDeliveryFor(placedAt),
+  });
+  if (customerMobile) {
+    recordCustomerOrder(customerMobile, {
+      amount: checkout.total,
+      plan: checkout.subscription ? `${cartItems[0]?.name ?? "Milk"} · ${checkout.subscription.planName}` : null,
+    });
+  }
   return newOrder;
 }
 
@@ -173,7 +269,9 @@ export function formatPlanDate(date: Date) {
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// Logout: the next visitor starts with no orders.
-export function forgetAllOrders() {
-  saveOrders(noOrders);
-}
+/*
+  Logout: nothing to clear any more. Orders belong to the customer who placed them (their login number),
+  so the next visitor sees none of them, and the customer finds them again after logging back in.
+  (Kept so the account dashboard's Logout keeps working unchanged.)
+*/
+export function forgetAllOrders() {}

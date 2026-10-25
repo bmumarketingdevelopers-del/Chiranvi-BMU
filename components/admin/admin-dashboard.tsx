@@ -37,6 +37,7 @@ import styles from "./admin-dashboard.module.css";
 const STATUS_CLASS_NAMES: Record<AdminOrderStatus, string> = {
   Delivered: styles["admin-status-delivered"],
   "Out for delivery": styles["admin-status-out-for-delivery"],
+  Packed: styles["admin-status-packed"],
   Pending: styles["admin-status-pending"],
   Cancelled: sharedStyles["admin-status-cancelled"],
 };
@@ -409,11 +410,7 @@ export default function AdminDashboard() {
                 <th scope="col">Amount</th>
                 <th scope="col">Payment</th>
                 <th scope="col">Status</th>
-                <th scope="col">
-                  <span className={styles["admin-visually-hidden"]}>
-                    Actions
-                  </span>
-                </th>
+                <th scope="col" className={styles["admin-orders-actions"]}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -461,7 +458,10 @@ export default function AdminDashboard() {
                           )
                         }
                       >
-                        •••
+                        Actions
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
                       </button>
                       {openOrderMenu === order.orderNumber && (
                         <div

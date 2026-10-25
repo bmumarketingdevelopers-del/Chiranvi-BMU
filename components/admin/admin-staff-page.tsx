@@ -277,9 +277,7 @@ function StaffPage() {
                 <th scope="col">Today</th>
                 <th scope="col">Attendance ({monthName})</th>
                 <th scope="col">Salary</th>
-                <th scope="col">
-                  <span className={dashboardStyles["admin-visually-hidden"]}>Actions</span>
-                </th>
+                <th scope="col" className={dashboardStyles["admin-orders-actions"]}>Actions</th>
               </tr>
             </thead>
             <tbody>

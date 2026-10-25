@@ -11,6 +11,10 @@
 */
 
 export type ProductKind = "subscription" | "one-time";
+
+// Free delivery for the whole order (everything in the cart) from this amount: the cart and the product
+// pages' "Add ₹… more for free delivery" both use it
+export const FREE_DELIVERY_FROM = 500;
 export type PublishStatus = "draft" | "published";
 
 export type ProductPicture = {
@@ -389,7 +393,7 @@ const paneerPage: OneTimeProductPage = {
   cartPackWord: "pack",
   quantityWord: { one: "pack", many: "packs" },
   note: { text: "Freshly prepared · Delivered chilled", tone: "fresh" },
-  freeDelivery: { kind: "from", amount: 499 },
+  freeDelivery: { kind: "from", amount: FREE_DELIVERY_FROM },
   review: { quote: "So soft it melts in the gravy. My kids won’t eat packet paneer any more.", name: "Arjun K.", area: "Whitefield" },
   deliverySteps: [orderByNineStep, { icon: "box", title: "Made at 4 AM", detail: "From fresh milk" }, atYourDoorStep],
   productInformation: [
@@ -440,7 +444,7 @@ const butterPage: OneTimeProductPage = {
   cartPackWord: "pack",
   quantityWord: { one: "pack", many: "packs" },
   note: { text: "Churned this week · keep refrigerated", tone: "fresh" },
-  freeDelivery: { kind: "from", amount: 499 },
+  freeDelivery: { kind: "from", amount: FREE_DELIVERY_FROM },
   review: { quote: "Tastes just like the makkhan at my nani’s house. Perfect on hot parathas.", name: "Rohit M.", area: "Koramangala" },
   deliverySteps: [orderByNineStep, { icon: "box", title: "Churned fresh", detail: "This week’s batch" }, atYourDoorStep],
   productInformation: [
@@ -522,7 +526,7 @@ const attaPage: OneTimeProductPage = {
   cartPackWord: "pouch",
   quantityWord: { one: "pack", many: "packs" },
   note: { text: "Milled this week · resealable zip pouch", tone: "fresh" },
-  freeDelivery: { kind: "from", amount: 499 },
+  freeDelivery: { kind: "from", amount: FREE_DELIVERY_FROM },
   review: { quote: "Rotis stay soft even in the lunch box. You can smell the fresh wheat when you open the pack.", name: "Kavya P.", area: "Malleshwaram" },
   deliverySteps: [orderByNineStep, { icon: "box", title: "Milled fresh", detail: "This week’s batch" }, { icon: "home", title: "At your door", detail: "By tomorrow" }],
   productInformation: [
@@ -646,7 +650,7 @@ const batterPage: OneTimeProductPage = {
   cartPackWord: "pack",
   quantityWord: { one: "pack", many: "packs" },
   note: { text: "Ground this morning · best within 3 days, refrigerated", tone: "fresh" },
-  freeDelivery: { kind: "from", amount: 499 },
+  freeDelivery: { kind: "from", amount: FREE_DELIVERY_FROM },
   review: { quote: "Soft idlis and crisp dosas, just like home. Saves me so much time on weekday mornings.", name: "Lakshmi R.", area: "Basavanagudi" },
   deliverySteps: [orderByNineStep, { icon: "box", title: "Ground at 4 AM", detail: "Fresh batch" }, atYourDoorStep],
   productInformation: [
@@ -702,7 +706,7 @@ const corianderPage: OneTimeProductPage = {
   cartPackWord: "pouch",
   quantityWord: { one: "pack", many: "packs" },
   note: { text: "Ground in small batches · resealable zip pouch", tone: "fresh" },
-  freeDelivery: { kind: "from", amount: 499 },
+  freeDelivery: { kind: "from", amount: FREE_DELIVERY_FROM },
   review: { quote: "", name: "", area: "" },
   deliverySteps: [orderByNineStep, { icon: "box", title: "Packed fresh", detail: "Small batches" }, { icon: "home", title: "At your door", detail: "By tomorrow" }],
   productInformation: [

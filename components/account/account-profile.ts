@@ -1,69 +1,51 @@
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo } from "react";
 import { useLoggedInMobileNumber } from "@/components/login/login-status";
 import { useOwnerDetails } from "@/store/staff-access-store";
+import { useCustomerProfile, type CustomerProfile } from "@/store/customer-profiles-store";
 
 /*
-  The logged-in customer's details on the account dashboard (sidebar name, welcome banner, Profile form).
-  Placeholder values from the design until a real customer account exists. Kept only in the open
-  page's memory: "Save changes" updates them until the page is refreshed.
-  The mobile number is always the one that was used to log in. The owner's name comes from the owner
-  details (Team access in the Chiranvi Panel) until they save a different name in the Profile form.
+  The logged-in customer's details on the account dashboard (sidebar name, welcome banner). They come
+  from the Profile page, saved per login number in store/customer-profiles-store.ts. Before the
+  customer saves their profile: "New customer" (the owner: their name from Team access). Logged out
+  (design preview only): the design's placeholder values.
+  The mobile number is always the one that was used to log in.
 */
 
 export type AccountProfile = {
   fullName: string;
-  mobileNumber: string;
+  mobileNumber: string; // "+91 98450 12345"
   email: string;
-  dateOfBirth: string; // yyyy-mm-dd, the format date inputs use
-  familySize: string;
-  preferredPlanType: string;
+  customerId: string; // empty until the profile is saved
+  savedProfile: CustomerProfile | null; // null: a new customer who has not saved their profile yet
 };
 
 const placeholderProfile: AccountProfile = {
   fullName: "Priya Sharma",
   mobileNumber: "+91 98450 12345",
   email: "priya.sharma@example.com",
-  dateOfBirth: "1992-08-14",
-  familySize: "3 – 4 members",
-  preferredPlanType: "Weekly",
+  customerId: "",
+  savedProfile: null,
 };
-
-let accountProfile = placeholderProfile;
-const accountProfileListeners = new Set<() => void>();
-
-export function saveAccountProfile(newProfile: AccountProfile) {
-  accountProfile = newProfile;
-  accountProfileListeners.forEach((onChange) => onChange());
-}
-
-function subscribeToAccountProfile(onChange: () => void) {
-  accountProfileListeners.add(onChange);
-  return () => {
-    accountProfileListeners.delete(onChange);
-  };
-}
 
 // "8754852810" -> "+91 87548 52810"
 export function formatIndianMobileNumber(mobileNumber: string) {
   return `+91 ${mobileNumber.slice(0, 5)} ${mobileNumber.slice(5)}`;
 }
 
-export function useAccountProfile() {
-  const savedProfile = useSyncExternalStore(
-    subscribeToAccountProfile,
-    () => accountProfile,
-    () => placeholderProfile,
-  );
+export function useAccountProfile(): AccountProfile {
   const loggedInMobileNumber = useLoggedInMobileNumber();
   const owner = useOwnerDetails();
+  const savedProfile = useCustomerProfile(loggedInMobileNumber);
   return useMemo(() => {
-    if (!loggedInMobileNumber) return savedProfile;
-    const isOwnerWithDefaultName =
-      loggedInMobileNumber === owner.mobileNumber && savedProfile.fullName === placeholderProfile.fullName;
+    if (!loggedInMobileNumber) return placeholderProfile;
+    const savedName = savedProfile ? `${savedProfile.firstName} ${savedProfile.lastName}`.trim() : "";
+    const fallbackName = loggedInMobileNumber === owner.mobileNumber ? owner.name : "New customer";
     return {
-      ...savedProfile,
-      fullName: isOwnerWithDefaultName ? owner.name : savedProfile.fullName,
+      fullName: savedName || fallbackName,
       mobileNumber: formatIndianMobileNumber(loggedInMobileNumber),
+      email: savedProfile?.email ?? "",
+      customerId: savedProfile?.customerId ?? "",
+      savedProfile,
     };
   }, [savedProfile, loggedInMobileNumber, owner]);
 }

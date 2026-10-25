@@ -960,6 +960,53 @@
 }
 
 /* Place order: on desktop just the button; on phones the row sticks to the bottom with the amount */
+/* "Pay with": UPI / Net banking / Card as three small choices in a row (no cash on delivery) */
+.checkout-payment-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--checkout-design-pixel));
+  min-width: 0;
+  margin: calc(16 * var(--checkout-design-pixel)) 0 0;
+  padding: 0;
+  border: none;
+}
+
+.checkout-payment-methods-title {
+  width: 100%;
+  margin-bottom: calc(6 * var(--checkout-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--checkout-design-pixel));
+  font-weight: 700;
+  color: #1e2a22;
+}
+
+.checkout-payment-method {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--checkout-design-pixel));
+  padding: calc(8 * var(--checkout-design-pixel)) calc(10 * var(--checkout-design-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: calc(10 * var(--checkout-design-pixel));
+  background: #ffffff;
+  font-size: calc(12.5 * var(--checkout-design-pixel));
+  font-weight: 600;
+  white-space: nowrap;
+  color: #1e2a22;
+  cursor: pointer;
+}
+
+.checkout-payment-method input {
+  accent-color: #2f6b3a;
+}
+
+.checkout-payment-method-chosen {
+  border-color: #2f6b3a;
+  background: #e6f0e1;
+  color: #1f4d2e;
+}
+
 .checkout-place-row {
   margin-top: calc(16 * var(--checkout-design-pixel));
 }

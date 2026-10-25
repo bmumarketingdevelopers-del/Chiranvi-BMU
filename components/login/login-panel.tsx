@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+<<<<<<< HEAD
 import { addPendingProductToCart, forgetPendingCartProduct } from "@/store/cart-store";
+=======
+import { addPendingProductToCart } from "@/store/cart-store";
+import { getCustomerProfile } from "@/store/customer-profiles-store";
+>>>>>>> 8c15463 (Customer and Order flow set - V1)
 import { rememberLogin, takePageAfterLogin } from "./login-status";
 import styles from "./login-panel.module.css";
 
@@ -96,6 +101,14 @@ export default function LoginPanel({
     if (!isOtpComplete) return;
     // Connect to the OTP service: check otpDigits.join("") for fullMobileNumber and log the user in here.
     rememberLogin(mobileNumberDigits);
+    // A new customer (no saved profile yet): straight to the Profile page to fill in their details
+    // (a product they were adding still goes into the cart first)
+    if (!getCustomerProfile(mobileNumberDigits)) {
+      addPendingProductToCart();
+      onClose?.();
+      router.push("/account");
+      return;
+    }
     // Login started from "Add to cart": the product goes into the cart and the visitor stays on the
     // landing page (the phone sheet just closes; the login page goes back to the landing page).
     if (addPendingProductToCart()) {

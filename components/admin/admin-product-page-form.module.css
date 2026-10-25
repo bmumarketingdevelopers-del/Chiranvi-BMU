@@ -115,6 +115,8 @@
 
 /* Missing or wrong fields, listed at the top (red: the form cannot be saved yet) */
 .admin-product-page-problems {
+  /* Across the whole form (shown at its end, above the Save button) */
+  grid-column: 1 / -1;
   padding: calc(12 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
   border-radius: calc(10 * var(--admin-pixel));
   background: #fdecea;
@@ -210,6 +212,53 @@
   font-size: calc(11.5 * var(--admin-pixel));
   font-weight: 600;
   color: #6e7a72;
+}
+
+/* The one-line heading is for phones only (larger screens: the labels row below) */
+.admin-product-page-row-heading-phone {
+  display: none;
+}
+
+/* Each label above its own box: the same columns as the rows of boxes */
+.admin-product-page-row-labels {
+  margin-bottom: calc(-2 * var(--admin-pixel));
+  font-size: calc(11.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #6e7a72;
+}
+
+/* Category drop-down; "+ Add new category…" opens a name box and an Add button under it */
+.admin-product-category-picker {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-product-category-new-row {
+  display: flex;
+  gap: calc(6 * var(--admin-pixel));
+}
+
+.admin-product-category-add-button {
+  flex-shrink: 0;
+  padding: 0 calc(16 * var(--admin-pixel));
+  border-radius: calc(10 * var(--admin-pixel));
+  background: #1f4d2e;
+  font-family: inherit;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.admin-product-category-add-button:disabled {
+  background: #c9d3cb;
+  cursor: default;
+}
+
+/* Keeps the labels in line with the boxes: as wide as a row's × button */
+.admin-product-page-row-labels-spacer {
+  width: calc(32 * var(--admin-pixel));
 }
 
 .admin-product-page-pack-row {
@@ -355,5 +404,14 @@
   .admin-product-page-pack-row:has(> :nth-child(7)),
   .admin-product-page-plan-row {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /* Phones: the boxes wrap two a row, so the one-line heading instead of labels above each box */
+  .admin-product-page-row-heading-phone {
+    display: block;
+  }
+
+  .admin-product-page-row-labels {
+    display: none;
   }
 }

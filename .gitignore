@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Supabase local data
 .supabase/
+
+# Data shared between browsers until the database is connected (app/api/shared-data)
+.shared-data/
