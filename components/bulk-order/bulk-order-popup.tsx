@@ -190,7 +190,6 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [problems, setProblems] = useState<string[]>([]);
   const firstFieldRef = useRef<HTMLInputElement>(null);
   // The list shows two products and does not scroll; "View more products" opens all of them (scrollable)
   const productListRef = useRef<HTMLUListElement>(null);
@@ -218,20 +217,19 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
   const changeQuantity = (cardId: string, change: number) =>
     setQuantities((current) => ({ ...current, [cardId]: Math.max(0, (current[cardId] ?? 0) + change) }));
   const chosenCount = Object.values(quantities).filter((quantity) => quantity > 0).length;
+  const digits = phone.replace(/\D/g, "");
+  // Submit unlocks only when every detail is filled: name, address, 10-digit phone, a valid email (or none),
+  // and at least one product
+  const isFormComplete =
+    name.trim() !== "" &&
+    address.trim() !== "" &&
+    digits.length === 10 &&
+    (email.trim() === "" || /^\S+@\S+\.\S+$/.test(email.trim())) &&
+    chosenCount > 0;
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    const found: string[] = [];
-    const digits = phone.replace(/\D/g, "");
-    if (!name.trim()) found.push("Your name");
-    if (!address.trim()) found.push("Your address");
-    if (digits.length !== 10) found.push("A 10-digit phone number");
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) found.push("A valid email (or leave it empty)");
-    if (chosenCount === 0) found.push("The quantity of at least one product");
-    if (found.length > 0) {
-      setProblems(found);
-      return;
-    }
+    if (!isFormComplete) return;
     const bulkOrderItems = productCards
       .filter((card) => (quantities[card.cardId] ?? 0) > 0)
       .map((card) => ({ productName: card.name, packLabel: card.packLabel, quantity: quantities[card.cardId] }));
@@ -253,17 +251,6 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
         Get a bulk quote
       </h2>
       <p className={styles["bulk-order-form-intro"]}>Tell us what you need; our team will call you with the best price.</p>
-
-      {problems.length > 0 && (
-        <div className={styles["bulk-order-problems"]} role="alert">
-          <strong>Please fill in:</strong>
-          <ul>
-            {problems.map((problem) => (
-              <li key={problem}>{problem}</li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <div className={styles["bulk-order-fields"]}>
         <label className={styles["bulk-order-field"]}>
@@ -339,7 +326,7 @@ function BulkQuoteForm({ onSent }: { onSent: () => void }) {
         </button>
       )}
 
-      <button type="submit" className={styles["bulk-order-main-button"]}>
+      <button type="submit" className={styles["bulk-order-main-button"]} disabled={!isFormComplete}>
         Submit request
       </button>
       <p className={styles["bulk-order-footnote"]}>

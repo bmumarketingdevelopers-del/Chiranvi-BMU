@@ -465,13 +465,43 @@
   color: #ffffff;
 }
 
+/*
+  "Order Now →": a real button over the picture's own one (same place and gold), without the darker
+  circle the picture has behind its arrow.
+*/
 .ghee-banner-order-now-link {
   position: absolute;
-  top: 37.8%;
-  left: 10.4%;
-  width: 27.2%;
-  height: 7.4%;
+  top: 34.7%;
+  left: 10.2%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9cqw;
+  width: 27.6%;
+  height: 7.8%;
   border-radius: 9999px;
+  background: #f1b73f;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 2.6cqw;
+  font-weight: 600;
+  color: #1a1206;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.ghee-banner-order-now-link:hover {
+  background: #f5c04f;
+}
+
+.ghee-banner-order-now-arrow {
+  flex-shrink: 0;
+  width: 3cqw;
+  height: 3cqw;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .ghee-banner-order-now-link:focus-visible {

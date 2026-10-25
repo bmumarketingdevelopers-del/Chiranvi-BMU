@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { rememberPageAfterLogin, useIsLoggedIn } from "@/components/login/login-status";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import styles from "./hero-section.module.css";
 
@@ -16,6 +19,7 @@ const satisfiedCustomerPhotos = [
 ];
 
 export default function HeroSection() {
+  const isLoggedIn = useIsLoggedIn();
   return (
     <>
       {/* Navigation bar, placed the same way on every page (stays at the top; the hero runs up under it) */}
@@ -108,9 +112,13 @@ export default function HeroSection() {
               products you can trust for your family.
             </p>
 
+            {/* Order Now: the products page (logged out: the login first, then the products page) */}
             <Link
-              href="/login"
+              href={isLoggedIn ? "/products" : "/login"}
               className={styles["landing-hero-order-now-button"]}
+              onClick={() => {
+                if (!isLoggedIn) rememberPageAfterLogin("/products");
+              }}
             >
               Order Now
             </Link>

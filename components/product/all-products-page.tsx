@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useIsLoggedIn } from "@/components/login/login-status";
+import { rememberPageAfterLogin, useIsLoggedIn, useIsLoginStatusKnown } from "@/components/login/login-status";
 import SiteFooter from "@/components/footer/site-footer";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { addProductToCart, changeCartItemQuantity, rememberPendingCartProduct, useCartItems, type CartProduct } from "@/store/cart-store";
@@ -16,14 +16,16 @@ import styles from "./all-products-page.module.css";
 
 /*
   All products (/products), from the design: title, category filters with a small picture and a count,
-  then one card per product.
+  then one card per product. Only for logged-in visitors: anyone else is sent to the login, which then comes
+  back to this page.
   - Products with a page (the six starting products and the ones added in the Chiranvi Panel): one card
     each, clicking anywhere on it opens the page.
   - The powders (Moringa, Turmeric, Red Chilli) from the product list (store/products-store.ts) under
     "Powders": they have no page yet, so their card does not open anything (it will once a page with the
     same address exists); ADD and the heart work.
   - ADD puts that pack in the cart (then "− 1 +"); not logged in, it goes to the login first.
-  - The heart saves the pack to the Wishlist (account → Wishlist).
+  - The heart saves the pack to the Wishlist (account → Wishlist); Notify me asks for a stock alert. Not
+    logged in, both go to the login first (nothing is added without an account) and come back here.
   "View all products" and "Start Shopping" across the site lead here.
 */
 
@@ -186,7 +188,17 @@ function readNotifyRequests(): string[] {
   }
 }
 
-function NotifyMeButton({ cardId }: { cardId: string }) {
+/*
+  Logged out: the heart and Notify me go to the login first (nothing is saved without an account), and the
+  login comes back to this page.
+*/
+function goToLoginAndBack(router: ReturnType<typeof useRouter>) {
+  rememberPageAfterLogin(window.location.pathname + window.location.search);
+  router.push("/login");
+}
+
+function NotifyMeButton({ cardId, isLoggedIn }: { cardId: string; isLoggedIn: boolean }) {
+  const router = useRouter();
   const [isRequested, setIsRequested] = useState(false);
   useEffect(() => {
     // Read once in the browser (localStorage is not there while the page is drawn on the server)
@@ -206,6 +218,10 @@ function NotifyMeButton({ cardId }: { cardId: string }) {
       type="button"
       className={styles["all-products-notify-button"]}
       onClick={() => {
+        if (!isLoggedIn) {
+          goToLoginAndBack(router);
+          return;
+        }
         try {
           window.localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify([...readNotifyRequests(), cardId]));
         } catch {
@@ -364,7 +380,7 @@ export function ProductCardTile({ card }: { card: ProductCard }) {
           aria-pressed={isHearted}
           aria-label={isHearted ? `Remove ${card.name} ${card.packLabel} from wishlist` : `Add ${card.name} ${card.packLabel} to wishlist`}
           className={styles["all-products-heart-button"]}
-          onClick={() => toggleWishlistItem(toWishlistItem(card))}
+          onClick={() => (isLoggedIn ? toggleWishlistItem(toWishlistItem(card)) : goToLoginAndBack(router))}
         >
           <HeartIcon isFilled={isHearted} />
         </button>
@@ -407,7 +423,7 @@ export function ProductCardTile({ card }: { card: ProductCard }) {
             View product
           </Link>
         ) : card.isSoldOut ? (
-          <NotifyMeButton cardId={card.cardId} />
+          <NotifyMeButton cardId={card.cardId} isLoggedIn={isLoggedIn} />
         ) : (
           <CardCartControl card={card} quantityInCart={quantityInCart} isLoggedIn={isLoggedIn} />
         )}
@@ -422,6 +438,19 @@ export default function AllProductsPage({ startingCategory }: { startingCategory
   const cards = useProductCards();
   const categoriesWithCards = SHOP_CATEGORIES.filter((category) => cards.some((card) => card.category === category));
   const shownCards = chosenCategory === "All" ? cards : cards.filter((card) => card.category === chosenCategory);
+  const isLoggedIn = useIsLoggedIn();
+  const isLoginStatusKnown = useIsLoginStatusKnown();
+  const router = useRouter();
+
+  // Not logged in: log in first, then come back to this page. Waits until the saved login has been read.
+  useEffect(() => {
+    if (!isLoginStatusKnown || isLoggedIn) return;
+    rememberPageAfterLogin(window.location.pathname + window.location.search);
+    router.replace("/login");
+  }, [isLoginStatusKnown, isLoggedIn, router]);
+
+  // Nothing is shown until the visitor is known to be logged in
+  if (!isLoggedIn) return null;
 
   return (
     <div className={styles["all-products-page"]}>

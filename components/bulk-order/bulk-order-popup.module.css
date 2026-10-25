@@ -237,6 +237,13 @@
   background: #285c3a;
 }
 
+/* Submit request, locked until every detail is filled */
+.bulk-order-main-button:disabled {
+  background: #e6f0e1;
+  color: #8aa391;
+  cursor: not-allowed;
+}
+
 .bulk-order-footnote {
   margin-top: 12px;
   font-size: 13px;
@@ -300,21 +307,6 @@
   margin-top: 4px;
   font-size: 14px;
   color: #5f5f5f;
-}
-
-.bulk-order-problems {
-  margin-top: 14px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #fdecea;
-  font-size: 13px;
-  color: #a93226;
-}
-
-.bulk-order-problems ul {
-  margin-top: 4px;
-  padding-left: 18px;
-  list-style: disc;
 }
 
 .bulk-order-fields {

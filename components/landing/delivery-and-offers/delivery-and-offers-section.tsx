@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { rememberPageAfterLogin, useIsLoggedIn } from "@/components/login/login-status";
 import styles from "./delivery-and-offers-section.module.css";
 
 /*
@@ -10,13 +11,26 @@ import styles from "./delivery-and-offers-section.module.css";
   Top row: "Goodness, Delivered" text, the delivery van picture, "Choose what's good for you" text.
   Bottom row: four promotion cards (Farm Fresh Combo, Homemade Powders, Pure Cow Ghee, Fresh Dairy).
   The card pictures come from the design. "Everyday essentials" on the combo card and
-  "PURE COW GHEE" + the "Order Now" button on the ghee banner are part of the pictures;
-  the rest of the text is real text placed on top. Every card leads to the login page.
+  "PURE COW GHEE" on the ghee banner is part of the picture; the rest of the text, and the ghee banner's
+  "Order Now" button (drawn over the picture's own button, without its arrow circle), are real.
+  Logged in, each card opens its products: Farm Fresh Combo → All products, Homemade Powders → Powders,
+  Pure Cow Ghee → the A2 Desi Cow Ghee page, Fresh Dairy → Milk. Logged out, they lead to the login first,
+  which then comes back to that page.
   Scroll reveal: when the section scrolls into view, everything fades and slides up together.
 */
 
 export default function DeliveryAndOffersSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const isLoggedIn = useIsLoggedIn();
+  // A card's link: the page when logged in; otherwise the login, which comes back to that page
+  function linkTo(pagePath: string) {
+    return {
+      href: isLoggedIn ? pagePath : "/login",
+      onClick: () => {
+        if (!isLoggedIn) rememberPageAfterLogin(pagePath);
+      },
+    };
+  }
   // "visible": shown normally (also the server-rendered state, so nothing is hidden without JavaScript).
   // "waiting": hidden, ready to animate. "revealed": animated into view.
   const [revealState, setRevealState] = useState<"visible" | "waiting" | "revealed">("visible");
@@ -230,7 +244,7 @@ export default function DeliveryAndOffersSection() {
 
       {/* Bottom row: promotion cards */}
       <div className={styles["offer-cards-grid"]}>
-        <Link href="/login" className={`${styles["offer-card"]} ${styles["offer-card-farm-fresh-combo"]}`}>
+        <Link {...linkTo("/products")} className={`${styles["offer-card"]} ${styles["offer-card-farm-fresh-combo"]}`}>
           <Image
             src="/images/promotions/farm-fresh-combo-card-chiranvi-farm-logos.webp"
             alt=""
@@ -247,7 +261,7 @@ export default function DeliveryAndOffersSection() {
           <span className={styles["offer-card-visually-hidden"]}>Everyday essentials: Farm Fresh Combo</span>
         </Link>
 
-        <Link href="/login" className={`${styles["offer-card"]} ${styles["offer-card-homemade-powders"]}`}>
+        <Link {...linkTo("/products?category=Powders")} className={`${styles["offer-card"]} ${styles["offer-card-homemade-powders"]}`}>
           <Image
             src="/images/promotions/homemade-powders-card-chiranvi-farm-logos.webp"
             alt=""
@@ -275,13 +289,17 @@ export default function DeliveryAndOffersSection() {
           />
           <span className={styles["ghee-banner-label"]}>Traditional goodness</span>
           <span className={styles["ghee-banner-tagline"]}>Pure goodness, from our farm</span>
-          {/* Invisible link exactly over the "Order Now" button drawn in the picture */}
-          <Link href="/login" className={styles["ghee-banner-order-now-link"]}>
-            <span className={styles["offer-card-visually-hidden"]}>Order Pure Cow Ghee now</span>
+          {/* "Order Now →" drawn exactly over the picture's own button (covers its arrow circle) */}
+          <Link {...linkTo("/products/a2-desi-ghee")} className={styles["ghee-banner-order-now-link"]}>
+            Order Now
+            <svg viewBox="0 0 24 24" aria-hidden="true" className={styles["ghee-banner-order-now-arrow"]}>
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+            <span className={styles["offer-card-visually-hidden"]}> Pure Cow Ghee</span>
           </Link>
         </div>
 
-        <Link href="/login" className={`${styles["offer-card"]} ${styles["offer-card-fresh-dairy"]}`}>
+        <Link {...linkTo("/products?category=Milk")} className={`${styles["offer-card"]} ${styles["offer-card-fresh-dairy"]}`}>
           <Image
             src="/images/promotions/fresh-dairy-banner-chiranvi-farm-logo.webp"
             alt=""
