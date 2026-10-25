@@ -500,13 +500,9 @@ export default function CartView() {
       couponCode: appliedCoupon && !isCouponForPlan ? appliedCoupon.coupon.code : undefined,
       couponDiscount: itemsCouponDiscount || undefined,
       deliveryFee,
-<<<<<<< HEAD
       deliverTo,
-=======
-      deliverTo: `${chosenAddress.name} · ${formatAddressLine(chosenAddress)}`,
       area: chosenAddress.area,
       paymentMethod,
->>>>>>> 8c15463 (Customer and Order flow set - V1)
     });
     if (appliedCoupon && !isCouponForPlan) {
       recordCouponUse(appliedCoupon.coupon.code, {

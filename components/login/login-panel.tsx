@@ -3,12 +3,8 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-<<<<<<< HEAD
 import { addPendingProductToCart, forgetPendingCartProduct } from "@/store/cart-store";
-=======
-import { addPendingProductToCart } from "@/store/cart-store";
 import { getCustomerProfile } from "@/store/customer-profiles-store";
->>>>>>> 8c15463 (Customer and Order flow set - V1)
 import { rememberLogin, takePageAfterLogin } from "./login-status";
 import styles from "./login-panel.module.css";
 
