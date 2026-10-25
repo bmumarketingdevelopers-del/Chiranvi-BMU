@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { addPendingProductToCart } from "@/store/cart-store";
+import { addPendingProductToCart, forgetPendingCartProduct } from "@/store/cart-store";
 import { rememberLogin, takePageAfterLogin } from "./login-status";
 import styles from "./login-panel.module.css";
 
@@ -37,8 +37,15 @@ function formatCountdown(totalSeconds: number) {
 /*
   layout "page"         - the /login page: a centred card on a grey page (desktop and direct visits).
   layout "bottom-sheet" - inside the phone bottom sheet (login-bottom-sheet.tsx): no grey page, and the
-                         close button calls onClose instead of going to the home page.
+                         close button calls onClose instead of leaving the page.
 */
+
+// True when the visitor reached the login from another page of this site (so Back stays on the site)
+function cameFromThisSite() {
+  const navigationApi = (window as { navigation?: { canGoBack?: boolean } }).navigation;
+  if (typeof navigationApi?.canGoBack === "boolean") return navigationApi.canGoBack;
+  return window.history.length > 1;
+}
 export default function LoginPanel({
   layout = "page",
   onClose,
@@ -102,6 +109,18 @@ export default function LoginPanel({
     router.push(takePageAfterLogin() ?? "/cart");
   }
 
+  /*
+    × on the login page: back to the page and spot the visitor came from (Best Sellers, a product page,
+    the cart...), or the home page when the login was opened directly. Nothing waiting is kept: the
+    product from "Add to cart" and the noted page are forgotten, so a later login doesn't use them.
+  */
+  function closeLoginPage() {
+    forgetPendingCartProduct();
+    takePageAfterLogin();
+    if (cameFromThisSite()) router.back();
+    else router.push("/");
+  }
+
   function changeMobileNumber() {
     setLoginStep("enter-mobile-number");
   }
@@ -138,9 +157,9 @@ export default function LoginPanel({
         {closeIcon}
       </button>
     ) : (
-      <Link href="/" aria-label="Close and go back to the home page" className={styles["login-close-button"]}>
+      <button type="button" onClick={closeLoginPage} aria-label="Close and go back" className={styles["login-close-button"]}>
         {closeIcon}
-      </Link>
+      </button>
     );
 
   return (

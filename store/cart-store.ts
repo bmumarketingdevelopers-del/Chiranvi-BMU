@@ -212,6 +212,11 @@ export function rememberPendingCartProduct(product: CartProduct) {
   pendingCartProduct = product;
 }
 
+// The login was closed without logging in: forget the remembered product, so a later login doesn't add it.
+export function forgetPendingCartProduct() {
+  pendingCartProduct = null;
+}
+
 // After logging in: add the remembered product (if any) to the cart. True when a product was added.
 export function addPendingProductToCart() {
   const productToAdd = pendingCartProduct;

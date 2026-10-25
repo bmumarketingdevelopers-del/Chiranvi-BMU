@@ -690,6 +690,114 @@ const redSandalPage: OneTimeProductPage = {
   nutritionBasis: "",
 };
 
+/*
+  The Best Sellers powders (Moringa, Turmeric, Red Chilli): the ghee page's one-time template with their own
+  text and pouch picture. Their addresses match their cards on Products & pricing (store/products-store.ts),
+  so Best Sellers opens them and Sold out there shows here. Starting prices (500 g = the card's ₹249,
+  was ₹389); the prices, packs, picture and text are changed in the Chiranvi Panel (Product pages → Edit).
+*/
+const moringaPage: OneTimeProductPage = {
+  ...corianderPage,
+  slug: "moringa-powder",
+  cardNote: "shade-dried leaves",
+  name: "Moringa Powder",
+  tagline: "Shade-Dried Drumstick Leaves, Finely Ground",
+  description:
+    "Made from fresh drumstick (moringa) leaves, shade-dried to keep their green colour and goodness, then finely ground in small batches. Stir a spoonful into smoothies, dals, chapati dough or warm water every day.",
+  badge: { text: "Green superfood", colour: "green" },
+  rating: { score: "4.5", count: "(7,105)" },
+  ratingNote: "Small-batch ground",
+  highlights: ["Shade-dried leaves", "Finely ground", "No added colour", "No preservatives"],
+  pictures: [
+    { imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516, alt: "Chiranvi Farm moringa leaves powder pouch" },
+  ],
+  pictureFit: { heightPercent: 80 },
+  packs: [
+    { packId: "100-g", label: "100 g", size: 100, price: 69 },
+    { packId: "250-g", label: "250 g", size: 250, price: 149 },
+    { packId: "500-g", label: "500 g", size: 500, price: 249, originalPrice: 389, tag: "Best value" },
+  ],
+  note: { text: "Ground in small batches · resealable zip pouch", tone: "fresh" },
+  productInformation: [
+    { label: "Ingredients", value: "100% moringa (drumstick) leaves" },
+    { label: "Net quantity", value: "100 g / 250 g / 500 g" },
+    { label: "Shelf life", value: "Best within 6 months" },
+    { label: "Storage", value: "Cool, dry place; close the pouch after use" },
+    { label: "Country of origin", value: "India" },
+    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+    { label: "FSSAI Lic. No.", value: "[add number]" },
+  ],
+  nutritionFacts: [
+    { label: "Energy", value: "205 kcal" },
+    { label: "Protein", value: "27 g" },
+    { label: "Total fat", value: "2 g" },
+    { label: "Carbohydrate", value: "38 g" },
+    { label: "Dietary fibre", value: "19 g" },
+  ],
+};
+
+const turmericPage: OneTimeProductPage = {
+  ...moringaPage,
+  slug: "turmeric-powder",
+  cardNote: "sun-dried roots",
+  name: "Turmeric Powder",
+  tagline: "Golden, Earthy Haldi from Whole Roots",
+  description:
+    "Made from whole turmeric roots, boiled, sun-dried and stone-ground in small batches for a deep golden colour and earthy aroma. A pinch brightens curries, dals, rice and a warm glass of haldi milk.",
+  badge: { text: "Kitchen essential", colour: "gold" },
+  ratingNote: "Stone-ground",
+  highlights: ["Whole roots", "Stone-ground", "No added colour", "No preservatives"],
+  pictures: [
+    { imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548, alt: "Chiranvi Farm turmeric powder pouch" },
+  ],
+  packs: [
+    { packId: "100-g", label: "100 g", size: 100, price: 59 },
+    { packId: "250-g", label: "250 g", size: 250, price: 139 },
+    { packId: "500-g", label: "500 g", size: 500, price: 249, originalPrice: 389, tag: "Best value" },
+  ],
+  productInformation: moringaPage.productInformation.map((row) =>
+    row.label === "Ingredients" ? { ...row, value: "100% turmeric roots" } : row,
+  ),
+  nutritionFacts: [
+    { label: "Energy", value: "312 kcal" },
+    { label: "Protein", value: "10 g" },
+    { label: "Total fat", value: "3 g" },
+    { label: "Carbohydrate", value: "67 g" },
+    { label: "Dietary fibre", value: "23 g" },
+  ],
+};
+
+const redChilliPage: OneTimeProductPage = {
+  ...moringaPage,
+  slug: "red-chilli-powder",
+  cardNote: "sun-dried chillies",
+  name: "Red Chilli Powder",
+  tagline: "Bright Red, Full of Flavour",
+  description:
+    "Made from sun-dried red chillies, cleaned and ground in small batches for a bright colour and a clean, lasting heat. Just right for curries, chutneys, pickles and everyday tadka.",
+  badge: { text: "Spice it up", colour: "cream" },
+  ratingNote: "Small-batch ground",
+  highlights: ["Sun-dried chillies", "Small-batch ground", "No added colour", "No preservatives"],
+  pictures: [
+    { imageSource: "/images/products/red-chilli-powder-pouch.webp", imageWidth: 360, imageHeight: 548, alt: "Chiranvi Farm red chilli powder pouch" },
+  ],
+  packs: [
+    { packId: "100-g", label: "100 g", size: 100, price: 59 },
+    { packId: "250-g", label: "250 g", size: 250, price: 139 },
+    { packId: "500-g", label: "500 g", size: 500, price: 249, originalPrice: 389, tag: "Best value" },
+  ],
+  productInformation: moringaPage.productInformation.map((row) =>
+    row.label === "Ingredients" ? { ...row, value: "100% red chillies" } : row,
+  ),
+  nutritionFacts: [
+    { label: "Energy", value: "282 kcal" },
+    { label: "Protein", value: "13 g" },
+    { label: "Total fat", value: "14 g" },
+    { label: "Carbohydrate", value: "50 g" },
+    { label: "Dietary fibre", value: "35 g" },
+  ],
+};
+
 // Order on the All products page: the three milks, then the ghees, paneer, the butters, atta, batter, powders
 export const startingProductPages: ProductPage[] = [
   milkPage,
@@ -702,6 +810,9 @@ export const startingProductPages: ProductPage[] = [
   jerseyButterPage,
   attaPage,
   batterPage,
+  moringaPage,
+  turmericPage,
+  redChilliPage,
   corianderPage,
   redSandalPage,
 ];

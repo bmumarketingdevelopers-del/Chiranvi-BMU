@@ -20,9 +20,9 @@ import styles from "./all-products-page.module.css";
   back to this page.
   - Products with a page (the six starting products and the ones added in the Chiranvi Panel): one card
     each, clicking anywhere on it opens the page.
-  - The powders (Moringa, Turmeric, Red Chilli) from the product list (store/products-store.ts) under
-    "Powders": they have no page yet, so their card does not open anything (it will once a page with the
-    same address exists); ADD and the heart work.
+  - The powders (Moringa, Turmeric, Red Chilli) have their own pages now. If one of those pages is deleted
+    in the panel, its card from the product list (store/products-store.ts) shows under "Powders" instead:
+    that card does not open anything; ADD and the heart work.
   - ADD puts that pack in the cart (then "− 1 +"); not logged in, it goes to the login first.
   - The heart saves the pack to the Wishlist (account → Wishlist); Notify me asks for a stock alert. Not
     logged in, both go to the login first (nothing is added without an account) and come back here.

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { forgetPendingCartProduct } from "@/store/cart-store";
 import LoginPanel from "./login-panel";
+import { takePageAfterLogin } from "./login-status";
 import styles from "./login-bottom-sheet.module.css";
 
 /*
@@ -14,6 +16,14 @@ import styles from "./login-bottom-sheet.module.css";
 
 export default function LoginBottomSheet() {
   const [isLoginSheetOpen, setIsLoginSheetOpen] = useState(false);
+
+  // Closed without logging in (dimmed page or Escape): forget the product from "Add to cart" and the
+  // noted page, so a later login doesn't use them. (After a login the sheet closes through onClose.)
+  function closeWithoutLoggingIn() {
+    forgetPendingCartProduct();
+    takePageAfterLogin();
+    setIsLoginSheetOpen(false);
+  }
 
   // Catch taps on any /login link before the link itself handles them, but only in the phone layout.
   useEffect(() => {
@@ -35,7 +45,7 @@ export default function LoginBottomSheet() {
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsLoginSheetOpen(false);
+      if (event.key === "Escape") closeWithoutLoggingIn();
     }
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -52,7 +62,7 @@ export default function LoginBottomSheet() {
         type="button"
         aria-label="Close login"
         className={styles["login-bottom-sheet-dimmed-page"]}
-        onClick={() => setIsLoginSheetOpen(false)}
+        onClick={closeWithoutLoggingIn}
       />
       <div role="dialog" aria-modal="true" aria-labelledby="login-card-heading" className={styles["login-bottom-sheet"]}>
         <LoginPanel layout="bottom-sheet" onClose={() => setIsLoginSheetOpen(false)} />
