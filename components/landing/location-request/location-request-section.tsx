@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { POWDER_PRODUCT_IDS, useProductCards } from "@/components/product/all-products-page";
+import { addLead } from "@/store/admin-leads-store";
 import styles from "./location-request-section.module.css";
 
 /*
   Landing page section below delivery and offers: city illustration with a map pin on the left,
   "Welcome to Chiranvi Farm", a short note that delivery is limited to selected locations,
   and a "Request" button on the right.
-  The button does nothing yet; it will be connected once delivery locations are decided.
+  "Request" opens the delivery request pop-up over the landing page (see LocationRequestPopup below).
   Scroll reveal: when the section scrolls into view, everything fades and slides up together.
   City animation (always running, see the CSS file): clouds drift behind the buildings without a gap,
   the van (left to right) and the scooter (right to left) keep riding past behind the pin, and our
@@ -40,8 +41,49 @@ function usePinPictures() {
 
 const chiranviLogo: PinPicture = { imageSource: "/images/brand/chiranvi-farm-logo.webp", imageWidth: 516, imageHeight: 240 };
 
+/*
+  Bengaluru areas in the "Your area" list (A to Z) with each area's main pincode, which fills the Pincode
+  box when the area is chosen (an area can have more than one pincode, so the box can still be changed).
+  Anything else is "Others", with its own box and an empty pincode.
+*/
+const BENGALURU_AREA_PINCODES: Record<string, string> = {
+  Banashankari: "560050",
+  "Bannerghatta Road": "560076",
+  Basavanagudi: "560004",
+  Bellandur: "560103",
+  "BTM Layout": "560076",
+  Domlur: "560071",
+  "Electronic City": "560100",
+  "Frazer Town": "560005",
+  Hebbal: "560024",
+  Hennur: "560043",
+  "HSR Layout": "560102",
+  Indiranagar: "560038",
+  Jayanagar: "560041",
+  "JP Nagar": "560078",
+  "Kalyan Nagar": "560043",
+  Kengeri: "560060",
+  Koramangala: "560034",
+  "KR Puram": "560036",
+  Malleshwaram: "560003",
+  Marathahalli: "560037",
+  Rajajinagar: "560010",
+  "RT Nagar": "560032",
+  Sadashivanagar: "560080",
+  "Sarjapur Road": "560035",
+  Ulsoor: "560008",
+  Varthur: "560087",
+  Vijayanagar: "560040",
+  Whitefield: "560066",
+  Yelahanka: "560064",
+  Yeshwanthpur: "560022",
+};
+const BENGALURU_AREAS = Object.keys(BENGALURU_AREA_PINCODES);
+const OTHER_AREA = "Others";
+
 export default function LocationRequestSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const [isRequestPopupOpen, setIsRequestPopupOpen] = useState(false);
   const productPictures = usePinPictures();
   // Two products: each is listed twice, so one can wait on the left while the other slides out
   const pinPictures = productPictures.length === 2 ? [...productPictures, ...productPictures] : productPictures;
@@ -198,7 +240,7 @@ export default function LocationRequestSection() {
             only to selected locations.
           </p>
 
-          <button type="button" className={styles["location-request-button"]}>
+          <button type="button" className={styles["location-request-button"]} onClick={() => setIsRequestPopupOpen(true)}>
             <svg viewBox="0 0 24 24" className={styles["location-request-button-icon"]} aria-hidden="true">
               <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.6a2.6 2.6 0 1 1 0-5.2 2.6 2.6 0 0 1 0 5.2Z" />
             </svg>
@@ -206,6 +248,257 @@ export default function LocationRequestSection() {
           </button>
         </div>
       </div>
+
+      {isRequestPopupOpen && <LocationRequestPopup onClose={() => setIsRequestPopupOpen(false)} />}
     </section>
+  );
+}
+
+/*
+  "Your area": a box that opens its list inside itself (the box grows downwards in the pop-up and the list
+  scrolls), instead of the browser's own dropdown. The chosen area is shown light green with a tick.
+  Keyboard: Enter / Space / ↓ open it, ↑ ↓ move, Enter chooses, Escape closes the list only.
+  A click outside the box closes the list.
+*/
+const AREA_CHOICES = [...BENGALURU_AREAS, OTHER_AREA];
+
+function AreaPicker({ area, onChoose }: { area: string; onChoose: (area: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  // The highlighted row while the list is open (keyboard and mouse)
+  const [activeIndex, setActiveIndex] = useState(0);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  function open() {
+    setActiveIndex(Math.max(0, AREA_CHOICES.indexOf(area)));
+    setIsOpen(true);
+  }
+  function choose(choice: string) {
+    onChoose(choice);
+    setIsOpen(false);
+  }
+
+  // Click outside the box: close the list
+  useEffect(() => {
+    if (!isOpen) return;
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) setIsOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [isOpen]);
+
+  // Keep the highlighted row in view inside the list
+  useEffect(() => {
+    if (!isOpen) return;
+    listRef.current?.children[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [isOpen, activeIndex]);
+
+  function handleKeyDown(event: React.KeyboardEvent) {
+    if (!isOpen) {
+      if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
+        event.preventDefault();
+        open();
+      }
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) => Math.min(AREA_CHOICES.length - 1, Math.max(0, index + (event.key === "ArrowDown" ? 1 : -1))));
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      choose(AREA_CHOICES[activeIndex]);
+    } else if (event.key === "Escape") {
+      // Closes the list, not the whole pop-up
+      event.preventDefault();
+      event.stopPropagation();
+      event.nativeEvent.stopImmediatePropagation();
+      setIsOpen(false);
+    }
+  }
+
+  return (
+    <div ref={pickerRef} className={`${styles["location-area-picker"]} ${isOpen ? styles["location-area-picker-open"] : ""}`}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-labelledby="location-popup-area-label"
+        className={`${styles["location-area-picker-button"]} ${area ? "" : styles["location-area-picker-placeholder"]}`}
+        onClick={() => (isOpen ? setIsOpen(false) : open())}
+        onKeyDown={handleKeyDown}
+      >
+        {area || "Choose your area in Bengaluru"}
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={styles["location-area-picker-arrow"]}>
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {isOpen && (
+        <ul ref={listRef} role="listbox" aria-labelledby="location-popup-area-label" className={styles["location-area-picker-list"]} data-lenis-prevent>
+          {AREA_CHOICES.map((choice, index) => (
+            <li
+              key={choice}
+              role="option"
+              aria-selected={choice === area}
+              className={`${styles["location-area-picker-option"]} ${index === activeIndex ? styles["location-area-picker-option-active"] : ""} ${
+                choice === area ? styles["location-area-picker-option-chosen"] : ""
+              }`}
+              onPointerEnter={() => setActiveIndex(index)}
+              onClick={() => choose(choice)}
+            >
+              {choice}
+              {choice === area && (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/*
+  Delivery request pop-up ("Request"): over the landing page, which stays behind it, dimmed.
+  Name, phone number (10 digits) and the area: a Bengaluru area from the list, or "Others", which opens a
+  box to type the location; then the pincode, filled from the chosen area (optional, 6 digits when given).
+  "Request delivery" stays greyed until name, number and area are filled; it saves a New
+  lead from the Website (Chiranvi Panel → Leads: the area in the lead's address, "Location request" as its
+  note), then shows a thank-you. ×, Escape or a click on the dimmed page closes it.
+  Drawn inside the section but outside its content (which the scroll animation moves), so it keeps the
+  page's fonts and stays fixed to the screen.
+*/
+function LocationRequestPopup({ onClose }: { onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [area, setArea] = useState("");
+  const [otherLocation, setOtherLocation] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [requestedLocation, setRequestedLocation] = useState<string | null>(null);
+  const nameFieldRef = useRef<HTMLInputElement>(null);
+
+  const location = area === OTHER_AREA ? otherLocation.trim() : area;
+  // Pincode: optional, but 6 digits when given
+  const isFormComplete = name.trim() !== "" && phone.length === 10 && location !== "" && (pincode === "" || pincode.length === 6);
+
+  // Choosing an area fills its pincode (Others: empty, for the customer to type)
+  function chooseArea(chosenArea: string) {
+    setArea(chosenArea);
+    setPincode(BENGALURU_AREA_PINCODES[chosenArea] ?? "");
+  }
+
+  // The latest onClose, so the set-up below runs only once (not again on every keystroke)
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Opens with the cursor in Name; Escape closes it; the page behind does not scroll meanwhile
+  useEffect(() => {
+    nameFieldRef.current?.focus();
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onCloseRef.current();
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!isFormComplete) return;
+    addLead({
+      name: name.trim(),
+      phone: `${phone.slice(0, 5)} ${phone.slice(5, 7)} ${phone.slice(7)}`,
+      source: "Website",
+      note: "Location request",
+      address: `${location}, Bengaluru${pincode ? ` ${pincode}` : ""}`,
+    });
+    setRequestedLocation(location);
+  }
+
+  return (
+    <div className={styles["location-popup-backdrop"]} data-lenis-prevent onClick={(event) => event.target === event.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="location-popup-title" className={styles["location-popup"]}>
+        <button type="button" className={styles["location-popup-close-button"]} aria-label="Close" onClick={onClose}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+
+        {requestedLocation === null ? (
+          <form onSubmit={submit} noValidate>
+            <h2 id="location-popup-title" className={styles["location-popup-title"]}>
+              Request delivery
+            </h2>
+            <p className={styles["location-popup-intro"]}>Tell us where you are. We will call you when we deliver to your area.</p>
+
+            <label className={styles["location-popup-field"]}>
+              <span>Name *</span>
+              <input ref={nameFieldRef} value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="Your name" />
+            </label>
+            <label className={styles["location-popup-field"]}>
+              <span>Phone number *</span>
+              <input
+                value={phone}
+                onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))}
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder="10-digit mobile number"
+              />
+            </label>
+            <div className={styles["location-popup-field"]}>
+              <span id="location-popup-area-label">Your area *</span>
+              <AreaPicker area={area} onChoose={chooseArea} />
+            </div>
+            {/* "Others": the location in the customer's own words */}
+            {area === OTHER_AREA && (
+              <label className={styles["location-popup-field"]}>
+                <span>Your location *</span>
+                <input value={otherLocation} onChange={(event) => setOtherLocation(event.target.value)} placeholder="Area, landmark or city" autoFocus />
+              </label>
+            )}
+            {/* Filled from the chosen area; can be changed */}
+            <label className={styles["location-popup-field"]}>
+              <span>Pincode</span>
+              <input
+                value={pincode}
+                onChange={(event) => setPincode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                inputMode="numeric"
+                autoComplete="postal-code"
+                placeholder="6-digit pincode"
+              />
+            </label>
+
+            <button type="submit" className={styles["location-popup-submit-button"]} disabled={!isFormComplete}>
+              Request delivery
+            </button>
+          </form>
+        ) : (
+          <div className={styles["location-popup-thanks"]}>
+            <span className={styles["location-popup-thanks-icon"]} aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            </span>
+            <h2 id="location-popup-title" className={styles["location-popup-title"]}>
+              Thank you!
+            </h2>
+            <p className={styles["location-popup-intro"]}>
+              We have your request for {requestedLocation}. Our team will call you soon.
+            </p>
+            <button type="button" className={styles["location-popup-submit-button"]} onClick={onClose}>
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
