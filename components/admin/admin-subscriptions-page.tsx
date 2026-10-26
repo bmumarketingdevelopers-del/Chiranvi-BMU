@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import {
+  MILK_TYPES,
+  MILK_TYPE_NAMES,
   PLAN_LENGTHS,
   addSubscription,
   cancelSubscription,
@@ -37,11 +39,12 @@ import sharedStyles from "./admin-shared.module.css";
   Subscriptions (/admin/subscriptions), from the design 03-subscriptions: milk only, daily or
   alternate-day plans.
     top        search (customer or area), New milk plan (pop-up form), Custom range, Export
-    numbers    active plans, milk per day (with the cow / A2 / buffalo split), paused, cancelled this week
-    table      All / Cow milk / A2 milk / Buffalo milk / Paused tabs; 14 a page;
+    numbers    active plans, milk per day (with the A2 / Jersey / Skimmed split), paused, cancelled this week
+    table      All / A2 (Gir Cow) / Jersey / Skimmed / Paused tabs; 14 a page;
                the Plan column shows how long the customer subscribed for (3 months, 6 months, 1 year);
                "..." pauses, resumes or cancels a plan
-  Subscriptions come from store/admin-subscriptions-store.ts (saved in this browser for now).
+  Subscriptions come from store/admin-subscriptions-store.ts (saved in this browser for now), plans bought on
+  the website included; a plan inside a pause approved on Pause requests shows as Paused.
 */
 
 const PAGE_SIZE = 14;
@@ -51,20 +54,20 @@ const STATUS_CLASS_NAMES: Record<SubscriptionStatus, string> = {
   Paused: dashboardStyles["admin-status-pending"],
 };
 
-type SubscriptionTab = "all" | "cow" | "a2" | "buffalo" | "paused";
+type SubscriptionTab = "all" | "a2" | "jersey" | "skimmed" | "paused";
 
 function isInTab(subscription: AdminSubscription, tab: SubscriptionTab) {
   const status = getSubscriptionStatus(subscription);
   if (tab === "all") return true;
-  if (tab === "cow") return subscription.milkType === "Cow";
   if (tab === "a2") return subscription.milkType === "A2";
-  if (tab === "buffalo") return subscription.milkType === "Buffalo";
+  if (tab === "jersey") return subscription.milkType === "Jersey";
+  if (tab === "skimmed") return subscription.milkType === "Skimmed";
   return status === "Paused";
 }
 
 // Daily plans come tomorrow; alternate-day plans tomorrow or the day after
 function getNextDelivery(subscription: AdminSubscription, today: Date) {
-  if (subscription.isPaused) return "Paused";
+  if (getSubscriptionStatus(subscription, today) === "Paused") return "Paused";
   const daysAhead =
     subscription.frequency === "Daily" ? 1 : Number(subscription.id.replace(/\D/g, "")) % 2 === 0 ? 1 : 2;
   const next = new Date(today.getTime() + daysAhead * 86400000);
@@ -82,9 +85,9 @@ function planDetail(subscription: AdminSubscription) {
 const EMPTY_NEW_PLAN = {
   customerName: "",
   area: "",
-  milkType: "Cow" as MilkType,
+  milkType: "A2" as MilkType,
   quantity: "1 L",
-  container: "Pouch",
+  container: "Glass bottle",
   frequency: "Daily" as MilkFrequency,
   planLength: "3 months" as PlanLength,
 };
@@ -123,7 +126,7 @@ function SubscriptionsPage() {
   const pageItems = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Numbers for the cards (all subscriptions, not just the search)
-  const running = subscriptions.filter((subscription) => !subscription.isPaused);
+  const running = subscriptions.filter((subscription) => getSubscriptionStatus(subscription, today) === "Active");
   const litresPerDay = (subscription: AdminSubscription) =>
     subscription.litresPerDelivery * (subscription.frequency === "Daily" ? 1 : 0.5);
   const totalLitres = running.reduce((sum, subscription) => sum + litresPerDay(subscription), 0);
@@ -144,7 +147,7 @@ function SubscriptionsPage() {
       ...shown.map((subscription) => [
         subscription.customerName,
         subscription.area,
-        `${subscription.milkType} Milk ${subscription.quantity}`,
+        `${MILK_TYPE_NAMES[subscription.milkType]} Milk ${subscription.quantity}`,
         subscription.container,
         subscription.frequency,
         getNextDelivery(subscription, today),
@@ -174,7 +177,7 @@ function SubscriptionsPage() {
     setNewPlan(EMPTY_NEW_PLAN);
     setTab("all");
     setPage(1);
-    showToast(`${added.milkType} Milk ${added.quantity} plan added for ${added.customerName}`);
+    showToast(`${MILK_TYPE_NAMES[added.milkType]} Milk ${added.quantity} plan added for ${added.customerName}`);
   }
 
   return (
@@ -212,7 +215,7 @@ function SubscriptionsPage() {
           {
             label: "Milk per day",
             value: `${Math.round(totalLitres).toLocaleString("en-IN")} L`,
-            note: `Cow ${shareOf("Cow")}% · A2 ${shareOf("A2")}% · Buffalo ${shareOf("Buffalo")}%`,
+            note: `A2 ${shareOf("A2")}% · Jersey ${shareOf("Jersey")}% · Skimmed ${shareOf("Skimmed")}%`,
             trend: "plain",
             icon: ["M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3Z"],
           },
@@ -252,9 +255,9 @@ function SubscriptionsPage() {
             }}
             tabs={[
               { key: "all", label: "All" },
-              { key: "cow", label: "Cow milk" },
-              { key: "a2", label: "A2 milk" },
-              { key: "buffalo", label: "Buffalo milk" },
+              { key: "a2", label: "A2 (Gir Cow)" },
+              { key: "jersey", label: "Jersey" },
+              { key: "skimmed", label: "Skimmed" },
               { key: "paused", label: "Paused" },
             ]}
           />
@@ -285,7 +288,7 @@ function SubscriptionsPage() {
                     </td>
                     <td>
                       <span className={dashboardStyles["admin-orders-customer"]}>
-                        {subscription.milkType} Milk {subscription.quantity}
+                        {MILK_TYPE_NAMES[subscription.milkType]} Milk {subscription.quantity}
                       </span>
                       <span className={dashboardStyles["admin-orders-area"]}>{planDetail(subscription)}</span>
                     </td>
@@ -375,9 +378,11 @@ function SubscriptionsPage() {
               value={newPlan.milkType}
               onChange={(changeEvent) => setNewPlan({ ...newPlan, milkType: changeEvent.target.value as MilkType })}
             >
-              <option value="Cow">Cow milk</option>
-              <option value="A2">A2 milk</option>
-              <option value="Buffalo">Buffalo milk</option>
+              {MILK_TYPES.map((milkType) => (
+                <option key={milkType} value={milkType}>
+                  {MILK_TYPE_NAMES[milkType]} milk
+                </option>
+              ))}
             </select>
           </AdminDialogField>
           <AdminDialogField label="Quantity">
@@ -397,7 +402,7 @@ function SubscriptionsPage() {
               value={newPlan.container}
               onChange={(changeEvent) => setNewPlan({ ...newPlan, container: changeEvent.target.value })}
             >
-              {["Pouch", "Glass bottle", "Family · 2 × 1 L pouch"].map((container) => (
+              {["Glass bottle", "2 × 1 L glass bottle"].map((container) => (
                 <option key={container}>{container}</option>
               ))}
             </select>

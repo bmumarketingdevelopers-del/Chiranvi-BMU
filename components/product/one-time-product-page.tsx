@@ -132,12 +132,20 @@ function CartIcon() {
 
 // "Fast selling products": heading, View all, and the cards
 // The product's own card is left out on its own page (clicking it would only open this page again)
+// The Fast selling row always shows this many products
+const FAST_SELLING_COUNT = 5;
+
 function FastSellingRow({ cards, currentSlug }: { cards: FastSellingCard[]; currentSlug: string }) {
-  // The products this row lists, as full cards with prices (in the row's order)
+  // The products this row lists, as full cards with prices (in the row's order), without this page's own
+  // product; when that leaves fewer than five, the next products of the All products page fill the row
   const allCards = useProductCards();
-  const rowCards = cards
+  const listedCards = cards
     .filter((listed) => listed.productId !== currentSlug)
     .flatMap((listed) => allCards.filter((card) => card.slug === listed.productId));
+  const extraCards = allCards.filter(
+    (card) => card.hasPage && card.slug !== currentSlug && !listedCards.some((listed) => listed.slug === card.slug),
+  );
+  const rowCards = [...listedCards, ...extraCards].slice(0, FAST_SELLING_COUNT);
   return (
     <section className={styles["fast-selling-section"]} aria-labelledby="fast-selling-heading">
       <div className={styles["fast-selling-heading-row"]}>
@@ -321,7 +329,8 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
               </>
             )}
 
-            {/* Choose Your Pack Size */}
+            {/* Choose Your Pack Size (not shown for a product sold in one pack only: nothing to choose) */}
+            {page.packs.length > 1 && (
             <fieldset className={styles["one-time-pack-sizes"]}>
               <legend className={styles["one-time-section-label"]}>Choose Your Pack Size</legend>
               <div className={styles["one-time-pack-size-options"]}>
@@ -355,6 +364,7 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
                 })}
               </div>
             </fieldset>
+            )}
 
             {page.note.text && (
               <p className={`${styles["one-time-note"]} ${page.note.tone === "warning" ? styles["one-time-note-warning"] : ""}`}>

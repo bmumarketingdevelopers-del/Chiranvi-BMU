@@ -5,6 +5,8 @@ import { useLoggedInMobileNumber } from "@/components/login/login-status";
 import type { CartItem } from "./cart-store";
 import { addWebsiteOrder, type OrderPaymentMethod } from "./admin-orders-store";
 import { recordCustomerOrder } from "./admin-customers-store";
+import { recordWebsitePayment } from "./admin-payments-store";
+import { addSubscription, type MilkType, type PlanLength } from "./admin-subscriptions-store";
 import { getCustomerProfile } from "./customer-profiles-store";
 
 /*
@@ -207,7 +209,50 @@ export function placeOrder(cartItems: CartItem[], checkout: CheckoutDetails) {
       plan: checkout.subscription ? `${cartItems[0]?.name ?? "Milk"} · ${checkout.subscription.planName}` : null,
     });
   }
+
+  // The payment, on the panel's Payments page
+  const panelArea = area || profile?.location || "";
+  recordWebsitePayment({
+    customerName,
+    area: panelArea,
+    type: checkout.subscription ? "Subscription" : "Order",
+    method: newOrder.paymentMethod ?? "UPI",
+    amount: checkout.total,
+    websiteOrderId: newOrder.orderId,
+  });
+
+  // A new milk plan (not an extension of one) on the panel's Subscriptions page
+  const plan = checkout.subscription;
+  if (plan && !plan.extendsOrderId) {
+    const isHalfLitre = (plan.bottleLabel ?? "1 L") === "500 ml";
+    const litresPerDelivery = plan.bottlesPerDay * (isHalfLitre ? 0.5 : 1);
+    addSubscription({
+      customerName,
+      area: panelArea,
+      milkType: milkTypeOf(cartItems[0]?.productId ?? ""),
+      quantity: litresPerDelivery < 1 ? `${litresPerDelivery * 1000} ml` : `${litresPerDelivery} L`,
+      litresPerDelivery,
+      container: `${plan.bottlesPerDay} × ${plan.bottleLabel ?? "1 L"} glass bottle`,
+      frequency: "Daily",
+      planLength: planLengthOf(plan.months),
+      websiteOrderId: newOrder.orderId,
+      customerMobile,
+    });
+  }
   return newOrder;
+}
+
+// The panel's milk name for a milk bought on the website ("a2-desi-milk", "jersey-milk-half-litre" …)
+function milkTypeOf(productId: string): MilkType {
+  if (productId.startsWith("jersey-milk")) return "Jersey";
+  if (productId.startsWith("skimmed-milk")) return "Skimmed";
+  return "A2";
+}
+
+function planLengthOf(months: number): PlanLength {
+  if (months >= 12) return "1 year";
+  if (months >= 6) return "6 months";
+  return "3 months";
 }
 
 /*

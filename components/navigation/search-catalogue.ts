@@ -54,12 +54,12 @@ export const searchCatalogue: SearchCatalogueItem[] = [
   },
   {
     name: "Flours",
-    productSlug: "whole-wheat-atta",
+    productSlug: "kapti-wheat-atta",
     label: "Flours",
     imageSource: "/images/categories/flours-category-chiranvi-farm.webp",
     imageWidth: 412,
     imageHeight: 276,
-    extraSearchWords: "flour flours atta ragi jowar millet",
+    extraSearchWords: "flour flours atta wheat kapti jave multigrain ragi millet",
   },
   {
     name: "Batter",
@@ -77,22 +77,6 @@ export const searchCatalogue: SearchCatalogueItem[] = [
     imageWidth: 336,
     imageHeight: 516,
     extraSearchWords: "moringa drumstick leaves powder homemade",
-  },
-  {
-    name: "Turmeric Powder",
-    label: "Powders",
-    imageSource: "/images/products/turmeric-powder-pouch.webp",
-    imageWidth: 360,
-    imageHeight: 548,
-    extraSearchWords: "turmeric haldi powder spice homemade",
-  },
-  {
-    name: "Red Chilli Powder",
-    label: "Powders",
-    imageSource: "/images/products/red-chilli-powder-pouch.webp",
-    imageWidth: 360,
-    imageHeight: 548,
-    extraSearchWords: "red chilli chili mirchi powder spice homemade",
   },
 ];
 

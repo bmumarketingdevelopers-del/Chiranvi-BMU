@@ -263,12 +263,20 @@ function CheckoutToCartButton({
 
 // "Fast selling products": heading, View all, and the cards
 // The product's own card is left out on its own page (its View product would only open this page again)
+// The Fast selling rows always show this many products
+const FAST_SELLING_COUNT = 5;
+
 function FastSellingRow({ cards, currentSlug }: { cards: FastSellingCard[]; currentSlug: string }) {
-  // The products this row lists, as full cards with prices (in the row's order)
+  // The products this row lists, as full cards with prices (in the row's order), without this page's own
+  // product; when that leaves fewer than five, the next products of the All products page fill the row
   const allCards = useProductCards();
-  const rowCards = cards
+  const listedCards = cards
     .filter((listed) => listed.productId !== currentSlug)
     .flatMap((listed) => allCards.filter((card) => card.slug === listed.productId));
+  const extraCards = allCards.filter(
+    (card) => card.hasPage && card.slug !== currentSlug && !listedCards.some((listed) => listed.slug === card.slug),
+  );
+  const rowCards = [...listedCards, ...extraCards].slice(0, FAST_SELLING_COUNT);
   return (
     <section className={styles["fast-selling-section"]} aria-labelledby="fast-selling-heading">
       <div className={styles["fast-selling-heading-row"]}>
@@ -293,15 +301,20 @@ function FastSellingRow({ cards, currentSlug }: { cards: FastSellingCard[]; curr
   );
 }
 
+// The 500 ml bottle's price: the one set in the Chiranvi Panel, otherwise half the 1 litre price, rounded up
+function halfLitrePriceOf(page: SubscriptionPageData) {
+  return page.halfLitrePrice && page.halfLitrePrice > 0 ? page.halfLitrePrice : Math.ceil(page.price / 2);
+}
+
 /*
-  Milk in 500 ml bottles (pages with hasHalfLitreBottle): the same page with 500 ml wording and half the
-  1 litre price, rounded up, so it follows the price set in the Chiranvi Panel. Plans, bills and the cart
+  Milk in 500 ml bottles (pages with hasHalfLitreBottle): the same page with 500 ml wording and the 500 ml
+  price (set in the Chiranvi Panel, or half the 1 litre price, rounded up). Plans, bills and the cart
   all use these values; 500 ml bottles are their own line in the cart.
 */
 function toHalfLitrePage(page: SubscriptionPageData): SubscriptionPageData {
   return {
     ...page,
-    price: Math.ceil(page.price / 2),
+    price: halfLitrePriceOf(page),
     originalPrice: page.originalPrice ? Math.ceil(page.originalPrice / 2) : undefined,
     unitName: "500 ml", // "₹53 / 500 ml"
     unitShort: " × 500 ml", // "Milk (2 × 500 ml × ₹53)", "2 × 500 ml daily"
@@ -516,7 +529,7 @@ export default function SubscriptionProductPage({ page: fullPage }: { page: Subs
               <div className={styles["subscription-bottle-sizes"]} role="radiogroup" aria-label="Bottle size">
                 {[
                   { isHalf: false, label: "1 litre", price: fullPage.price },
-                  { isHalf: true, label: "500 ml", price: Math.ceil(fullPage.price / 2) },
+                  { isHalf: true, label: "500 ml", price: halfLitrePriceOf(fullPage) },
                 ].map((size) => (
                   <button
                     key={size.label}

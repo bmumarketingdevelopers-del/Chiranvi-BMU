@@ -5,10 +5,12 @@ import { useSyncExternalStore } from "react";
   connected. No wallet: money comes in for orders and subscription plans, and goes out as refunds.
   The first time, 600 sample payments from the last seven days are made (newest first); after that
   the list is saved in this browser, so retries, refunds and recorded payments stay after a refresh.
+  Every payment made on the website (an order or a milk plan, Pay now in the cart) is added here too.
 */
 
 export type PaymentType = "Order" | "Subscription" | "Refund";
-export type PaymentMethod = "UPI" | "Card" | "Cash";
+// Net banking: paid on the website (no cash on delivery there); Cash: recorded in the panel
+export type PaymentMethod = "UPI" | "Net banking" | "Card" | "Cash";
 export type PaymentStatus = "Success" | "Failed";
 
 export type AdminPayment = {
@@ -20,9 +22,10 @@ export type AdminPayment = {
   method: PaymentMethod;
   amount: number; // money in is positive, refunds are negative
   status: PaymentStatus;
+  websiteOrderId?: string; // paid on the website: its order number
 };
 
-export const PAYMENT_METHODS: PaymentMethod[] = ["UPI", "Card", "Cash"];
+export const PAYMENT_METHODS: PaymentMethod[] = ["UPI", "Net banking", "Card", "Cash"];
 
 const STORAGE_KEY = "chiranvi-admin-payments";
 
@@ -140,10 +143,27 @@ export function recordPayment(payment: Pick<AdminPayment, "customerName" | "area
   return newPayment;
 }
 
+// A payment made on the website (Pay now in the cart), with the order's number
+export function recordWebsitePayment(
+  payment: Pick<AdminPayment, "customerName" | "area" | "type" | "method" | "amount"> & { websiteOrderId: string },
+) {
+  const newPayment: AdminPayment = { ...payment, id: nextId(), paidAt: new Date().toISOString(), status: "Success" };
+  save([newPayment, ...getPayments()]);
+  return newPayment;
+}
+
+// Also follows changes made in other tabs and browsers (shared data), so a website payment shows at once
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
+  function followOtherTabs(event: StorageEvent) {
+    if (event.key !== STORAGE_KEY) return;
+    payments = null;
+    onChange();
+  }
+  window.addEventListener("storage", followOtherTabs);
   return () => {
     listeners.delete(onChange);
+    window.removeEventListener("storage", followOtherTabs);
   };
 }
 

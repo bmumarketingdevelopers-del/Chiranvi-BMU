@@ -20,9 +20,9 @@ import styles from "./all-products-page.module.css";
   back to this page.
   - Products with a page (the six starting products and the ones added in the Chiranvi Panel): one card
     each, clicking anywhere on it opens the page.
-  - The powders (Moringa, Turmeric, Red Chilli) have their own pages now. If one of those pages is deleted
-    in the panel, its card from the product list (store/products-store.ts) shows under "Powders" instead:
-    that card does not open anything; ADD and the heart work.
+  - Moringa powder has its own page. If that page is deleted in the panel, its card from the product list
+    (store/products-store.ts) shows under "Powders" instead: that card does not open anything; ADD and the
+    heart work. (Turmeric and Red Chilli powder are no longer sold; the panel can add them back.)
   - ADD puts that pack in the cart (then "− 1 +"); not logged in, it goes to the login first.
   - The heart saves the pack to the Wishlist (account → Wishlist); Notify me asks for a stock alert. Not
     logged in, both go to the login first (nothing is added without an account) and come back here.
@@ -48,7 +48,7 @@ export type ProductCard = {
 };
 
 // The powders shown before their own pages exist (ids in store/products-store.ts; the panel shows these too)
-export const POWDER_PRODUCT_IDS = ["moringa-powder", "turmeric-powder", "red-chilli-powder"];
+export const POWDER_PRODUCT_IDS = ["moringa-powder"];
 
 // Small picture on each filter button (pictures the site already has)
 const FILTER_PICTURES: Record<ShopCategory, { imageSource: string; imageWidth: number; imageHeight: number }> = {
@@ -134,9 +134,8 @@ function toPowderCards(shopProducts: ShopProduct[], pageSlugs: Set<string>): Pro
 }
 
 /*
-  Ragi and Jowar flour have their own pages now (product-page-data.ts). These cards show only if one of
-  those pages is deleted in the panel: both use the site's Ragi + Jowar flours picture; Jowar is out of
-  stock (Notify me).
+  Ragi flour has its own page (product-page-data.ts). This card shows only if that page is deleted in the
+  panel, with the site's flours picture. (Jowar flour is no longer sold; the panel can add it back.)
 */
 const FLOURS_PICTURE = { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276 };
 const UPCOMING_FLOUR_CARDS: ProductCard[] = [
@@ -154,21 +153,6 @@ const UPCOMING_FLOUR_CARDS: ProductCard[] = [
     price: 119,
     originalPrice: 140,
     tag: "New",
-  },
-  {
-    cardId: "jowar-flour-1-kg",
-    slug: "jowar-flour",
-    hasPage: false,
-    name: "Jowar Flour",
-    category: "Flours",
-    packLabel: "1 kg",
-    cartPackSize: "1 kg pouch",
-    cardNote: "stone-ground",
-    rating: { score: "4.5", count: "(196)" },
-    picture: { ...FLOURS_PICTURE, alt: "Chiranvi Farm Jowar Flour" },
-    price: 99,
-    originalPrice: 115,
-    isSoldOut: true,
   },
 ];
 

@@ -646,6 +646,9 @@ export function ProductPageForm({
   );
   const [price, setPrice] = useState(textOf(subscriptionEditing?.price));
   const [originalPrice, setOriginalPrice] = useState(textOf(subscriptionEditing?.originalPrice));
+  // Milk: the 500 ml bottle (on or off) and its own price (empty: half the 1 litre price, rounded up)
+  const [hasHalfLitreBottle, setHasHalfLitreBottle] = useState(subscriptionEditing?.hasHalfLitreBottle ?? false);
+  const [halfLitrePrice, setHalfLitrePrice] = useState(textOf(subscriptionEditing?.halfLitrePrice));
   const [unitName, setUnitName] = useState(subscriptionEditing?.unitName ?? "litre");
   const [unitShort, setUnitShort] = useState(subscriptionEditing?.unitShort ?? "L");
   const [packSize, setPackSize] = useState(subscriptionEditing?.packSize ?? "1 litre glass bottle");
@@ -855,6 +858,8 @@ export function ProductPageForm({
         timingsStripText: timingsStripText.trim(),
         price: Number(price) || 0,
         originalPrice: Number(originalPrice) > 0 ? Number(originalPrice) : undefined,
+        hasHalfLitreBottle,
+        halfLitrePrice: hasHalfLitreBottle && Number(halfLitrePrice) > 0 ? Number(halfLitrePrice) : undefined,
         unitName: unitName.trim(),
         unitShort: unitShort.trim(),
         packShort: packShort.trim(),
@@ -881,7 +886,7 @@ export function ProductPageForm({
       const priceKey = (onePage: ProductPage) =>
         onePage.kind === "one-time"
           ? onePage.packs.map((pack) => `${pack.label}:${pack.price}:${pack.originalPrice ?? ""}`).join("|")
-          : `${onePage.price}:${onePage.originalPrice ?? ""}:${onePage.plans.map((plan) => plan.percentOff).join(",")}`;
+          : `${onePage.price}:${onePage.originalPrice ?? ""}:${onePage.halfLitrePrice ?? ""}:${onePage.plans.map((plan) => plan.percentOff).join(",")}`;
       if (priceKey(page) !== priceKey(editingPage)) found.push("Prices are changed only by the owner. Put the prices back as they were.");
     }
 
@@ -1246,6 +1251,28 @@ export function ProductPageForm({
             <AdminDialogField label="Old price ₹ (crossed out)">
               <input className={adminInputClassName} inputMode="decimal" value={originalPrice} onChange={(event) => setOriginalPrice(event.target.value)} placeholder="110" />
             </AdminDialogField>
+            {/* Milk: a 500 ml bottle beside the 1 litre one, with its own price or half the litre price */}
+            <AdminDialogField label="500 ml bottle">
+              <select
+                className={adminInputClassName}
+                value={hasHalfLitreBottle ? "yes" : "no"}
+                onChange={(event) => setHasHalfLitreBottle(event.target.value === "yes")}
+              >
+                <option value="yes">Yes, sold in 500 ml too</option>
+                <option value="no">No, only this size</option>
+              </select>
+            </AdminDialogField>
+            {hasHalfLitreBottle && (
+              <AdminDialogField label="500 ml price ₹ (empty: half the price)">
+                <input
+                  className={adminInputClassName}
+                  inputMode="decimal"
+                  value={halfLitrePrice}
+                  onChange={(event) => setHalfLitrePrice(event.target.value)}
+                  placeholder={Number(price) > 0 ? String(Math.ceil(Number(price) / 2)) : "53"}
+                />
+              </AdminDialogField>
+            )}
             <AdminDialogField label="Unit (₹95 / litre)">
               <input className={adminInputClassName} value={unitName} onChange={(event) => setUnitName(event.target.value)} />
             </AdminDialogField>

@@ -139,8 +139,10 @@ export type SubscriptionProductPage = ProductPageBase & {
   deliveryByTime: string; // "7 AM"
   review: { quote: string; name: string; area: string; subscriberSince: string };
   subscriptionFastSellingCards: FastSellingCard[]; // the row under the Subscribe & save tab
-  // Milk: also sold in 500 ml bottles at half the 1 litre price (rounded up), chosen on the page
+  // Milk: also sold in 500 ml bottles, chosen on the page (switched on or off in the Chiranvi Panel)
   hasHalfLitreBottle?: boolean;
+  // The 500 ml price set in the panel; missing: half the 1 litre price, rounded up
+  halfLitrePrice?: number;
   // The tag on its product cards (All products, Best Sellers): missing = "Subscribe & save", "" = no tag
   cardTag?: "Subscribe & save" | "Best value" | "Most popular" | "";
 };
@@ -164,7 +166,7 @@ export const defaultSubscriptionFastSellingCards: FastSellingCard[] = [
   { productId: "a2-desi-ghee", name: "A2 Desi Ghee", imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, ratingCount: "7,105" },
   { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-box-chiranvi-farm.webp", imageWidth: 3712, imageHeight: 2728, ratingCount: "7,105" },
   { productId: "moringa-powder", name: "Moringa Powder", imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516, ratingCount: "7,105" },
-  { productId: "turmeric-powder", name: "Turmeric Powder", imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548, ratingCount: "7,105" },
+  { productId: "menthya-mudde-powder", name: "Menthya Mudde Powder", imageSource: "/images/products/menthya-mudde-powder-pouch.webp", imageWidth: 677, imageHeight: 672, ratingCount: "new" },
 ];
 
 // Subscribe & save plans a new subscription product starts with (the milk page's)
@@ -297,10 +299,12 @@ const gheePage: OneTimeProductPage = {
     { imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, alt: "Chiranvi Farms Desi Ghee in a glass jar" },
   ],
   pictureFit: { heightPercent: 80 },
+  // Starting prices (set the real ones in the Chiranvi Panel → Products & pricing → Edit page): 1 litre,
+  // and 500 ml / 250 ml at a half / a quarter of it (rounded up), like the milk; no crossed-out price
   packs: [
-    { packId: "250-ml", label: "250 ml", size: 250, price: 699 },
-    { packId: "500-ml", label: "500 ml", size: 500, price: 1299 },
-    { packId: "1-litre", label: "1 litre", size: 1000, price: 1399, originalPrice: 1799, tag: "Best value" },
+    { packId: "250-ml", label: "250 ml", size: 250, price: 350 },
+    { packId: "500-ml", label: "500 ml", size: 500, price: 700 },
+    { packId: "1-litre", label: "1 litre", size: 1000, price: 1399, tag: "Best value" },
   ],
   defaultPackId: "1-litre",
   priceBreakdown: { kind: "per-unit", unitLabel: "100 ml", unitSize: 100, headlineDecimals: 0, cardRounding: "whole", taxNote: "incl. all taxes" },
@@ -348,9 +352,9 @@ const jerseyGheePage: OneTimeProductPage = {
   highlights: ["Lab-tested", "Slow-cooked", "No preservatives", "Glass jar"],
   pictures: [{ ...gheePage.pictures[0], alt: "Chiranvi Farms Jersey cow ghee in a glass jar" }],
   packs: [
-    { packId: "250-ml", label: "250 ml", size: 250, price: 549 },
-    { packId: "500-ml", label: "500 ml", size: 500, price: 999 },
-    { packId: "1-litre", label: "1 litre", size: 1000, price: 1099, originalPrice: 1399, tag: "Best value" },
+    { packId: "250-ml", label: "250 ml", size: 250, price: 275 },
+    { packId: "500-ml", label: "500 ml", size: 500, price: 550 },
+    { packId: "1-litre", label: "1 litre", size: 1000, price: 1099, tag: "Best value" },
   ],
   note: { text: "Made in small batches · keep at room temperature", tone: "fresh" },
   review: { quote: "", name: "", area: "" },
@@ -383,12 +387,9 @@ const paneerPage: OneTimeProductPage = {
     },
   ],
   pictureFit: { widthPercent: 72, heightPercent: 80 },
-  packs: [
-    { packId: "200-g", label: "200 g", size: 200, price: 149 },
-    { packId: "500-g", label: "500 g", size: 500, price: 349, originalPrice: 399, tag: "Most popular" },
-    { packId: "1-kg", label: "1 kg", size: 1000, price: 649 },
-  ],
-  defaultPackId: "500-g",
+  // One pack only: more paneer is bought with "− quantity +"
+  packs: [{ packId: "250-g", label: "250 g", size: 250, price: 165 }],
+  defaultPackId: "250-g",
   priceBreakdown: { kind: "per-unit", unitLabel: "100 g", unitSize: 100, headlineDecimals: 2, cardRounding: "half", taxNote: "Inclusive of all taxes" },
   cartPackWord: "pack",
   quantityWord: { one: "pack", many: "packs" },
@@ -398,7 +399,7 @@ const paneerPage: OneTimeProductPage = {
   deliverySteps: [orderByNineStep, { icon: "box", title: "Made at 4 AM", detail: "From fresh milk" }, atYourDoorStep],
   productInformation: [
     { label: "Ingredients", value: "Cow milk, citric acid" },
-    { label: "Net quantity", value: "200 g / 500 g / 1 kg" },
+    { label: "Net quantity", value: "250 g" },
     { label: "Shelf life", value: "Best within 3 days" },
     { label: "Storage", value: "Refrigerate at 0 to 4 °C" },
     { label: "Country of origin", value: "India" },
@@ -552,9 +553,77 @@ const attaPage: OneTimeProductPage = {
 };
 
 /*
-  Ragi and Jowar flour: the atta page's one-time template (the same as ghee's) with their own text. Their
-  pack pictures are still to come, so both use the site's Ragi + Jowar flours picture until one is uploaded
-  in the Chiranvi Panel (Product pages → Edit). The 1 kg pack keeps the prices their cards showed.
+  The wheat attas sold now: Kapti and Jave wheat (they replace Whole Wheat Atta, whose page above is only
+  their template and is no longer on the website), and Multigrain atta. Starting prices; the real prices,
+  sizes and pictures are set in the Chiranvi Panel (Products & pricing → Edit page). Kapti and Jave use the
+  atta picture until their own is uploaded.
+*/
+const kaptiWheatAttaPage: OneTimeProductPage = {
+  ...attaPage,
+  slug: "kapti-wheat-atta",
+  name: "Kapti Wheat Atta",
+  tagline: "Stone-Ground Kapti Wheat, Soft Rotis",
+  description:
+    "Made from Kapti wheat grains, cleaned and stone-ground in small batches to keep their natural goodness. Makes soft rotis, chapatis and parathas with a rich, wholesome taste.",
+  badge: { text: "Traditional wheat", colour: "cream" },
+  highlights: ["Stone-ground", "100% Kapti wheat", "No maida", "No preservatives"],
+  pictures: [{ ...attaPage.pictures[0], alt: "Chiranvi Farm Kapti wheat atta pouch with a bowl of flour and wheat" }],
+  packs: [
+    { packId: "1-kg", label: "1 kg", size: 1, price: 79 },
+    { packId: "2-kg", label: "2 kg", size: 2, price: 149 },
+    { packId: "5-kg", label: "5 kg", size: 5, price: 329, tag: "Best value" },
+  ],
+  review: { quote: "", name: "", area: "" },
+  productInformation: attaPage.productInformation.map((row) => (row.label === "Ingredients" ? { ...row, value: "100% Kapti wheat" } : row)),
+};
+
+const javeWheatAttaPage: OneTimeProductPage = {
+  ...kaptiWheatAttaPage,
+  slug: "jave-wheat-atta",
+  name: "Jave Wheat Atta",
+  tagline: "Stone-Ground Jave Wheat, Rich & Wholesome",
+  description:
+    "Made from Jave wheat grains, cleaned and stone-ground in small batches. A traditional wheat for soft rotis, chapatis and everyday cooking with a rich, nutty taste.",
+  highlights: ["Stone-ground", "100% Jave wheat", "No maida", "No preservatives"],
+  pictures: [{ ...attaPage.pictures[0], alt: "Chiranvi Farm Jave wheat atta pouch with a bowl of flour and wheat" }],
+  productInformation: attaPage.productInformation.map((row) => (row.label === "Ingredients" ? { ...row, value: "100% Jave wheat" } : row)),
+};
+
+const multigrainAttaPage: OneTimeProductPage = {
+  ...attaPage,
+  slug: "multigrain-atta-flour",
+  cardNote: "many grains",
+  name: "Multigrain Atta Flour",
+  tagline: "One Flour, Many Grains",
+  description:
+    "A wholesome blend of wheat and other grains, stone-ground in small batches. Makes soft, tasty rotis and chapatis for the whole family.",
+  badge: { text: "Wholesome blend", colour: "green" },
+  rating: { score: "4.6", count: "(new)" },
+  highlights: ["Stone-ground", "Many grains", "No maida", "No preservatives"],
+  // The pouch from the ad (cropped, edges faded into the page)
+  pictures: [
+    { imageSource: "/images/products/multigrain-atta-flour-pouch.webp", imageWidth: 705, imageHeight: 735, alt: "Chiranvi Farm multigrain atta flour pouch with a bowl of flour and rotis" },
+  ],
+  pictureFit: { widthPercent: 66, heightPercent: 86 },
+  // One pack only (more with "− quantity +")
+  packs: [{ packId: "2-kg", label: "2 kg", size: 2, price: 229 }],
+  defaultPackId: "2-kg",
+  review: { quote: "", name: "", area: "" },
+  productInformation: attaPage.productInformation.map((row) =>
+    row.label === "Ingredients"
+      ? { ...row, value: "Wheat and other grains [add the grains used]" }
+      : row.label === "Net quantity"
+        ? { ...row, value: "2 kg" }
+        : row,
+  ),
+  nutritionFacts: [],
+  nutritionBasis: "",
+};
+
+/*
+  Ragi flour: the atta page's one-time template (the same as ghee's) with its own text. Its pack picture is
+  still to come, so it uses the site's flours picture until one is uploaded in the Chiranvi Panel (Product
+  pages → Edit).
 */
 const ragiFlourPage: OneTimeProductPage = {
   ...attaPage,
@@ -570,9 +639,11 @@ const ragiFlourPage: OneTimeProductPage = {
   pictures: [
     { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, alt: "Chiranvi Farm Ragi Flour pouch with ragi and a bowl of flour" },
   ],
+  // 1 / 2 / 5 kg (starting prices from ₹119 a kg; set the real ones in the Chiranvi Panel), no crossed-out price
   packs: [
-    { packId: "500-g", label: "500 g", size: 0.5, price: 65 },
-    { packId: "1-kg", label: "1 kg", size: 1, price: 119, originalPrice: 140, tag: "Best value" },
+    { packId: "1-kg", label: "1 kg", size: 1, price: 119 },
+    { packId: "2-kg", label: "2 kg", size: 2, price: 229 },
+    { packId: "5-kg", label: "5 kg", size: 5, price: 549, tag: "Best value" },
   ],
   defaultPackId: "1-kg",
   review: { quote: "", name: "", area: "" },
@@ -580,7 +651,7 @@ const ragiFlourPage: OneTimeProductPage = {
     row.label === "Ingredients"
       ? { ...row, value: "100% ragi (finger millet)" }
       : row.label === "Net quantity"
-        ? { ...row, value: "500 g / 1 kg" }
+        ? { ...row, value: "1 kg / 2 kg / 5 kg" }
         : row,
   ),
   nutritionFacts: [
@@ -590,35 +661,6 @@ const ragiFlourPage: OneTimeProductPage = {
     { label: "Carbohydrate", value: "66 g" },
     { label: "Dietary fibre", value: "11 g" },
     { label: "Calcium", value: "344 mg" },
-  ],
-};
-
-const jowarFlourPage: OneTimeProductPage = {
-  ...ragiFlourPage,
-  slug: "jowar-flour",
-  name: "Jowar Flour",
-  tagline: "Stone-Ground Sorghum, Light & Wholesome",
-  description:
-    "Made from cleaned jowar (sorghum) grains, stone-ground in small batches for a fine, fresh flour. Makes soft jowar rotis and bhakri, and works well in dosas and baking.",
-  badge: { text: "Millet goodness", colour: "cream" },
-  rating: { score: "4.5", count: "(196)" },
-  highlights: ["Stone-ground", "100% jowar", "Gluten-free", "No preservatives"],
-  pictures: [
-    { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, alt: "Chiranvi Farm Jowar Flour pouch with jowar and a bowl of flour" },
-  ],
-  packs: [
-    { packId: "500-g", label: "500 g", size: 0.5, price: 55 },
-    { packId: "1-kg", label: "1 kg", size: 1, price: 99, originalPrice: 115, tag: "Best value" },
-  ],
-  productInformation: ragiFlourPage.productInformation.map((row) =>
-    row.label === "Ingredients" ? { ...row, value: "100% jowar (sorghum)" } : row,
-  ),
-  nutritionFacts: [
-    { label: "Energy", value: "349 kcal" },
-    { label: "Protein", value: "10 g" },
-    { label: "Total fat", value: "1.7 g" },
-    { label: "Carbohydrate", value: "73 g" },
-    { label: "Dietary fibre", value: "10 g" },
   ],
 };
 
@@ -643,9 +685,8 @@ const batterPage: OneTimeProductPage = {
   pictureFit: { widthPercent: 34, heightPercent: 84 },
   hasPictureShadow: true,
   packs: [
-    { packId: "500-g", label: "500 g", size: 500, price: 59, itemCount: 10 },
-    { packId: "1-kg", label: "1 kg", size: 1000, price: 99, originalPrice: 120, tag: "Most popular", itemCount: 20 },
-    { packId: "2-kg", label: "2 kg", size: 2000, price: 179, itemCount: 40 },
+    // One pack only (more with "− quantity +"); sizes and prices can be changed in the Chiranvi Panel
+    { packId: "1-kg", label: "1 kg", size: 1000, price: 99, originalPrice: 120, itemCount: 20 },
   ],
   defaultPackId: "1-kg",
   priceBreakdown: { kind: "item-count", itemLabel: "idlis", taxNote: "incl. all taxes" },
@@ -657,7 +698,7 @@ const batterPage: OneTimeProductPage = {
   deliverySteps: [orderByNineStep, { icon: "box", title: "Ground at 4 AM", detail: "Fresh batch" }, atYourDoorStep],
   productInformation: [
     { label: "Ingredients", value: "Rice, urad dal, methi seeds, salt" },
-    { label: "Net quantity", value: "500 g / 1 kg / 2 kg" },
+    { label: "Net quantity", value: "1 kg" },
     { label: "Shelf life", value: "Best within 3 days" },
     { label: "Storage", value: "Refrigerate at 0 to 4 °C" },
     { label: "Country of origin", value: "India" },
@@ -676,8 +717,8 @@ const batterPage: OneTimeProductPage = {
 };
 
 /*
-  The powders with their own pages: coriander (a spice for cooking) and red sandal (for skin care, so no
-  nutrition facts). Pictures: the admin's uploads, cut out (see-through, shadow below). No reviews yet.
+  Coriander powder: no longer sold, but its page is the template the other powders are built on (Moringa,
+  then Menthya Mudde and Millet Ganji). Picture: the admin's upload, cut out (see-through, shadow below).
 */
 const corianderPage: OneTimeProductPage = {
   kind: "one-time",
@@ -731,47 +772,11 @@ const corianderPage: OneTimeProductPage = {
   fastSellingCards: defaultFastSellingCards,
 };
 
-const redSandalPage: OneTimeProductPage = {
-  ...corianderPage,
-  slug: "red-sandalwood-powder",
-  cardNote: "finely sieved",
-  name: "Red Sandal Powder",
-  tagline: "Pure Rakta Chandan for Skin Care",
-  description:
-    "Finely ground from red sandalwood (rakta chandan) and sieved for a smooth paste. Mix with rose water, milk or curd for a traditional face pack that leaves skin feeling fresh and even-toned.",
-  badge: { text: "For skin care", colour: "gold" },
-  rating: { score: "4.5", count: "(new)" },
-  ratingNote: "Traditional beauty care",
-  highlights: ["100% red sandalwood", "Finely sieved", "No added colour", "For external use"],
-  pictures: [
-    { imageSource: "/images/products/red-sandalwood-powder-bowl.webp", imageWidth: 984, imageHeight: 883, alt: "Chiranvi Farm red sandal powder in a wooden bowl with a scoop" },
-  ],
-  pictureFit: { widthPercent: 59, heightPercent: 78 },
-  packs: [
-    { packId: "100-g", label: "100 g", size: 100, price: 199 },
-    { packId: "250-g", label: "250 g", size: 250, price: 449 },
-    { packId: "500-g", label: "500 g", size: 500, price: 850, originalPrice: 999, tag: "Best value" },
-  ],
-  note: { text: "Finely sieved · for external use only", tone: "fresh" },
-  productInformation: [
-    { label: "Ingredients", value: "100% red sandalwood powder" },
-    { label: "Net quantity", value: "100 g / 250 g / 500 g" },
-    { label: "How to use", value: "Mix into a paste, apply for 10–15 minutes, rinse" },
-    { label: "Caution", value: "For external use only; do a patch test first" },
-    { label: "Shelf life", value: "Best within 12 months" },
-    { label: "Storage", value: "Cool, dry place; close the pouch after use" },
-    { label: "Country of origin", value: "India" },
-    { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
-  ],
-  nutritionFacts: [],
-  nutritionBasis: "",
-};
-
 /*
-  The Best Sellers powders (Moringa, Turmeric, Red Chilli): the ghee page's one-time template with their own
-  text and pouch picture. Their addresses match their cards on Products & pricing (store/products-store.ts),
-  so Best Sellers opens them and Sold out there shows here. Starting prices (500 g = the card's ₹249,
-  was ₹389); the prices, packs, picture and text are changed in the Chiranvi Panel (Product pages → Edit).
+  Moringa powder (a Best Seller): the ghee page's one-time template with its own text and pouch picture. Its
+  address matches its card on Products & pricing (store/products-store.ts), so Best Sellers opens it and
+  Sold out there shows here. Starting prices (500 g = the card's ₹249, was ₹389); the prices, packs, picture
+  and text are changed in the Chiranvi Panel (Product pages → Edit).
 */
 const moringaPage: OneTimeProductPage = {
   ...corianderPage,
@@ -785,10 +790,11 @@ const moringaPage: OneTimeProductPage = {
   rating: { score: "4.5", count: "(7,105)" },
   ratingNote: "Small-batch ground",
   highlights: ["Shade-dried leaves", "Finely ground", "No added colour", "No preservatives"],
+  // The kraft pouch from the ad (cropped, edges faded into the page)
   pictures: [
-    { imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516, alt: "Chiranvi Farm moringa leaves powder pouch" },
+    { imageSource: "/images/products/moringa-powder-kraft-pouch.webp", imageWidth: 803, imageHeight: 747, alt: "Chiranvi Farm moringa powder in a kraft pouch with a bowl of powder" },
   ],
-  pictureFit: { heightPercent: 80 },
+  pictureFit: { widthPercent: 70, heightPercent: 84 },
   packs: [
     { packId: "100-g", label: "100 g", size: 100, price: 69 },
     { packId: "250-g", label: "250 g", size: 250, price: 149 },
@@ -813,69 +819,73 @@ const moringaPage: OneTimeProductPage = {
   ],
 };
 
-const turmericPage: OneTimeProductPage = {
+/*
+  Menthya Mudde Powder (picture from its ad, cropped) and Millet Ganji Powder (the flours picture until its
+  own is uploaded). Starting prices; the real ones, the ingredients and nutrition are set in the Chiranvi
+  Panel (Products & pricing → Edit page).
+*/
+const menthyaMuddePage: OneTimeProductPage = {
   ...moringaPage,
-  slug: "turmeric-powder",
-  cardNote: "sun-dried roots",
-  name: "Turmeric Powder",
-  tagline: "Golden, Earthy Haldi from Whole Roots",
+  slug: "menthya-mudde-powder",
+  cardNote: "ready mix",
+  name: "Menthya Mudde Powder",
+  tagline: "Just Add Hot Water, Shape & Enjoy",
   description:
-    "Made from whole turmeric roots, boiled, sun-dried and stone-ground in small batches for a deep golden colour and earthy aroma. A pinch brightens curries, dals, rice and a warm glass of haldi milk.",
-  badge: { text: "Kitchen essential", colour: "gold" },
-  ratingNote: "Stone-ground",
-  highlights: ["Whole roots", "Stone-ground", "No added colour", "No preservatives"],
-  pictures: [
-    { imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548, alt: "Chiranvi Farm turmeric powder pouch" },
-  ],
-  packs: [
-    { packId: "100-g", label: "100 g", size: 100, price: 59 },
-    { packId: "250-g", label: "250 g", size: 250, price: 139 },
-    { packId: "500-g", label: "500 g", size: 500, price: 249, originalPrice: 389, tag: "Best value" },
-  ],
-  productInformation: moringaPage.productInformation.map((row) =>
-    row.label === "Ingredients" ? { ...row, value: "100% turmeric roots" } : row,
-  ),
-  nutritionFacts: [
-    { label: "Energy", value: "312 kcal" },
-    { label: "Protein", value: "10 g" },
-    { label: "Total fat", value: "3 g" },
-    { label: "Carbohydrate", value: "67 g" },
-    { label: "Dietary fibre", value: "23 g" },
-  ],
-};
-
-const redChilliPage: OneTimeProductPage = {
-  ...moringaPage,
-  slug: "red-chilli-powder",
-  cardNote: "sun-dried chillies",
-  name: "Red Chilli Powder",
-  tagline: "Bright Red, Full of Flavour",
-  description:
-    "Made from sun-dried red chillies, cleaned and ground in small batches for a bright colour and a clean, lasting heat. Just right for curries, chutneys, pickles and everyday tadka.",
-  badge: { text: "Spice it up", colour: "cream" },
+    "A traditional menthya (fenugreek) mudde mix, ground in small batches. Stir into hot water, shape into soft mudde and enjoy with saaru or curry.",
+  badge: { text: "Traditional mix", colour: "cream" },
+  rating: { score: "4.6", count: "(new)" },
   ratingNote: "Small-batch ground",
-  highlights: ["Sun-dried chillies", "Small-batch ground", "No added colour", "No preservatives"],
+  highlights: ["Ready mix", "Just add hot water", "No added colour", "No preservatives"],
   pictures: [
-    { imageSource: "/images/products/red-chilli-powder-pouch.webp", imageWidth: 360, imageHeight: 548, alt: "Chiranvi Farm red chilli powder pouch" },
+    { imageSource: "/images/products/menthya-mudde-powder-pouch.webp", imageWidth: 677, imageHeight: 672, alt: "Chiranvi Farm menthya mudde powder pouch with a bowl of powder" },
   ],
+  pictureFit: { widthPercent: 66, heightPercent: 84 },
   packs: [
-    { packId: "100-g", label: "100 g", size: 100, price: 59 },
-    { packId: "250-g", label: "250 g", size: 250, price: 139 },
-    { packId: "500-g", label: "500 g", size: 500, price: 249, originalPrice: 389, tag: "Best value" },
+    { packId: "500-g", label: "500 g", size: 500, price: 149 },
+    { packId: "1-kg", label: "1 kg", size: 1000, price: 279, tag: "Best value" },
   ],
+  defaultPackId: "1-kg",
+  note: { text: "Ground in small batches · resealable zip pouch", tone: "fresh" },
   productInformation: moringaPage.productInformation.map((row) =>
-    row.label === "Ingredients" ? { ...row, value: "100% red chillies" } : row,
+    row.label === "Ingredients"
+      ? { ...row, value: "Menthya (fenugreek) mudde mix [add the ingredients]" }
+      : row.label === "Net quantity"
+        ? { ...row, value: "500 g / 1 kg" }
+        : row,
   ),
-  nutritionFacts: [
-    { label: "Energy", value: "282 kcal" },
-    { label: "Protein", value: "13 g" },
-    { label: "Total fat", value: "14 g" },
-    { label: "Carbohydrate", value: "50 g" },
-    { label: "Dietary fibre", value: "35 g" },
-  ],
+  nutritionFacts: [],
+  nutritionBasis: "",
 };
 
-// Order on the All products page: the three milks, then the ghees, paneer, the butters, atta, batter, powders
+const milletGanjiPage: OneTimeProductPage = {
+  ...menthyaMuddePage,
+  slug: "millet-ganji-powder",
+  cardNote: "porridge mix",
+  name: "Millet Ganji Powder",
+  tagline: "A Warm, Wholesome Millet Porridge",
+  description:
+    "A wholesome millet ganji mix, ground in small batches. Cook with water or milk for a warm, filling porridge for breakfast or an evening meal.",
+  badge: { text: "Millet goodness", colour: "green" },
+  highlights: ["Millets", "Small-batch ground", "No added sugar", "No preservatives"],
+  pictures: [
+    { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276, alt: "Chiranvi Farm millet ganji powder" },
+  ],
+  pictureFit: { widthPercent: 78, heightPercent: 88 },
+  packs: [
+    { packId: "500-g", label: "500 g", size: 500, price: 129 },
+    { packId: "1-kg", label: "1 kg", size: 1000, price: 239, tag: "Best value" },
+  ],
+  productInformation: menthyaMuddePage.productInformation.map((row) =>
+    row.label === "Ingredients" ? { ...row, value: "Millets [add the millets used]" } : row,
+  ),
+};
+
+/*
+  Order on the All products page: the three milks, the ghees, paneer, the butters, the attas and flours,
+  batter, then the powders. No longer sold: Whole Wheat Atta (Kapti and Jave replace it; its page above is
+  their template), Coriander powder (its page is the powders' template), Jowar flour, and Turmeric, Red
+  Chilli and Red Sandal powder. The Chiranvi Panel can add any of them again ("Add product").
+*/
 export const startingProductPages: ProductPage[] = [
   milkPage,
   jerseyMilkPage,
@@ -885,15 +895,14 @@ export const startingProductPages: ProductPage[] = [
   paneerPage,
   butterPage,
   jerseyButterPage,
-  attaPage,
+  kaptiWheatAttaPage,
+  javeWheatAttaPage,
+  multigrainAttaPage,
   ragiFlourPage,
-  jowarFlourPage,
   batterPage,
+  menthyaMuddePage,
+  milletGanjiPage,
   moringaPage,
-  turmericPage,
-  redChilliPage,
-  corianderPage,
-  redSandalPage,
 ];
 
 // Page address from a product name: "Ragi Flour" → "ragi-flour"

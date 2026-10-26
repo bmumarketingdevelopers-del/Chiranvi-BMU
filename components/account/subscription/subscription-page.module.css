@@ -131,6 +131,198 @@
   color: #1e2a22;
 }
 
+/* Pause already approved or running: the button stays, greyed */
+.subscription-pause-button:disabled {
+  background: #9fb3a5;
+  cursor: default;
+}
+
+/* A pause request waiting for approval: cancel it (outlined) */
+.subscription-cancel-pause-button {
+  font-family: var(--font-ubuntu), sans-serif;
+  min-width: calc(170 * var(--account-design-pixel));
+  height: calc(38 * var(--account-design-pixel));
+  padding: 0 calc(18 * var(--account-design-pixel));
+  border: 1.5px solid #2f6b3f;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-size: calc(14 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #2f6b3f;
+  cursor: pointer;
+}
+
+.subscription-cancel-pause-button:hover,
+.subscription-cancel-pause-button:focus-visible {
+  background: #e6f0e1;
+}
+
+/* The pause request's answer under the card's details */
+.subscription-pause-note {
+  margin-top: calc(10 * var(--account-design-pixel));
+  padding: calc(8 * var(--account-design-pixel)) calc(12 * var(--account-design-pixel));
+  border-radius: calc(10 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  line-height: 1.45;
+}
+
+.subscription-pause-note-waiting,
+.subscription-pause-note-paused {
+  background: #fbf3e1;
+  color: #7a5600;
+}
+
+.subscription-pause-note-scheduled {
+  background: #e6f0e1;
+  color: #1f4d2e;
+}
+
+/* Not approved: red, as it did not go through */
+.subscription-pause-note-rejected {
+  background: #fdecea;
+  color: #a93226;
+}
+
+/* ---------- Pause pop-up ---------- */
+
+.pause-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(19, 37, 27, 0.45);
+  overflow-y: auto;
+}
+
+.pause-popup {
+  position: relative;
+  width: min(calc(440 * var(--account-design-pixel)), 100%);
+  padding: calc(24 * var(--account-design-pixel));
+  border-radius: calc(18 * var(--account-design-pixel));
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(19, 37, 27, 0.25);
+  color: #1e2a22;
+}
+
+.pause-popup-close-button {
+  position: absolute;
+  top: calc(14 * var(--account-design-pixel));
+  right: calc(14 * var(--account-design-pixel));
+  display: grid;
+  place-items: center;
+  width: calc(32 * var(--account-design-pixel));
+  height: calc(32 * var(--account-design-pixel));
+  border-radius: 50%;
+  background: #f1f4ef;
+  cursor: pointer;
+}
+
+.pause-popup-close-button svg {
+  width: 50%;
+  height: 50%;
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.pause-popup-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(21 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.pause-popup-intro {
+  margin-top: calc(6 * var(--account-design-pixel));
+  padding-right: calc(26 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  line-height: 1.5;
+  color: #6e7a72;
+}
+
+.pause-popup-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(12 * var(--account-design-pixel));
+}
+
+.pause-popup-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--account-design-pixel));
+  margin-top: calc(14 * var(--account-design-pixel));
+  font-size: calc(13 * var(--account-design-pixel));
+  font-weight: 600;
+}
+
+.pause-popup-field input,
+.pause-popup-field select {
+  width: 100%;
+  height: calc(44 * var(--account-design-pixel));
+  padding: 0 calc(12 * var(--account-design-pixel));
+  border: 1.5px solid #dfe3dc;
+  border-radius: calc(10 * var(--account-design-pixel));
+  background: #ffffff;
+  font: inherit;
+  font-weight: 400;
+  font-size: calc(14 * var(--account-design-pixel));
+  color: #1e2a22;
+  outline: none;
+}
+
+.pause-popup-field input:focus,
+.pause-popup-field select:focus {
+  border-color: #2f6b3f;
+}
+
+.pause-popup-field select.pause-popup-select-empty {
+  color: #9aa39c;
+}
+
+.pause-popup-summary {
+  margin-top: calc(8 * var(--account-design-pixel));
+  font-size: calc(12.5 * var(--account-design-pixel));
+  color: #2f6b3f;
+}
+
+.pause-popup-buttons {
+  display: flex;
+  gap: calc(10 * var(--account-design-pixel));
+  margin-top: calc(20 * var(--account-design-pixel));
+}
+
+.pause-popup-cancel-button,
+.pause-popup-send-button {
+  flex: 1;
+  height: calc(44 * var(--account-design-pixel));
+  border-radius: calc(11 * var(--account-design-pixel));
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14.5 * var(--account-design-pixel));
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pause-popup-cancel-button {
+  border: 1.5px solid #dfe3dc;
+  background: #ffffff;
+  color: #1e2a22;
+}
+
+.pause-popup-send-button {
+  background: #1f4d2e;
+  color: #ffffff;
+}
+
+/* Locked until both dates and a reason are filled */
+.pause-popup-send-button:disabled {
+  background: #e6f0e1;
+  color: #8aa391;
+  cursor: not-allowed;
+}
+
 .subscription-extend-button:hover,
 .subscription-extend-button:focus-visible {
   background: #eaa910;

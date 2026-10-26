@@ -1,10 +1,14 @@
 import { useSyncExternalStore } from "react";
+import { setWebsitePlanPause } from "./admin-subscriptions-store";
 
 /*
   Pause requests seen in the Chiranvi Panel (Pause requests page, and the count on its sidebar
   badge), until the database is connected: customers asking to stop milk for a few days.
   The first time, 56 sample requests are made (5 waiting for approval); after that the list is saved in
   this browser, so approvals and rejections stay after a refresh.
+  Customers send real requests from My Subscription ("Pause subscription": from, resume on, reason). The
+  customer sees the answer there; an approved one also pauses that plan on the Subscriptions page for
+  those days.
 */
 
 export type PauseRequestStatus = "Pending" | "Approved" | "Rejected";
@@ -21,7 +25,14 @@ export type PauseRequest = {
   reason: string;
   status: PauseRequestStatus;
   decidedBy?: string; // who approved or rejected it
+  // Sent from the website: the plan's order number and the customer's mobile number
+  websiteOrderId?: string;
+  customerMobile?: string;
+  requestedAt?: string; // ISO date and time
 };
+
+// Reasons a customer can choose on My Subscription
+export const PAUSE_REASONS = ["Travelling", "Out of town", "Guests at home", "Health reasons", "Other"];
 
 const STORAGE_KEY = "chiranvi-admin-pause-requests";
 
@@ -92,20 +103,52 @@ function getRequests() {
   return requests as PauseRequest[];
 }
 
-export function decidePauseRequest(id: string, status: "Approved" | "Rejected", decidedBy: string) {
-  requests = getRequests().map((request) => (request.id === id ? { ...request, status, decidedBy } : request));
+function save(newRequests: PauseRequest[]) {
+  requests = newRequests;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(newRequests));
   } catch {
     // Storage blocked: changes last until the page is refreshed.
   }
   listeners.forEach((onChange) => onChange());
 }
 
+// Approved for a plan bought on the website: that plan is paused for those days on the Subscriptions page
+export function decidePauseRequest(id: string, status: "Approved" | "Rejected", decidedBy: string) {
+  const decided = getRequests().find((request) => request.id === id);
+  save(getRequests().map((request) => (request.id === id ? { ...request, status, decidedBy } : request)));
+  if (decided?.websiteOrderId) {
+    setWebsitePlanPause(decided.websiteOrderId, status === "Approved" ? { pauseFrom: decided.pauseFrom, resumeOn: decided.resumeOn } : null);
+  }
+}
+
+// A customer's request from My Subscription: waits for the panel's answer (Pending)
+export function addPauseRequest(
+  request: Pick<PauseRequest, "customerName" | "area" | "plan" | "frequency" | "litresPerDay" | "pauseFrom" | "resumeOn" | "reason" | "websiteOrderId" | "customerMobile">,
+) {
+  const highest = Math.max(0, ...getRequests().map((existing) => Number(existing.id.replace(/\D/g, ""))));
+  const newRequest: PauseRequest = { ...request, id: `PR-${highest + 1}`, status: "Pending", requestedAt: new Date().toISOString() };
+  save([newRequest, ...getRequests()]);
+  return newRequest;
+}
+
+// The customer cancels a request the panel has not answered yet
+export function cancelPauseRequest(id: string) {
+  save(getRequests().filter((request) => !(request.id === id && request.status === "Pending")));
+}
+
+// Also follows changes made in other tabs and browsers (shared data): the customer sees the answer at once
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
+  function followOtherTabs(event: StorageEvent) {
+    if (event.key !== STORAGE_KEY) return;
+    requests = null;
+    onChange();
+  }
+  window.addEventListener("storage", followOtherTabs);
   return () => {
     listeners.delete(onChange);
+    window.removeEventListener("storage", followOtherTabs);
   };
 }
 
