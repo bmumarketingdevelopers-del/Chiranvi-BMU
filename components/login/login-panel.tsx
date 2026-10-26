@@ -98,11 +98,15 @@ export default function LoginPanel({
     // Connect to the OTP service: check otpDigits.join("") for fullMobileNumber and log the user in here.
     rememberLogin(mobileNumberDigits);
     // A new customer (no saved profile yet): straight to the Profile page to fill in their details
-    // (a product they were adding still goes into the cart first)
+    // (a product they were adding still goes into the cart first). Back from Profile returns to where they
+    // started (e.g. Best Sellers), not to the login: the login page is replaced by Profile in the history
+    // (the phone sheet is not a page of its own, so there Profile is simply opened on top).
     if (!getCustomerProfile(mobileNumberDigits)) {
       addPendingProductToCart();
+      takePageAfterLogin();
       onClose?.();
-      router.push("/account");
+      if (layout === "bottom-sheet") router.push("/account");
+      else router.replace("/account");
       return;
     }
     // Login started from "Add to cart": the product goes into the cart and the visitor stays on the
