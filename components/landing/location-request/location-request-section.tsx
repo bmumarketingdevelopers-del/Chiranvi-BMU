@@ -47,7 +47,7 @@ const chiranviLogo: PinPicture = { imageSource: "/images/brand/chiranvi-farm-log
   Anything else is "Others", with its own box and an empty pincode.
 */
 const BENGALURU_AREA_PINCODES: Record<string, string> = {
-  Banashankari: "560050",
+  Banashankarii: "560050",
   "Bannerghatta Road": "560076",
   Basavanagudi: "560004",
   Bellandur: "560103",
