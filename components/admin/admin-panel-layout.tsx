@@ -15,6 +15,7 @@ import { usePauseRequests } from "@/store/admin-pause-requests-store";
 import { useComplaintTickets } from "@/store/admin-complaints-store";
 import { useTodayDeliveries } from "@/store/admin-deliveries-store";
 import { useNewCustomerCount } from "@/store/admin-customers-store";
+import { useNewOrders } from "@/store/admin-orders-store";
 import { AdminModuleProvider } from "./admin-shared";
 import styles from "./admin-panel.module.css";
 
@@ -63,7 +64,6 @@ const panelPageGroups: { title: string; pages: PanelPage[] }[] = [
         href: "/admin/orders",
         label: "Orders",
         access: "orders",
-        badge: { count: 12, tone: "green" },
         iconPaths: ["M9 3.5h6v3H9z", "M7 5H5.5v15.5h13V5H17", "M8.5 11.5h7", "M8.5 15.5h5"],
       },
       {
@@ -192,8 +192,8 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
   const staffAccess = useCurrentStaffAccess();
   const pathname = usePathname();
   const router = useRouter();
-  // Live counts: pause requests waiting, open high-priority complaints and today's missed deliveries
-  // (the others are samples)
+  // Live counts: new orders and customers, pause requests waiting, open high-priority complaints and
+  // today's missed deliveries (the others are samples)
   const waitingPauseRequests = usePauseRequests().filter((request) => request.status === "Pending").length;
   const urgentComplaints = useComplaintTickets().filter(
     (ticket) => ticket.status === "Open" && ticket.priority === "High",
@@ -201,6 +201,8 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
   const missedDeliveries = useTodayDeliveries().filter((delivery) => delivery.status === "Missed").length;
   // Customers who signed up on the website since the Customers page was last opened
   const newCustomers = useNewCustomerCount();
+  // Website orders placed since the Orders page was last opened
+  const newOrders = useNewOrders().length;
   // Phones and tablets: the sidebar as a slide-in menu
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPathname, setMenuPathname] = useState(pathname);
@@ -241,7 +243,7 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
   }
 
   const currentPage = panelPageGroups.flatMap((group) => group.pages).find((page) => page.href === pathname);
-  const waitingCount = waitingPauseRequests + urgentComplaints + missedDeliveries + newCustomers;
+  const waitingCount = waitingPauseRequests + urgentComplaints + missedDeliveries + newCustomers + newOrders;
 
   return (
     <div className={styles["admin-panel"]}>
@@ -289,7 +291,9 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
                 {openablePages.map((page) => {
                   const isCurrentPage = pathname === page.href;
                   const liveCount =
-                    page.href === "/admin/pause-requests"
+                    page.href === "/admin/orders"
+                      ? { count: newOrders, tone: "green" as const }
+                      : page.href === "/admin/pause-requests"
                       ? { count: waitingPauseRequests, tone: "orange" as const }
                       : page.href === "/admin/refunds"
                         ? { count: urgentComplaints, tone: "red" as const }

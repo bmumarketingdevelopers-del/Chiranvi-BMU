@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { setCustomerOrderStatus, type OrderStatus } from "./orders-store";
 import { customerIdForMobile } from "./admin-customers-store";
 
@@ -57,6 +57,8 @@ const TO_CUSTOMER_STATUS: Record<AdminOrderStatus, OrderStatus> = {
 };
 
 const STORAGE_KEY = "chiranvi-admin-orders";
+// When the Orders page was last opened (website orders placed after it are "new": sidebar badge and bell)
+const SEEN_STORAGE_KEY = "chiranvi-admin-orders-seen-at";
 
 const sampleCustomers: [string, string][] = [
   ["Priya Sharma", "RR Nagar"],
@@ -226,12 +228,37 @@ export function addAdminOrder(order: Omit<AdminOrder, "orderNumber" | "placedAt"
   return newOrder;
 }
 
+let seenAt: string | null = null;
+
+function getSeenAt() {
+  if (seenAt !== null) return seenAt;
+  if (typeof window === "undefined") return "";
+  try {
+    seenAt = window.localStorage.getItem(SEEN_STORAGE_KEY) ?? "";
+  } catch {
+    seenAt = "";
+  }
+  return seenAt;
+}
+
+// The Orders page was opened: the new orders are now seen (the badge and the bell's list clear)
+export function markOrdersSeen() {
+  seenAt = new Date().toISOString();
+  try {
+    window.localStorage.setItem(SEEN_STORAGE_KEY, seenAt);
+  } catch {
+    // Storage blocked: seen until the page is refreshed.
+  }
+  listeners.forEach((onChange) => onChange());
+}
+
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
   // A customer's order placed in another tab (the website open next to the panel)
   function followOtherTabs(event: StorageEvent) {
-    if (event.key !== STORAGE_KEY) return;
-    adminOrders = null;
+    if (event.key === STORAGE_KEY) adminOrders = null;
+    else if (event.key === SEEN_STORAGE_KEY) seenAt = null;
+    else return;
     onChange();
   }
   window.addEventListener("storage", followOtherTabs);
@@ -243,4 +270,15 @@ function subscribe(onChange: () => void) {
 
 export function useAdminOrders() {
   return useSyncExternalStore(subscribe, getOrders, () => EMPTY);
+}
+
+// Website orders placed since the Orders page was last opened, newest first (sidebar badge and bell);
+// orders added in the panel itself are not counted
+export function useNewOrders() {
+  const allOrders = useAdminOrders();
+  const lastSeen = useSyncExternalStore(subscribe, getSeenAt, () => "");
+  return useMemo(
+    () => allOrders.filter((order) => order.websiteOrderId && order.placedAt > lastSeen),
+    [allOrders, lastSeen],
+  );
 }

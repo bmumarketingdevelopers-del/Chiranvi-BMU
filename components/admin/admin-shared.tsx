@@ -1,7 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import Link from "next/link";
 import { useCurrentStaffAccess, type PanelModule, type PermissionAction } from "@/store/staff-access-store";
+import { useNewOrders } from "@/store/admin-orders-store";
+import { useNewCustomers } from "@/store/admin-customers-store";
 import { dashboardAlerts } from "./admin-dashboard-data";
 import AdminDateRangePicker from "./admin-date-range-picker";
 import dashboardStyles from "./admin-dashboard.module.css";
@@ -91,6 +94,113 @@ function useCloseOnOutside(isOpen: boolean, close: () => void) {
   return areaRef;
 }
 
+// 5:23 pm today, or 24 Oct, 5:23 pm
+function formatNotificationTime(isoTime: string) {
+  const time = new Date(isoTime);
+  const clock = time.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true });
+  return time.toDateString() === new Date().toDateString()
+    ? clock
+    : `${time.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}, ${clock}`;
+}
+
+// The most new items listed in the bell (the rest are counted under them)
+const NEW_ITEMS_SHOWN = 6;
+
+/*
+  The bell next to the search (every panel page and the dashboard): the dot shows while there are new
+  website orders or new customers (since their page was last opened, as on the sidebar badges). Its
+  pop-up lists them newest first, each opening its page (which marks them seen), then the alerts.
+*/
+export function AdminNotificationsBell() {
+  const [isOpen, setIsOpen] = useState(false);
+  const areaRef = useCloseOnOutside(isOpen, () => setIsOpen(false));
+  const access = useCurrentStaffAccess();
+  // Only what the person's role can open
+  const newOrders = useNewOrders();
+  const newCustomers = useNewCustomers();
+  const newItems = [
+    ...(access?.can("orders", "view") ? newOrders : []).map((order) => ({
+      key: `order-${order.orderNumber}`,
+      href: "/admin/orders",
+      time: order.placedAt,
+      title: `New order ${order.orderNumber}`,
+      detail: `${order.customerName}${order.area ? ` · ${order.area}` : ""} · ₹${order.amount.toLocaleString("en-IN")}`,
+      icon: ["M9 3.5h6v3H9z", "M7 5H5.5v15.5h13V5H17", "M8.5 11.5h7", "M8.5 15.5h5"],
+    })),
+    ...(access?.can("customers", "view") ? newCustomers : []).map((customer) => ({
+      key: `customer-${customer.id}`,
+      href: "/admin/customers",
+      time: customer.registeredAt ?? "",
+      title: `New customer ${customer.name}`,
+      detail: `${customer.id}${customer.area ? ` · ${customer.area}` : ""}`,
+      icon: ["M12 11.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z", "M4.5 20.5a7.5 7.5 0 0 1 15 0"],
+    })),
+  ].sort((first, second) => second.time.localeCompare(first.time));
+
+  return (
+    <div ref={areaRef} className={dashboardStyles["admin-popup-anchor"]} data-admin-popup>
+      <button
+        type="button"
+        className={dashboardStyles["admin-bell-button"]}
+        aria-label={newItems.length > 0 ? `Notifications, ${newItems.length} new` : "Notifications"}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((wasOpen) => !wasOpen)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" />
+          <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
+        </svg>
+        {newItems.length > 0 && <span className={dashboardStyles["admin-bell-dot"]} aria-hidden="true" />}
+      </button>
+      {isOpen && (
+        <div className={`${dashboardStyles["admin-popup"]} ${dashboardStyles["admin-notifications"]}`}>
+          <p className={dashboardStyles["admin-popup-title"]}>New{newItems.length > 0 ? ` (${newItems.length})` : ""}</p>
+          {newItems.length === 0 && <p className={dashboardStyles["admin-notification-empty"]}>No new orders or customers</p>}
+          {newItems.slice(0, NEW_ITEMS_SHOWN).map((item) => (
+            <Link key={item.key} href={item.href} className={dashboardStyles["admin-notification-link"]} onClick={() => setIsOpen(false)}>
+              <span className={`${dashboardStyles["admin-alert-icon"]} ${dashboardStyles["admin-alert-icon-green"]}`}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  {item.icon.map((path) => (
+                    <path key={path} d={path} />
+                  ))}
+                </svg>
+              </span>
+              <span>
+                <span className={dashboardStyles["admin-alert-title"]}>{item.title}</span>
+                <span className={dashboardStyles["admin-alert-detail"]}>
+                  {item.detail} · {formatNotificationTime(item.time)}
+                </span>
+              </span>
+            </Link>
+          ))}
+          {newItems.length > NEW_ITEMS_SHOWN && (
+            <p className={dashboardStyles["admin-notification-empty"]}>and {newItems.length - NEW_ITEMS_SHOWN} more</p>
+          )}
+
+          <p className={`${dashboardStyles["admin-popup-title"]} ${dashboardStyles["admin-notifications-second-title"]}`}>
+            Needs your attention
+          </p>
+          {dashboardAlerts.map((alert) => (
+            <p key={alert.title} className={dashboardStyles["admin-notification"]}>
+              <span className={`${dashboardStyles["admin-alert-icon"]} ${dashboardStyles[`admin-alert-icon-${alert.tone}`]}`}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  {alert.icon.map((path) => (
+                    <path key={path} d={path} />
+                  ))}
+                </svg>
+              </span>
+              <span>
+                <span className={dashboardStyles["admin-alert-title"]}>{alert.title}</span>
+                <span className={dashboardStyles["admin-alert-detail"]}>{alert.detail}</span>
+              </span>
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AdminPageTop({
   title,
   description,
@@ -121,14 +231,12 @@ export function AdminPageTop({
   // Shown on the left of the second row instead of nothing (Products: the category tabs)
   belowSearch?: ReactNode;
 }) {
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isRangePickerOpen, setIsRangePickerOpen] = useState(false);
   // The role decides whether the main (New / Add) button and Export show
   const canCreate = useAdminCan("create");
   const canExport = useAdminCan("export");
   if (!canCreate) onAction = undefined;
   if (!canExport) onExport = undefined;
-  const notificationsRef = useCloseOnOutside(isNotificationsOpen, () => setIsNotificationsOpen(false));
   const rangeRef = useCloseOnOutside(isRangePickerOpen, () => setIsRangePickerOpen(false));
   const hasRange = today && rangeFrom && rangeTo && onRangeChange;
 
@@ -155,43 +263,7 @@ export function AdminPageTop({
             />
           </label>
 
-          <div ref={notificationsRef} className={dashboardStyles["admin-popup-anchor"]}>
-            <button
-              type="button"
-              className={dashboardStyles["admin-bell-button"]}
-              aria-label="Notifications"
-              aria-expanded={isNotificationsOpen}
-              onClick={() => setIsNotificationsOpen((isOpen) => !isOpen)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" />
-                <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
-              </svg>
-              <span className={dashboardStyles["admin-bell-dot"]} aria-hidden="true" />
-            </button>
-            {isNotificationsOpen && (
-              <div className={`${dashboardStyles["admin-popup"]} ${dashboardStyles["admin-notifications"]}`}>
-                <p className={dashboardStyles["admin-popup-title"]}>Needs your attention</p>
-                {dashboardAlerts.map((alert) => (
-                  <p key={alert.title} className={dashboardStyles["admin-notification"]}>
-                    <span
-                      className={`${dashboardStyles["admin-alert-icon"]} ${dashboardStyles[`admin-alert-icon-${alert.tone}`]}`}
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        {alert.icon.map((path) => (
-                          <path key={path} d={path} />
-                        ))}
-                      </svg>
-                    </span>
-                    <span>
-                      <span className={dashboardStyles["admin-alert-title"]}>{alert.title}</span>
-                      <span className={dashboardStyles["admin-alert-detail"]}>{alert.detail}</span>
-                    </span>
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
+          <AdminNotificationsBell />
 
           {actionLabel && onAction && (
             <button type="button" className={dashboardStyles["admin-new-order-button"]} onClick={onAction}>

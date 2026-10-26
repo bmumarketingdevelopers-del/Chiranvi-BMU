@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ADMIN_ORDER_STATUSES,
   OPEN_ORDER_STATUSES,
   addAdminOrder,
   changeAdminOrderStatus,
+  markOrdersSeen,
   useAdminOrders,
   type AdminOrder,
   type AdminOrderStatus,
@@ -108,6 +109,11 @@ function OrdersPage() {
   // The order whose details are open ("View details")
   const [viewingNumber, setViewingNumber] = useState<string | null>(null);
   const viewing = orders.find((order) => order.orderNumber === viewingNumber);
+
+  // Opening this page counts as seeing the new orders: the sidebar badge and the bell's list clear
+  useEffect(() => {
+    markOrdersSeen();
+  }, []);
 
   function moveOrder(order: AdminOrder, status: AdminOrderStatus) {
     changeAdminOrderStatus(order.orderNumber, status);

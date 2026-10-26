@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import type { CustomerProfileDetails } from "./customer-profiles-store";
 
 /*
@@ -261,9 +261,16 @@ export function useAdminCustomers() {
   return useSyncExternalStore(subscribe, getCustomers, () => EMPTY);
 }
 
-// Customers who signed up on the website since the Customers page was last opened (sidebar badge)
-export function useNewCustomerCount() {
+// Customers who signed up on the website since the Customers page was last opened (sidebar badge and bell)
+export function useNewCustomers() {
   const allCustomers = useAdminCustomers();
   const lastSeen = useSyncExternalStore(subscribe, getSeenAt, () => "");
-  return allCustomers.filter((customer) => customer.registeredAt && customer.registeredAt > lastSeen).length;
+  return useMemo(
+    () => allCustomers.filter((customer) => customer.registeredAt && customer.registeredAt > lastSeen),
+    [allCustomers, lastSeen],
+  );
+}
+
+export function useNewCustomerCount() {
+  return useNewCustomers().length;
 }

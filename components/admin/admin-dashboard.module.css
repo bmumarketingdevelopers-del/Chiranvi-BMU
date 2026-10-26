@@ -222,6 +222,37 @@
   padding: calc(7 * var(--admin-pixel)) 0;
 }
 
+/* A new order or customer in the bell: opens its page */
+.admin-notification-link {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+  margin: 0 calc(-6 * var(--admin-pixel));
+  padding: calc(7 * var(--admin-pixel)) calc(6 * var(--admin-pixel));
+  border-radius: calc(8 * var(--admin-pixel));
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-notification-link:hover,
+.admin-notification-link:focus-visible {
+  background: #f1f6ee;
+}
+
+/* "No new orders or customers" / "and 3 more" */
+.admin-notification-empty {
+  padding: calc(4 * var(--admin-pixel)) 0 calc(6 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #6e7a72;
+}
+
+/* "Needs your attention" under the new items */
+.admin-notifications-second-title {
+  margin-top: calc(8 * var(--admin-pixel));
+  padding-top: calc(10 * var(--admin-pixel));
+  border-top: 1px solid #eef0ea;
+}
+
 .admin-order-menu {
   width: calc(170 * var(--admin-pixel));
 }
@@ -300,6 +331,12 @@
 .admin-alert-icon-orange,
 .admin-alert-icon-blue {
   background: #f5bf2c;
+  color: #1f4d2e;
+}
+
+/* New orders and customers in the bell: light green */
+.admin-alert-icon-green {
+  background: #e6f0e1;
   color: #1f4d2e;
 }
 

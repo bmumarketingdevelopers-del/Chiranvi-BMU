@@ -18,6 +18,7 @@ import {
 import { useTodayDeliveries } from "@/store/admin-deliveries-store";
 import { useDeliveryRoutes } from "@/store/admin-routes-store";
 import sharedStyles from "./admin-shared.module.css";
+import { AdminNotificationsBell } from "./admin-shared";
 import AdminDateRangePicker from "./admin-date-range-picker";
 import styles from "./admin-dashboard.module.css";
 
@@ -76,7 +77,6 @@ export default function AdminDashboard() {
   const [searchText, setSearchText] = useState("");
   const allOrders = useAdminOrders();
   const orders = useMemo(() => allOrders.slice(0, 5), [allOrders]);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isRangePickerOpen, setIsRangePickerOpen] = useState(false);
   // The chosen date range: the last seven days at first
   const [rangeFrom, setRangeFrom] = useState(
@@ -95,7 +95,6 @@ export default function AdminDashboard() {
         (event.target as Element).closest?.("[data-admin-popup]")
       )
         return;
-      setIsNotificationsOpen(false);
       setIsRangePickerOpen(false);
       setOpenOrderMenu(null);
     }
@@ -206,51 +205,8 @@ export default function AdminDashboard() {
             />
           </label>
 
-          <div className={styles["admin-popup-anchor"]} data-admin-popup>
-            <button
-              type="button"
-              className={styles["admin-bell-button"]}
-              aria-label="Notifications"
-              aria-expanded={isNotificationsOpen}
-              onClick={() => setIsNotificationsOpen((isOpen) => !isOpen)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" />
-                <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
-              </svg>
-              <span className={styles["admin-bell-dot"]} aria-hidden="true" />
-            </button>
-            {isNotificationsOpen && (
-              <div
-                className={`${styles["admin-popup"]} ${styles["admin-notifications"]}`}
-              >
-                <p className={styles["admin-popup-title"]}>
-                  Needs your attention
-                </p>
-                {dashboardAlerts.map((alert) => (
-                  <p key={alert.title} className={styles["admin-notification"]}>
-                    <span
-                      className={`${styles["admin-alert-icon"]} ${styles[`admin-alert-icon-${alert.tone}`]}`}
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        {alert.icon.map((path) => (
-                          <path key={path} d={path} />
-                        ))}
-                      </svg>
-                    </span>
-                    <span>
-                      <span className={styles["admin-alert-title"]}>
-                        {alert.title}
-                      </span>
-                      <span className={styles["admin-alert-detail"]}>
-                        {alert.detail}
-                      </span>
-                    </span>
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Bell: new orders and customers, then the alerts (shared with the other panel pages) */}
+          <AdminNotificationsBell />
 
           <Link
             href="/admin/orders"
