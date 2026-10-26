@@ -156,8 +156,8 @@ export type CartSubscription = {
   bottleCount: number;
   planTotal: number; // what the customer pays
   oneTimeTotal: number; // the same bottles at the one-time price
-  bottleLabel?: string; // "½ L" (missing: "1 L")
-  unitName?: string; // what the price is per: "½ litre" (missing: "litre")
+  bottleLabel?: string; // "500 ml" (missing: "1 L")
+  unitName?: string; // what the price is per: "500 ml" (missing: "litre")
   extendsOrderId?: string; // "Extend Plan" on My Subscription: adds these days to that running plan
 };
 

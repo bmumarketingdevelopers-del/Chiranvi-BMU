@@ -139,7 +139,7 @@ export type SubscriptionProductPage = ProductPageBase & {
   deliveryByTime: string; // "7 AM"
   review: { quote: string; name: string; area: string; subscriberSince: string };
   subscriptionFastSellingCards: FastSellingCard[]; // the row under the Subscribe & save tab
-  // Milk: also sold in ½ litre bottles at half the 1 litre price (rounded up), chosen on the page
+  // Milk: also sold in 500 ml bottles at half the 1 litre price (rounded up), chosen on the page
   hasHalfLitreBottle?: boolean;
   // The tag on its product cards (All products, Best Sellers): missing = "Subscribe & save", "" = no tag
   cardTag?: "Subscribe & save" | "Best value" | "Most popular" | "";
@@ -241,7 +241,7 @@ const milkPage: SubscriptionProductPage = {
 };
 
 /*
-  Jersey and Skimmed milk: the same page as A2 milk (subscription, 1 L or ½ L) with their own name, text
+  Jersey and Skimmed milk: the same page as A2 milk (subscription, 1 L or 500 ml) with their own name, text
   and price. They start with the A2 milk's picture, review-free; the picture and texts are changed in the
   Chiranvi Panel (Product pages → Edit).
 */
@@ -434,12 +434,13 @@ const butterPage: OneTimeProductPage = {
     { imageSource: "/images/categories/butter-category.webp", imageWidth: 412, imageHeight: 272, alt: "Chiranvi Farm desi white butter on a wooden board" },
   ],
   pictureFit: { widthPercent: 72, heightPercent: 80 },
+  // 1 kg ₹1,150; 500 g and 250 g are half and a quarter of it (rounded up), no crossed-out price
   packs: [
-    { packId: "100-g", label: "100 g", size: 100, price: 129 },
-    { packId: "250-g", label: "250 g", size: 250, price: 279 },
-    { packId: "500-g", label: "500 g", size: 500, price: 499, originalPrice: 599, tag: "Best value" },
+    { packId: "250-g", label: "250 g", size: 250, price: 288 },
+    { packId: "500-g", label: "500 g", size: 500, price: 575 },
+    { packId: "1-kg", label: "1 kg", size: 1000, price: 1150, tag: "Best value" },
   ],
-  defaultPackId: "500-g",
+  defaultPackId: "1-kg",
   priceBreakdown: { kind: "per-unit", unitLabel: "100 g", unitSize: 100, headlineDecimals: 2, cardRounding: "whole", taxNote: "Inclusive of all taxes" },
   cartPackWord: "pack",
   quantityWord: { one: "pack", many: "packs" },
@@ -449,7 +450,7 @@ const butterPage: OneTimeProductPage = {
   deliverySteps: [orderByNineStep, { icon: "box", title: "Churned fresh", detail: "This week’s batch" }, atYourDoorStep],
   productInformation: [
     { label: "Ingredients", value: "Cream from desi cow curd" },
-    { label: "Net quantity", value: "100 g / 250 g / 500 g" },
+    { label: "Net quantity", value: "250 g / 500 g / 1 kg" },
     { label: "Shelf life", value: "Best within 7 days" },
     { label: "Storage", value: "Refrigerate at 0 to 4 °C" },
     { label: "Country of origin", value: "India" },
@@ -468,8 +469,9 @@ const butterPage: OneTimeProductPage = {
 };
 
 /*
-  Jersey butter: the A2 butter's page with its own name, text and (starting) prices; the picture, texts and
-  prices are changed in the Chiranvi Panel (Product pages → Edit).
+  Jersey butter: the A2 butter's page with its own name, text and packs (250 g / 500 g / 1 kg, no crossed-out
+  price). Its prices are placeholders from the old 500 g price (₹399) until they are set in the Chiranvi
+  Panel (Products & pricing → Jersey Cow Butter → Edit page), like its picture and texts.
 */
 const jerseyButterPage: OneTimeProductPage = {
   ...butterPage,
@@ -483,9 +485,9 @@ const jerseyButterPage: OneTimeProductPage = {
   rating: { score: "4.6", count: "(new)" },
   pictures: [{ ...butterPage.pictures[0], alt: "Chiranvi Farm Jersey cow white butter on a wooden board" }],
   packs: [
-    { packId: "100-g", label: "100 g", size: 100, price: 99 },
-    { packId: "250-g", label: "250 g", size: 250, price: 219 },
-    { packId: "500-g", label: "500 g", size: 500, price: 399, originalPrice: 479, tag: "Best value" },
+    { packId: "250-g", label: "250 g", size: 250, price: 200 },
+    { packId: "500-g", label: "500 g", size: 500, price: 399 },
+    { packId: "1-kg", label: "1 kg", size: 1000, price: 798, tag: "Best value" },
   ],
   review: { quote: "", name: "", area: "" },
   productInformation: butterPage.productInformation.map((row) =>

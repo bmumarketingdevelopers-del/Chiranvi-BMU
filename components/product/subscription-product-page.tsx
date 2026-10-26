@@ -294,24 +294,24 @@ function FastSellingRow({ cards, currentSlug }: { cards: FastSellingCard[]; curr
 }
 
 /*
-  Milk in ½ litre bottles (pages with hasHalfLitreBottle): the same page with ½ litre wording and half the
+  Milk in 500 ml bottles (pages with hasHalfLitreBottle): the same page with 500 ml wording and half the
   1 litre price, rounded up, so it follows the price set in the Chiranvi Panel. Plans, bills and the cart
-  all use these values; ½ litre bottles are their own line in the cart.
+  all use these values; 500 ml bottles are their own line in the cart.
 */
 function toHalfLitrePage(page: SubscriptionPageData): SubscriptionPageData {
   return {
     ...page,
     price: Math.ceil(page.price / 2),
     originalPrice: page.originalPrice ? Math.ceil(page.originalPrice / 2) : undefined,
-    unitName: "½ litre",
-    unitShort: " × ½ L", // "Milk (2 × ½ L × ₹53)", "2 × ½ L daily"
-    packShort: "½ L",
-    packSize: /^1 litre/.test(page.packSize) ? page.packSize.replace(/^1 litre/, "½ litre") : "½ litre bottle",
+    unitName: "500 ml", // "₹53 / 500 ml"
+    unitShort: " × 500 ml", // "Milk (2 × 500 ml × ₹53)", "2 × 500 ml daily"
+    packShort: "500 ml", // "1 × 500 ml bottle every morning"
+    packSize: /^1 litre/.test(page.packSize) ? page.packSize.replace(/^1 litre/, "500 ml") : "500 ml bottle",
   };
 }
 
 export default function SubscriptionProductPage({ page: fullPage }: { page: SubscriptionPageData }) {
-  // Bottle size (milk): 1 litre or ½ litre; the page below shows the chosen size's values
+  // Bottle size (milk): 1 litre or 500 ml; the page below shows the chosen size's values
   const [isHalfLitreChosen, setIsHalfLitreChosen] = useState(false);
   const isHalfLitre = fullPage.hasHalfLitreBottle === true && isHalfLitreChosen;
   const page = useMemo(() => (isHalfLitre ? toHalfLitrePage(fullPage) : fullPage), [fullPage, isHalfLitre]);
@@ -511,12 +511,12 @@ export default function SubscriptionProductPage({ page: fullPage }: { page: Subs
                 </>
               )}
             </p>
-            {/* Bottle size (milk): 1 litre or ½ litre at half the price */}
+            {/* Bottle size (milk): 1 litre or 500 ml at half the price */}
             {fullPage.hasHalfLitreBottle && (
               <div className={styles["subscription-bottle-sizes"]} role="radiogroup" aria-label="Bottle size">
                 {[
                   { isHalf: false, label: "1 litre", price: fullPage.price },
-                  { isHalf: true, label: "½ litre", price: Math.ceil(fullPage.price / 2) },
+                  { isHalf: true, label: "500 ml", price: Math.ceil(fullPage.price / 2) },
                 ].map((size) => (
                   <button
                     key={size.label}

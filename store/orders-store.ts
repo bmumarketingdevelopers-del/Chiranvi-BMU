@@ -52,8 +52,8 @@ export type OrderSubscription = {
   pricePerLitre: number;
   bottleCount: number;
   extendsOrderId?: string; // set when this order adds days to an earlier plan instead of starting one
-  bottleLabel?: string; // "½ L" (missing: "1 L")
-  unitName?: string; // what the price is per: "½ litre" (missing: "litre")
+  bottleLabel?: string; // "500 ml" (missing: "1 L")
+  unitName?: string; // what the price is per: "500 ml" (missing: "litre")
 };
 
 // What the checkout adds to an order
@@ -221,8 +221,8 @@ export type RunningPlan = {
   days: number;
   bottlesPerDay: number;
   pricePerLitre: number;
-  bottleLabel: string; // "1 L" or "½ L"
-  unitName: string; // what the price is per: "litre" or "½ litre"
+  bottleLabel: string; // "1 L" or "500 ml"
+  unitName: string; // what the price is per: "litre" or "500 ml"
   deliverTo: string;
   product: CartItem; // the milk as bought (price = the plan's price per litre, originalPrice = one-time price)
   endsOn: Date; // the last delivery day
