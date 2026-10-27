@@ -286,3 +286,134 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/*
+  "Whose number is this?": a small box over the address form (the form dimmed behind it), with two
+  choices as large buttons, a note that the login number stays, and a way back to edit the number.
+*/
+.address-number-question-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 35, 25, 0.35);
+  animation: address-dialog-fade-in 150ms ease-out;
+}
+
+.address-number-question {
+  width: min(100%, calc(420 * var(--account-design-pixel)));
+  padding: calc(24 * var(--account-design-pixel));
+  border-radius: calc(18 * var(--account-design-pixel));
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(20, 35, 25, 0.25);
+  text-align: center;
+  animation: address-dialog-pop-in 180ms ease-out;
+}
+
+.address-number-question-heading {
+  margin: 0;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(19 * var(--account-design-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.address-number-question-text {
+  margin: calc(8 * var(--account-design-pixel)) 0 0;
+  font-size: calc(13.5 * var(--account-design-pixel));
+  line-height: 1.5;
+  color: #4a5a4f;
+}
+
+.address-number-question-text strong {
+  color: #1e2a22;
+  white-space: nowrap;
+}
+
+.address-number-question-choices {
+  display: grid;
+  gap: calc(10 * var(--account-design-pixel));
+  margin-top: calc(18 * var(--account-design-pixel));
+}
+
+.address-number-question-choice {
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--account-design-pixel));
+  padding: calc(12 * var(--account-design-pixel)) calc(16 * var(--account-design-pixel));
+  border: 1px solid #d9e2d8;
+  border-radius: calc(12 * var(--account-design-pixel));
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.address-number-question-choice:hover,
+.address-number-question-choice:focus-visible {
+  border-color: #2f6b3a;
+  background: #e6f0e1;
+  outline: none;
+}
+
+.address-number-question-choice strong {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(15 * var(--account-design-pixel));
+  color: #1f4d2e;
+}
+
+.address-number-question-choice span {
+  font-size: calc(12.5 * var(--account-design-pixel));
+  color: #5d6b62;
+}
+
+.address-number-question-login-note {
+  margin: calc(14 * var(--account-design-pixel)) 0 0;
+  font-size: calc(12 * var(--account-design-pixel));
+  color: #6e7a72;
+}
+
+.address-number-question-back-button {
+  margin-top: calc(8 * var(--account-design-pixel));
+  padding: calc(4 * var(--account-design-pixel));
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: calc(12.5 * var(--account-design-pixel));
+  font-weight: 600;
+  color: #2f6b3a;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Phones: plain px sizes, like the form's other phone sizes */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .address-number-question {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+
+  .address-number-question-heading {
+    font-size: 18px;
+  }
+
+  .address-number-question-text,
+  .address-number-question-choice strong {
+    font-size: 14px;
+  }
+
+  .address-number-question-choice span,
+  .address-number-question-back-button {
+    font-size: 12.5px;
+  }
+
+  .address-number-question-login-note {
+    font-size: 12px;
+  }
+}

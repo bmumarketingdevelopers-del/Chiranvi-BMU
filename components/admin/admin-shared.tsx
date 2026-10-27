@@ -331,7 +331,7 @@ export type AdminStat = {
   // up: green; plain: grey; bad: red (serious, e.g. failed payments)
   trend: "up" | "plain" | "bad";
   icon: string[];
-  // The value is words, not a number (e.g. "Cow Milk 1 L"): shown smaller
+  // The value is words, not a number (e.g. "Jersey Milk 1 L"): shown smaller
   isTextValue?: boolean;
   // Clickable card (Products: Low stock / Out of stock show those products); isSelected while it is on
   onClick?: () => void;

@@ -22,11 +22,21 @@ import type { ProductKind, ProductPage, ShopCategory } from "@/components/produc
 import { POWDER_PRODUCT_IDS } from "@/components/product/all-products-page";
 import { deleteProductPage, isStartingProductPage, useProductPages } from "@/store/product-pages-store";
 import {
+  DEFAULT_PRODUCT_ROWS,
+  NOODLES_KINDS,
+  NOODLES_KIND_NAMES,
+  saveProductRows,
+  useProductRows,
+  type ProductRows,
+} from "@/store/admin-product-rows-store";
+import {
   CategoryPicker,
   ChooseProductKindDialog,
   PICTURE_TOO_BIG_MESSAGE,
   ProductPageCardActions,
   ProductPageForm,
+  ProductRowSlotsEditor,
+  noodlesRowChoices,
   processPictureFile,
   useDeletedStartingProductPages,
 } from "./admin-product-page-form";
@@ -73,8 +83,59 @@ const CATEGORY_FROM_SHOP_CATEGORY: Record<ShopCategory, ProductCategory> = {
   Flours: "Others",
   Batter: "Others",
   Powders: "Others",
+  Noodles: "Others",
+  Pasta: "Others",
+  Macaroni: "Others",
   Others: "Others",
 };
+
+/*
+  "Arrange product rows": the five products under the product pages, in order.
+    - Fast selling products: on every page except the noodles, pasta and macaroni ones.
+    - You may also like: one list each for the Instant Noodles, Pasta and Macaroni pages; a place can match
+      the page (another flavour, or the same flavour of another product) or be any product.
+  A page with its own order (Edit page → "Product row on this page") keeps it. "Back to the original rows"
+  fills in the rows the website started with (saved only with Save rows).
+*/
+function ProductRowsDialog({ onClose, showToast }: { onClose: () => void; showToast: (message: string) => void }) {
+  const [rows, setRows] = useState<ProductRows>(useProductRows());
+  return (
+    <AdminDialog
+      title="Product rows"
+      submitLabel="Save rows"
+      onClose={onClose}
+      onSubmit={() => {
+        saveProductRows(rows);
+        showToast("Product rows saved");
+        onClose();
+      }}
+    >
+      <p className={styles["admin-product-rows-intro"]}>
+        Five products in each row, in this order. The page&apos;s own product is always left out; an empty place is skipped and the row is
+        filled up to five.
+      </p>
+      <section className={styles["admin-product-rows-group"]}>
+        <h3 className={styles["admin-product-rows-group-title"]}>Fast selling products</h3>
+        <p className={styles["admin-product-rows-group-note"]}>Milk, ghee, paneer, butter, flours, batter and powders pages</p>
+        <ProductRowSlotsEditor slots={rows.fastSelling} onChange={(slots) => setRows({ ...rows, fastSelling: slots })} label="Fast selling products" />
+      </section>
+      {NOODLES_KINDS.map((kind) => (
+        <section key={kind} className={styles["admin-product-rows-group"]}>
+          <h3 className={styles["admin-product-rows-group-title"]}>You may also like · {NOODLES_KIND_NAMES[kind]} pages</h3>
+          <ProductRowSlotsEditor
+            slots={rows.youMayAlsoLike[kind]}
+            onChange={(slots) => setRows({ ...rows, youMayAlsoLike: { ...rows.youMayAlsoLike, [kind]: slots } })}
+            label={`You may also like on ${NOODLES_KIND_NAMES[kind]} pages`}
+            matchingChoices={noodlesRowChoices(kind)}
+          />
+        </section>
+      ))}
+      <button type="button" className={styles["admin-product-rows-reset-button"]} onClick={() => setRows(DEFAULT_PRODUCT_ROWS)}>
+        Back to the original rows
+      </button>
+    </AdminDialog>
+  );
+}
 
 // The product page a card belongs to: made with the page in the panel, or the same address (a2-desi-ghee)
 function findPageOfCard(pages: ProductPage[], productId: string) {
@@ -237,6 +298,8 @@ function ProductsPage() {
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   // The new product being filled in (after its kind is chosen)
   const [newProduct, setNewProduct] = useState<{ kind: ProductKind; category: ProductCategory } | null>(null);
+  // "Arrange product rows": the Fast selling / You may also like rows under the product pages
+  const [isArrangingRows, setIsArrangingRows] = useState(false);
   const { showToast, toast } = useAdminToast();
 
   const words = searchText.trim().toLowerCase();
@@ -399,6 +462,17 @@ function ProductsPage() {
           },
         ]}
       />
+
+      {/* The row of five products under every product page, and its order */}
+      <div className={styles["admin-product-rows-bar"]}>
+        <p className={styles["admin-product-rows-bar-text"]}>
+          <strong>Product rows</strong> · the five products under each product page: Fast selling products, and You may also like on the
+          noodles, pasta and macaroni pages
+        </p>
+        <button type="button" className={styles["admin-product-rows-bar-button"]} onClick={() => setIsArrangingRows(true)}>
+          Arrange product rows
+        </button>
+      </div>
 
       {stockFilter && (
         <div className={styles["admin-product-filter-row"]}>
@@ -586,6 +660,8 @@ function ProductsPage() {
       {newProduct && (
         <ProductPopup key="new-product" product={null} newProduct={newProduct} onClose={() => setNewProduct(null)} showToast={showToast} />
       )}
+
+      {isArrangingRows && <ProductRowsDialog onClose={() => setIsArrangingRows(false)} showToast={showToast} />}
 
       {toast}
     </div>

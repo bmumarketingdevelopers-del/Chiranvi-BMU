@@ -45,8 +45,8 @@ export type FastSellingCard = {
 };
 
 // The filter it shows under on the All products page (/products)
-export type ShopCategory = "Milk" | "Paneer" | "Ghee" | "Butter" | "Flours" | "Batter" | "Powders" | "Others";
-export const SHOP_CATEGORIES: ShopCategory[] = ["Milk", "Paneer", "Ghee", "Butter", "Flours", "Batter", "Powders", "Others"];
+export type ShopCategory = "Milk" | "Paneer" | "Ghee" | "Butter" | "Flours" | "Batter" | "Powders" | "Noodles" | "Pasta" | "Macaroni" | "Others";
+export const SHOP_CATEGORIES: ShopCategory[] = ["Milk", "Paneer", "Ghee", "Butter", "Flours", "Batter", "Powders", "Noodles", "Pasta", "Macaroni", "Others"];
 
 type ProductPageBase = {
   slug: string; // the page address: /products/<slug>
@@ -64,6 +64,9 @@ type ProductPageBase = {
   hasPictureShadow?: boolean;
   deliverySteps: DeliveryStep[]; // three: Order by 9 PM → … → At your door
   fastSellingCards: FastSellingCard[];
+  // This page's own row under it (Edit page → "Product row on this page"), in order; missing: the shared
+  // Fast selling / You may also like list (store/admin-product-rows-store.ts)
+  productRowOverride?: string[];
   addedInPanel?: boolean; // false / missing: a starting page from this file
   // The product's cards on Products & pricing (store/products-store.ts) made with this page, so editing
   // or deleting the page in the panel updates or removes them too
@@ -166,7 +169,7 @@ export const defaultSubscriptionFastSellingCards: FastSellingCard[] = [
   { productId: "a2-desi-ghee", name: "A2 Desi Ghee", imageSource: "/images/products/desi-ghee-jar-chiranvi-farm.webp", imageWidth: 1524, imageHeight: 2204, ratingCount: "7,105" },
   { productId: "fresh-cow-paneer", name: "Fresh Cow Paneer", imageSource: "/images/products/fresh-paneer-box-chiranvi-farm.webp", imageWidth: 3712, imageHeight: 2728, ratingCount: "7,105" },
   { productId: "moringa-powder", name: "Moringa Powder", imageSource: "/images/products/moringa-leaves-powder-pouch.webp", imageWidth: 336, imageHeight: 516, ratingCount: "7,105" },
-  { productId: "menthya-mudde-powder", name: "Menthya Mudde Powder", imageSource: "/images/products/menthya-mudde-powder-pouch.webp", imageWidth: 677, imageHeight: 672, ratingCount: "new" },
+  { productId: "menthya-mudde-powder", name: "Menthya Mudde Powder", imageSource: "/images/products/menthya-mudde-powder-pouch.webp", imageWidth: 677, imageHeight: 670, ratingCount: "new" },
 ];
 
 // Subscribe & save plans a new subscription product starts with (the milk page's)
@@ -602,7 +605,7 @@ const multigrainAttaPage: OneTimeProductPage = {
   highlights: ["Stone-ground", "Many grains", "No maida", "No preservatives"],
   // The pouch from the ad (cropped, edges faded into the page)
   pictures: [
-    { imageSource: "/images/products/multigrain-atta-flour-pouch.webp", imageWidth: 705, imageHeight: 735, alt: "Chiranvi Farm multigrain atta flour pouch with a bowl of flour and rotis" },
+    { imageSource: "/images/products/multigrain-atta-flour-pouch.webp", imageWidth: 642, imageHeight: 734, alt: "Chiranvi Farm multigrain atta flour pouch with a bowl of flour and rotis" },
   ],
   pictureFit: { widthPercent: 66, heightPercent: 86 },
   // One pack only (more with "− quantity +")
@@ -792,7 +795,7 @@ const moringaPage: OneTimeProductPage = {
   highlights: ["Shade-dried leaves", "Finely ground", "No added colour", "No preservatives"],
   // The kraft pouch from the ad (cropped, edges faded into the page)
   pictures: [
-    { imageSource: "/images/products/moringa-powder-kraft-pouch.webp", imageWidth: 803, imageHeight: 747, alt: "Chiranvi Farm moringa powder in a kraft pouch with a bowl of powder" },
+    { imageSource: "/images/products/moringa-powder-kraft-pouch.webp", imageWidth: 758, imageHeight: 747, alt: "Chiranvi Farm moringa powder in a kraft pouch with a bowl of powder" },
   ],
   pictureFit: { widthPercent: 70, heightPercent: 84 },
   packs: [
@@ -837,7 +840,7 @@ const menthyaMuddePage: OneTimeProductPage = {
   ratingNote: "Small-batch ground",
   highlights: ["Ready mix", "Just add hot water", "No added colour", "No preservatives"],
   pictures: [
-    { imageSource: "/images/products/menthya-mudde-powder-pouch.webp", imageWidth: 677, imageHeight: 672, alt: "Chiranvi Farm menthya mudde powder pouch with a bowl of powder" },
+    { imageSource: "/images/products/menthya-mudde-powder-pouch.webp", imageWidth: 677, imageHeight: 670, alt: "Chiranvi Farm menthya mudde powder pouch with a bowl of powder" },
   ],
   pictureFit: { widthPercent: 66, heightPercent: 84 },
   packs: [
@@ -881,8 +884,111 @@ const milletGanjiPage: OneTimeProductPage = {
 };
 
 /*
+  Instant Noodles, Pasta and Macaroni: six flavours each, one page per flavour (18 pages), each under its own
+  All products category. One 250 g pack at ₹120 for now; the real prices, ingredients and nutrition are set in
+  the Chiranvi Panel (Products & pricing → Edit page). The pictures are cut from the pack designs (small for
+  now; replace them in the panel when the full-size photos come).
+*/
+type NoodleFlavour = { id: string; name: string };
+const NOODLE_FLAVOURS: NoodleFlavour[] = [
+  { id: "carrot", name: "Carrot" },
+  { id: "beetroot", name: "Beetroot" },
+  { id: "tomato", name: "Tomato" },
+  { id: "palak", name: "Palak" },
+  { id: "ragi", name: "Ragi" },
+  { id: "millet", name: "Millet" },
+];
+
+const noodlesAndPastaTemplate: OneTimeProductPage = {
+  ...moringaPage,
+  rating: { score: "4.5", count: "(new)" },
+  ratingNote: "Made with natural ingredients",
+  packs: [{ packId: "250-g", label: "250 g", size: 250, price: 120 }],
+  defaultPackId: "250-g",
+  cartPackWord: "pack",
+  note: { text: "Homemade · zero preservatives", tone: "fresh" },
+  review: { quote: "", name: "", area: "" },
+  deliverySteps: [orderByNineStep, { icon: "box", title: "Packed fresh", detail: "From this week’s batch" }, { icon: "home", title: "At your door", detail: "By tomorrow" }],
+  nutritionFacts: [],
+  nutritionBasis: "",
+};
+
+function toNoodlesAndPastaPages(product: {
+  kind: "Instant Noodles" | "Pasta" | "Macaroni";
+  slugEnd: string; // "instant-noodles"
+  pictureFileEnd: string; // "instant-noodles-pack"
+  pictureSize: { imageWidth: number; imageHeight: number };
+  pictureFit: OneTimeProductPage["pictureFit"];
+  shopCategory: ShopCategory;
+  tagline: string;
+  description: (flavour: string) => string;
+}): OneTimeProductPage[] {
+  return NOODLE_FLAVOURS.map((flavour) => ({
+    ...noodlesAndPastaTemplate,
+    slug: `${flavour.id}-${product.slugEnd}`,
+    shopCategory: product.shopCategory,
+    cardNote: `${flavour.name.toLowerCase()} flavour`,
+    name: `${flavour.name} ${product.kind}`,
+    tagline: product.tagline,
+    description: product.description(flavour.name.toLowerCase()),
+    badge: { text: `${flavour.name} flavour`, colour: "cream" },
+    highlights: [`${flavour.name} flavour`, "Homemade", "Zero preservatives", "Natural ingredients"],
+    pictures: [
+      {
+        imageSource: `/images/products/${flavour.id}-${product.pictureFileEnd}.webp`,
+        ...product.pictureSize,
+        alt: `Chiranvi Farm ${flavour.name} ${product.kind} ${product.kind === "Macaroni" ? "label" : "pack"}`,
+      },
+    ],
+    pictureFit: product.pictureFit,
+    productInformation: [
+      { label: "Ingredients", value: `[add ingredients] · ${flavour.name.toLowerCase()} flavour` },
+      { label: "Net quantity", value: "250 g" },
+      { label: "Shelf life", value: "[add shelf life]" },
+      { label: "Storage", value: "Cool, dry place" },
+      { label: "Country of origin", value: "India" },
+      { label: "Manufactured by", value: "Chiranvi Farm, [add address]" },
+      { label: "FSSAI Lic. No.", value: "[add number]" },
+    ],
+  }));
+}
+
+const instantNoodlesPages = toNoodlesAndPastaPages({
+  kind: "Instant Noodles",
+  slugEnd: "instant-noodles",
+  pictureFileEnd: "instant-noodles-pack",
+  pictureSize: { imageWidth: 850, imageHeight: 1000 },
+  pictureFit: { widthPercent: 60, heightPercent: 84 },
+  shopCategory: "Noodles",
+  tagline: "Homemade Noodles, Ready in Minutes",
+  description: (flavour) => `Homemade instant noodles with ${flavour} flavour, made with natural ingredients and no preservatives. A quick, tasty meal for kids and grown-ups.`,
+});
+
+const pastaPages = toNoodlesAndPastaPages({
+  kind: "Pasta",
+  slugEnd: "pasta",
+  pictureFileEnd: "pasta-pack",
+  pictureSize: { imageWidth: 714, imageHeight: 1000 },
+  pictureFit: { widthPercent: 56, heightPercent: 84 },
+  shopCategory: "Pasta",
+  tagline: "Homemade Pasta, Full of Flavour",
+  description: (flavour) => `Homemade pasta with ${flavour} flavour, made with natural ingredients and no preservatives. Cook it with your favourite sauce or vegetables.`,
+});
+
+const macaroniPages = toNoodlesAndPastaPages({
+  kind: "Macaroni",
+  slugEnd: "macaroni",
+  pictureFileEnd: "macaroni-label",
+  pictureSize: { imageWidth: 1000, imageHeight: 1000 },
+  pictureFit: { widthPercent: 70, heightPercent: 80 },
+  shopCategory: "Macaroni",
+  tagline: "Homemade Macaroni, Made Naturally",
+  description: (flavour) => `Homemade macaroni with ${flavour} flavour, made with natural ingredients and no preservatives. Great for a quick lunch box or a warm evening snack.`,
+});
+
+/*
   Order on the All products page: the three milks, the ghees, paneer, the butters, the attas and flours,
-  batter, then the powders. No longer sold: Whole Wheat Atta (Kapti and Jave replace it; its page above is
+  batter, then the powders, then the noodles, pasta and macaroni. No longer sold: Whole Wheat Atta (Kapti and Jave replace it; its page above is
   their template), Coriander powder (its page is the powders' template), Jowar flour, and Turmeric, Red
   Chilli and Red Sandal powder. The Chiranvi Panel can add any of them again ("Add product").
 */
@@ -903,6 +1009,9 @@ export const startingProductPages: ProductPage[] = [
   menthyaMuddePage,
   milletGanjiPage,
   moringaPage,
+  ...instantNoodlesPages,
+  ...pastaPages,
+  ...macaroniPages,
 ];
 
 // Page address from a product name: "Ragi Flour" → "ragi-flour"

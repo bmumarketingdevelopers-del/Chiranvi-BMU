@@ -442,6 +442,15 @@ function OrderDetailsDialog({
           <dt>Location</dt>
           <dd>{order.area || "—"}</dd>
         </div>
+        {/* Ordered for someone else: the number on the delivery address, to call at the door */}
+        {order.deliveryMobile && (
+          <div>
+            <dt>Delivery contact</dt>
+            <dd>
+              <a href={`tel:+91${order.deliveryMobile}`}>{`${order.deliveryMobile.slice(0, 5)} ${order.deliveryMobile.slice(5)}`}</a>
+            </dd>
+          </div>
+        )}
         {order.deliverTo && (
           <div className={leadStyles["admin-lead-details-wide"]}>
             <dt>Deliver to</dt>

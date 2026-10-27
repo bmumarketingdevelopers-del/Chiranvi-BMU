@@ -36,6 +36,7 @@ export type Order = {
   couponDiscount?: number;
   deliveryFee?: number;
   deliverTo?: string; // "Priya Raman · 12, 4th Cross, Jayanagar 4th Block, Bengaluru 560011"
+  deliveryMobile?: string; // 10 digits, the delivery address's mobile number (can be someone else's)
   subscription?: OrderSubscription; // only on a milk subscription order
   // Who ordered, how they paid, and when it was promised (orders placed before these were added have none)
   customerMobile?: string; // 10 digits, the login number
@@ -65,6 +66,7 @@ export type CheckoutDetails = {
   couponDiscount?: number;
   deliveryFee: number;
   deliverTo: string;
+  deliveryMobile?: string; // 10 digits, the delivery address's mobile number
   area?: string; // the delivery address's area (for the panel's Location)
   paymentMethod?: OrderPaymentMethod;
   subscription?: OrderSubscription;
@@ -201,6 +203,7 @@ export function placeOrder(cartItems: CartItem[], checkout: CheckoutDetails) {
     amount: checkout.total,
     payment: newOrder.paymentMethod ?? "UPI",
     deliverTo: checkout.deliverTo,
+    deliveryMobile: checkout.deliveryMobile,
     promisedAt: newOrder.promisedAt ?? promisedDeliveryFor(placedAt),
   });
   if (customerMobile) {

@@ -1,5 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
 import type { CustomerProfileDetails } from "./customer-profiles-store";
+import { withCurrentMilkPlanName } from "./admin-subscriptions-store";
 
 /*
   Customers seen in the Chiranvi Panel (Customers page), until the database is connected.
@@ -15,8 +16,9 @@ export type AdminCustomer = {
   id: string;
   name: string;
   area: string;
+  pincode?: string; // added in the panel (website sign-ups: in their profile)
   phone: string; // 98450 10 300
-  plan: string; // Cow Milk 1 L, or "One-time orders"
+  plan: string; // Jersey Milk 1 L, or "One-time orders"
   lifetimeValue: number;
   orderCount: number;
   lastOrderDaysAgo: number;
@@ -75,7 +77,7 @@ const sampleNames: [string, string][] = [
   ["Sneha Kulkarni", "Uttarahalli"],
   ["Mahesh B", "Vijayanagar"],
 ];
-const samplePlans = ["Cow Milk 1 L", "Cow Milk 500 ml", "A2 Milk 1 L", "Cow Milk 2 L", "Buffalo Milk 1 L", "Cow Milk 1 L", "One-time orders"];
+const samplePlans = ["Jersey Milk 1 L", "Jersey Milk 500 ml", "A2 (Gir Cow) Milk 1 L", "Jersey Milk 2 L", "Skimmed Milk 1 L", "A2 (Gir Cow) Milk 500 ml", "One-time orders"];
 const sampleValues = [18400, 9260, 32100, 4100, 12750, 7600, 2300];
 const sampleLastOrder = [0, 0, 1, 5, 0, 0, 1, 5, 0, 0, 1, 0, 0, 0, 2, 40, 0, 3];
 
@@ -108,7 +110,10 @@ function getCustomers() {
   if (typeof window === "undefined") return EMPTY;
   try {
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
-    customers = Array.isArray(saved) ? withMobileCustomerIds(saved) : makeSampleCustomers();
+    // Saved with the old milk names (Cow, Buffalo): shown with today's
+    customers = Array.isArray(saved)
+      ? withMobileCustomerIds(saved).map((customer) => ({ ...customer, plan: withCurrentMilkPlanName(customer.plan) }))
+      : makeSampleCustomers();
   } catch {
     customers = makeSampleCustomers();
   }
@@ -132,7 +137,7 @@ function save(newCustomers: AdminCustomer[]) {
   listeners.forEach((onChange) => onChange());
 }
 
-export function addCustomer(customer: Pick<AdminCustomer, "name" | "area" | "phone" | "plan">) {
+export function addCustomer(customer: Pick<AdminCustomer, "name" | "area" | "pincode" | "phone" | "plan">) {
   const highest = Math.max(0, ...getCustomers().map((existing) => Number(existing.id.replace(/\D/g, ""))));
   const newCustomer: AdminCustomer = {
     ...customer,

@@ -44,6 +44,7 @@ export type AdminOrder = {
   customerMobile?: string; // 10 digits, their login number
   itemList?: AdminOrderItem[];
   deliverTo?: string; // "Name · address line"
+  deliveryMobile?: string; // 10 digits, the delivery address's number (when it is not the login number)
   promisedAt?: string; // ISO: when Chiranvi promised to deliver it (next day by 7 AM)
   statusChangedAt?: Partial<Record<AdminOrderStatus, string>>; // ISO time each step was reached
 };
@@ -186,6 +187,7 @@ export function addWebsiteOrder(order: {
   amount: number;
   payment: OrderPaymentMethod;
   deliverTo: string;
+  deliveryMobile?: string;
   promisedAt: number;
 }) {
   const placedAt = new Date(order.placedAt).toISOString();
@@ -204,6 +206,8 @@ export function addWebsiteOrder(order: {
     customerMobile: order.customerMobile,
     itemList: order.itemList,
     deliverTo: order.deliverTo,
+    // Only kept when it differs from the login number (an order for someone else)
+    deliveryMobile: order.deliveryMobile && order.deliveryMobile !== order.customerMobile ? order.deliveryMobile : undefined,
     promisedAt: new Date(order.promisedAt).toISOString(),
     statusChangedAt: { Pending: placedAt },
   };

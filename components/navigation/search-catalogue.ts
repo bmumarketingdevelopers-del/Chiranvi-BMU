@@ -78,7 +78,32 @@ export const searchCatalogue: SearchCatalogueItem[] = [
     imageHeight: 516,
     extraSearchWords: "moringa drumstick leaves powder homemade",
   },
+  ...noodlesAndPastaItems(),
 ];
+
+/*
+  Instant Noodles, Pasta and Macaroni: one result per flavour (typing "noodles", "pasta", "macaroni" or a
+  flavour like "ragi" finds them), each opening its own product page.
+*/
+function noodlesAndPastaItems(): SearchCatalogueItem[] {
+  const flavours = ["Carrot", "Beetroot", "Tomato", "Palak", "Ragi", "Millet"];
+  const kinds = [
+    { name: "Instant Noodles", slugEnd: "instant-noodles", pictureEnd: "instant-noodles-pack", imageWidth: 850, imageHeight: 1000, words: "noodles instant maggi" },
+    { name: "Pasta", slugEnd: "pasta", pictureEnd: "pasta-pack", imageWidth: 714, imageHeight: 1000, words: "pasta fusilli" },
+    { name: "Macaroni", slugEnd: "macaroni", pictureEnd: "macaroni-label", imageWidth: 1000, imageHeight: 1000, words: "macaroni pasta" },
+  ];
+  return kinds.flatMap((kind) =>
+    flavours.map((flavour) => ({
+      name: `${flavour} ${kind.name}`,
+      productSlug: `${flavour.toLowerCase()}-${kind.slugEnd}`,
+      label: "Pasta & Noodles",
+      imageSource: `/images/products/${flavour.toLowerCase()}-${kind.pictureEnd}.webp`,
+      imageWidth: kind.imageWidth,
+      imageHeight: kind.imageHeight,
+      extraSearchWords: `${kind.words} ${flavour.toLowerCase()} homemade`,
+    })),
+  );
+}
 
 // Items whose name, label or extra words contain every typed word (capital letters ignored).
 export function findCatalogueItems(searchText: string) {

@@ -16,7 +16,9 @@ const ubuntuFont = Ubuntu({ subsets: ["latin"], weight: ["400", "500", "700"], v
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const { category } = await searchParams;
-  const startingCategory = SHOP_CATEGORIES.find((shopCategory: ShopCategory) => shopCategory === category);
+  // "Pasta & Noodles" (one circle on the home page) shows Noodles, Pasta and Macaroni together
+  const startingCategory =
+    category === "Pasta & Noodles" ? "Pasta & Noodles" : SHOP_CATEGORIES.find((shopCategory: ShopCategory) => shopCategory === category);
   return (
     <div className={`${poppinsFont.variable} ${ubuntuFont.variable}`}>
       {/* Same layout script as the home page, so the navigation bar gets its phone layout here too */}

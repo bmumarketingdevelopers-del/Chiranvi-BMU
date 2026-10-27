@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { setWebsitePlanPause } from "./admin-subscriptions-store";
+import { setWebsitePlanPause, withCurrentMilkPlanName } from "./admin-subscriptions-store";
 
 /*
   Pause requests seen in the Chiranvi Panel (Pause requests page, and the count on its sidebar
@@ -17,7 +17,7 @@ export type PauseRequest = {
   id: string;
   customerName: string;
   area: string;
-  plan: string; // Cow Milk 1 L
+  plan: string; // Jersey Milk 1 L
   frequency: "Daily" | "Alternate days";
   litresPerDay: number;
   pauseFrom: string; // ISO date
@@ -37,20 +37,20 @@ export const PAUSE_REASONS = ["Travelling", "Out of town", "Guests at home", "He
 const STORAGE_KEY = "chiranvi-admin-pause-requests";
 
 const sampleCustomers: [string, string, string, PauseRequest["frequency"], number][] = [
-  ["Divya Rao", "Banashankari", "Cow Milk 1 L", "Daily", 1],
-  ["Harish Patil", "JP Nagar", "Cow Milk 500 ml", "Daily", 0.5],
-  ["Lakshmi Devi", "RR Nagar", "A2 Milk 1 L", "Daily", 1],
-  ["Arjun Shetty", "Jayanagar", "Cow Milk 2 L", "Daily", 2],
-  ["Kavya M", "Basavanagudi", "Buffalo Milk 1 L", "Daily", 1],
-  ["Naveen Reddy", "Kengeri", "Cow Milk 1 L", "Alternate days", 0.5],
-  ["Sneha Kulkarni", "Uttarahalli", "Cow Milk 1 L", "Daily", 1],
-  ["Mahesh B", "Vijayanagar", "Cow Milk 500 ml", "Daily", 0.5],
-  ["Deepa S", "Banashankari", "A2 Milk 1 L", "Daily", 1],
-  ["Rahul Jain", "JP Nagar", "Cow Milk 2 L", "Daily", 2],
-  ["Shalini K", "RR Nagar", "Buffalo Milk 1 L", "Daily", 1],
-  ["Vinod Kumar", "Jayanagar", "Cow Milk 1 L", "Alternate days", 0.5],
-  ["Asha N", "Basavanagudi", "Cow Milk 1 L", "Daily", 1],
-  ["Manjunath G", "Kengeri", "Cow Milk 500 ml", "Daily", 0.5],
+  ["Divya Rao", "Banashankari", "Jersey Milk 1 L", "Daily", 1],
+  ["Harish Patil", "JP Nagar", "Jersey Milk 500 ml", "Daily", 0.5],
+  ["Lakshmi Devi", "RR Nagar", "A2 (Gir Cow) Milk 1 L", "Daily", 1],
+  ["Arjun Shetty", "Jayanagar", "Jersey Milk 2 L", "Daily", 2],
+  ["Kavya M", "Basavanagudi", "Skimmed Milk 1 L", "Daily", 1],
+  ["Naveen Reddy", "Kengeri", "Jersey Milk 1 L", "Alternate days", 0.5],
+  ["Sneha Kulkarni", "Uttarahalli", "Jersey Milk 1 L", "Daily", 1],
+  ["Mahesh B", "Vijayanagar", "Jersey Milk 500 ml", "Daily", 0.5],
+  ["Deepa S", "Banashankari", "A2 (Gir Cow) Milk 1 L", "Daily", 1],
+  ["Rahul Jain", "JP Nagar", "Jersey Milk 2 L", "Daily", 2],
+  ["Shalini K", "RR Nagar", "Skimmed Milk 1 L", "Daily", 1],
+  ["Vinod Kumar", "Jayanagar", "Jersey Milk 1 L", "Alternate days", 0.5],
+  ["Asha N", "Basavanagudi", "Jersey Milk 1 L", "Daily", 1],
+  ["Manjunath G", "Kengeri", "Jersey Milk 500 ml", "Daily", 0.5],
 ];
 
 const sampleReasons = ["Travelling", "Out of town", "Guests leaving", "Festival trip", "Health reasons", "Not needed"];
@@ -96,7 +96,8 @@ function getRequests() {
   if (typeof window === "undefined") return EMPTY;
   try {
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
-    requests = Array.isArray(saved) ? saved : makeSampleRequests();
+    // Saved with the old milk names (Cow, Buffalo): shown with today's
+    requests = Array.isArray(saved) ? saved.map((request: PauseRequest) => ({ ...request, plan: withCurrentMilkPlanName(request.plan) })) : makeSampleRequests();
   } catch {
     requests = makeSampleRequests();
   }

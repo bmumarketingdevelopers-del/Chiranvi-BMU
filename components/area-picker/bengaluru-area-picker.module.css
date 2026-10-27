@@ -1,0 +1,219 @@
+/*
+  Bengaluru area box: looks like the form's other boxes; when open, the list shows inside the same box
+  (the box grows downwards, about five areas in view, scrolling), with a line between the chosen value
+  and the list. Each "look" sets the sizes of the form it sits in, through the variables below.
+*/
+.bengaluru-area-picker {
+  border: var(--area-picker-border-width) solid var(--area-picker-border-colour);
+  border-radius: var(--area-picker-corner-radius);
+  background: #ffffff;
+  font-weight: 400;
+  transition: border-color 150ms ease;
+}
+
+/* Delivery request pop-up on the landing page (plain px, like its other boxes) */
+.bengaluru-area-picker-landing {
+  --area-picker-border-width: 1.5px;
+  --area-picker-border-colour: #dfe3dc;
+  --area-picker-corner-radius: 10px;
+  --area-picker-height: 41px;
+  --area-picker-side-padding: 14px;
+  --area-picker-font-size: 14px;
+  --area-picker-row-padding: 9px 10px;
+  --area-picker-list-height: 196px;
+  --area-picker-text-colour: #1a1a1a;
+  --area-picker-placeholder-colour: #9aa39c;
+}
+
+/* Account pages: address form and Profile (design sizes) */
+.bengaluru-area-picker-account {
+  --area-picker-border-width: 1px;
+  --area-picker-border-colour: #d9e2d8;
+  --area-picker-corner-radius: calc(10 * var(--account-design-pixel));
+  --area-picker-height: calc(44 * var(--account-design-pixel));
+  --area-picker-side-padding: calc(16 * var(--account-design-pixel));
+  --area-picker-font-size: calc(14 * var(--account-design-pixel));
+  --area-picker-row-padding: calc(9 * var(--account-design-pixel)) calc(10 * var(--account-design-pixel));
+  --area-picker-list-height: calc(210 * var(--account-design-pixel));
+  --area-picker-text-colour: #1e2a22;
+  --area-picker-placeholder-colour: #a6a6a6;
+}
+
+/* Chiranvi Panel pop-ups (medium admin size) */
+.bengaluru-area-picker-admin {
+  --area-picker-border-width: 1px;
+  --area-picker-border-colour: #e0e2da;
+  --area-picker-corner-radius: calc(10 * var(--admin-pixel));
+  --area-picker-height: calc(38 * var(--admin-pixel));
+  --area-picker-side-padding: calc(12 * var(--admin-pixel));
+  --area-picker-font-size: calc(13.5 * var(--admin-pixel));
+  --area-picker-row-padding: calc(8 * var(--admin-pixel)) calc(10 * var(--admin-pixel));
+  --area-picker-list-height: calc(190 * var(--admin-pixel));
+  --area-picker-text-colour: #1b2a20;
+  --area-picker-placeholder-colour: #9aa39c;
+}
+
+/* Phones: account boxes a little taller with bigger text, like the address form's other boxes */
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .bengaluru-area-picker-account {
+    --area-picker-height: 42px;
+    --area-picker-side-padding: 12px;
+    --area-picker-font-size: 15px;
+    --area-picker-row-padding: 10px 10px;
+    --area-picker-list-height: 210px;
+  }
+}
+
+.bengaluru-area-picker-open,
+.bengaluru-area-picker:focus-within {
+  border-color: #2f6b3a;
+}
+
+/* Area missing when the form was saved: red outline, like the form's other boxes */
+.bengaluru-area-picker.bengaluru-area-picker-error {
+  border-color: #e03a3a;
+}
+
+/* Saved details shown locked (Profile before "Edit details"): pale green, no arrow */
+.bengaluru-area-picker.bengaluru-area-picker-locked {
+  background: #f7faf6;
+}
+
+.bengaluru-area-picker-locked .bengaluru-area-picker-button {
+  cursor: default;
+}
+
+.bengaluru-area-picker-locked .bengaluru-area-picker-arrow {
+  visibility: hidden;
+}
+
+.bengaluru-area-picker-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: var(--area-picker-height);
+  padding: 0 var(--area-picker-side-padding);
+  border: none;
+  border-radius: var(--area-picker-corner-radius);
+  background: transparent;
+  font: inherit;
+  font-size: var(--area-picker-font-size);
+  color: var(--area-picker-text-colour);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Long typed area names stay on one line */
+.bengaluru-area-picker-chosen-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Nothing chosen yet: grey prompt */
+.bengaluru-area-picker-placeholder {
+  color: var(--area-picker-placeholder-colour);
+}
+
+.bengaluru-area-picker-arrow {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 150ms ease;
+}
+
+.bengaluru-area-picker-open .bengaluru-area-picker-arrow {
+  transform: rotate(180deg);
+}
+
+.bengaluru-area-picker-list {
+  max-height: var(--area-picker-list-height);
+  margin: 0;
+  padding: 4px;
+  border-top: 1px solid #e7ebe4;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bengaluru-area-picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--area-picker-row-padding);
+  border-radius: 8px;
+  font-size: var(--area-picker-font-size);
+  color: var(--area-picker-text-colour);
+  cursor: pointer;
+}
+
+/* The row under the pointer or the keyboard: very light green */
+.bengaluru-area-picker-option-active {
+  background: #f1f6ee;
+}
+
+/* The chosen area: light green, bold green text and a tick */
+.bengaluru-area-picker-option-chosen {
+  background: #e6f0e1;
+  font-weight: 600;
+  color: #1f4d2e;
+}
+
+.bengaluru-area-picker-option svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* "Filled in from the area… check it" under the Pincode box: small green text with an info icon */
+.pincode-check-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #2f6b3a;
+}
+
+.pincode-check-note svg {
+  flex-shrink: 0;
+  width: 1.15em;
+  height: 1.15em;
+  margin-top: 0.05em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.pincode-check-note-landing {
+  font-size: 12px;
+}
+
+.pincode-check-note-account {
+  font-size: calc(11.5 * var(--account-design-pixel));
+}
+
+.pincode-check-note-admin {
+  font-size: calc(11.5 * var(--admin-pixel));
+}
+
+:global(html:has(style[data-landing-layout="mobile"])) {
+  .pincode-check-note-account {
+    font-size: 11.5px;
+  }
+}

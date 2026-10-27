@@ -62,7 +62,7 @@
   right: calc(100% + 7 * var(--shop-by-category-design-pixel));
 }
 
-/* Six round categories in one centred row */
+/* Seven round categories in one centred row */
 
 .shop-by-category-list {
   display: flex;
@@ -82,8 +82,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(170 * var(--shop-by-category-design-pixel));
-  height: calc(170 * var(--shop-by-category-design-pixel));
+  /* 156 (was 170) so seven circles fit in one row with the 44 gap */
+  width: calc(156 * var(--shop-by-category-design-pixel));
+  height: calc(156 * var(--shop-by-category-design-pixel));
   overflow: hidden;
   border: 1px solid #d9d9d9;
   border-radius: 50%;
@@ -117,10 +118,12 @@
   font-weight: 600;
   line-height: calc(24 * var(--shop-by-category-design-pixel));
   color: #000000;
+  /* "Pasta & Noodles" wraps to two lines on phones: both lines centred under the circle */
+  text-align: center;
 }
 
 /*
-  Scroll reveal (states set by the component): the heading and all six categories move as one piece.
+  Scroll reveal (states set by the component): the heading and all seven categories move as one piece.
     waiting  - before it scrolls into view: hidden, slightly lower
     revealed - fades and slides up into place together
 */
@@ -139,7 +142,7 @@
 }
 
 /*
-  Mobile layout (chosen by the script in app/page.tsx): three categories per row, two rows.
+  Mobile layout (chosen by the script in app/page.tsx): three categories per row; the seventh sits in the middle of its own row.
 */
 :global(html:has(style[data-landing-layout="mobile"])) {
   .shop-by-category-section {
@@ -179,6 +182,10 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 20px 12px;
     margin-top: 22px;
+  }
+
+  .shop-by-category-list > li:last-child:nth-child(3n + 1) {
+    grid-column: 2;
   }
 
   .shop-by-category-link {

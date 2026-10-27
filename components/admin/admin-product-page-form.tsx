@@ -32,7 +32,18 @@ import {
   restoreStartingProductPage,
   updateProductPage,
   useHiddenStartingProductSlugs,
+  useProductPages,
 } from "@/store/product-pages-store";
+import {
+  NOODLES_KINDS,
+  NOODLES_KIND_NAMES,
+  OTHER_FLAVOUR_SLOT,
+  ROW_SIZE,
+  noodlesPageOf,
+  sameFlavourSlot,
+  type NoodlesKind,
+  type RowSlot,
+} from "@/store/admin-product-rows-store";
 import { addProduct, addProductCategory, removeProduct, useProductCategories, useShopProducts, type ProductCategory } from "@/store/products-store";
 import { AdminDialog, AdminDialogField, adminInputClassName } from "./admin-shared";
 import styles from "./admin-product-page-form.module.css";
@@ -609,6 +620,9 @@ export function ProductPageForm({
   const [reviewName, setReviewName] = useState(editingPage?.review.name ?? "");
   const [reviewArea, setReviewArea] = useState(editingPage?.review.area ?? "");
   const [status, setStatus] = useState<PublishStatus>(editingPage?.status ?? "published");
+  // The row under the page: the shared list (Products & pricing → Product rows) unless this page has its own
+  const [hasOwnProductRow, setHasOwnProductRow] = useState(Boolean(editingPage?.productRowOverride?.length));
+  const [ownProductRow, setOwnProductRow] = useState<RowSlot[]>(editingPage?.productRowOverride ?? []);
 
   // ---- One-time ----
   const [ratingNote, setRatingNote] = useState(oneTimeEditing?.ratingNote ?? "");
@@ -781,6 +795,8 @@ export function ProductPageForm({
       pictureFit: fit,
       hasPictureShadow,
       deliverySteps: buildDeliverySteps(),
+      // Its own row order, or none (the shared list)
+      productRowOverride: hasOwnProductRow && ownProductRow.some(Boolean) ? ownProductRow.filter(Boolean) : undefined,
     };
 
     let page: ProductPage | null = null;
@@ -1399,6 +1415,29 @@ export function ProductPageForm({
         </>
       )}
 
+      <FormSection number={nextSection()} title={`Product row on this page (${noodlesPageOf(slug) ? "You may also like" : "Fast selling products"})`}>
+        <AdminDialogField label="Products and order" isWide>
+          <select
+            className={adminInputClassName}
+            value={hasOwnProductRow ? "own" : "shared"}
+            onChange={(event) => setHasOwnProductRow(event.target.value === "own")}
+          >
+            <option value="shared">The shared list (Products & pricing → Product rows)</option>
+            <option value="own">This page&apos;s own order</option>
+          </select>
+        </AdminDialogField>
+        {hasOwnProductRow && (
+          <div className={styles["admin-product-row-own"]}>
+            <ProductRowSlotsEditor
+              slots={ownProductRow}
+              onChange={setOwnProductRow}
+              label="This page's product row"
+              matchingChoices={noodlesPageOf(slug) ? noodlesRowChoices(noodlesPageOf(slug)!.kind) : []}
+            />
+          </div>
+        )}
+      </FormSection>
+
       <FormSection number={nextSection()} title="Show on the website">
         <AdminDialogField label="Status" isWide>
           <select className={adminInputClassName} value={status} onChange={(event) => setStatus(event.target.value as PublishStatus)}>
@@ -1591,6 +1630,91 @@ export function ChooseProductKindDialog({
 // "Add product" (kept as the default export used by Products & pricing)
 export default function AddProductPageForm({ onClose, showToast }: { onClose: () => void; showToast: (message: string) => void }) {
   return <ProductPageForm onClose={onClose} showToast={showToast} />;
+}
+
+// The "matches the page" choices of a noodles, pasta or macaroni row: another flavour, or the same flavour of the others
+export function noodlesRowChoices(kind: NoodlesKind) {
+  return [
+    { value: OTHER_FLAVOUR_SLOT, label: `Another ${NOODLES_KIND_NAMES[kind]} flavour` },
+    ...NOODLES_KINDS.filter((otherKind) => otherKind !== kind).map((otherKind) => ({
+      value: sameFlavourSlot(otherKind),
+      label: `Same flavour ${NOODLES_KIND_NAMES[otherKind]}`,
+    })),
+  ];
+}
+
+/*
+  Five numbered places of a product row (Fast selling / You may also like), each a product from the website
+  (or, for noodles, pasta and macaroni rows, one that matches the page: another flavour / the same flavour of
+  another product), with ↑ ↓ to change the order. An empty place is skipped on the page.
+*/
+export function ProductRowSlotsEditor({
+  slots,
+  onChange,
+  label,
+  matchingChoices = [],
+}: {
+  slots: RowSlot[];
+  onChange: (slots: RowSlot[]) => void;
+  label: string;
+  matchingChoices?: { value: RowSlot; label: string }[];
+}) {
+  const pages = useProductPages().filter((page) => page.status === "published");
+  const places = Array.from({ length: ROW_SIZE }, (_, index) => slots[index] ?? "");
+  function setPlace(index: number, value: RowSlot) {
+    onChange(places.map((slot, placeIndex) => (placeIndex === index ? value : slot)));
+  }
+  function move(index: number, step: -1 | 1) {
+    const moved = [...places];
+    [moved[index], moved[index + step]] = [moved[index + step], moved[index]];
+    onChange(moved);
+  }
+  return (
+    <ol className={styles["admin-product-row-slots"]} aria-label={label}>
+      {places.map((slot, index) => (
+        <li key={index} className={styles["admin-product-row-slot"]}>
+          <span className={styles["admin-product-row-slot-number"]} aria-hidden="true">
+            {index + 1}
+          </span>
+          <select className={adminInputClassName} value={slot} aria-label={`${label}: place ${index + 1}`} onChange={(event) => setPlace(index, event.target.value)}>
+            <option value="">Empty (skipped)</option>
+            {matchingChoices.length > 0 && (
+              <optgroup label="Matches the page">
+                {matchingChoices.map((choice) => (
+                  <option key={choice.value} value={choice.value}>
+                    {choice.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="Products">
+              {pages.map((page) => (
+                <option key={page.slug} value={page.slug}>
+                  {page.name}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+          <button type="button" className={styles["admin-product-row-move-button"]} aria-label={`Move place ${index + 1} up`} disabled={index === 0} onClick={() => move(index, -1)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={styles["admin-product-row-move-button"]}
+            aria-label={`Move place ${index + 1} down`}
+            disabled={index === ROW_SIZE - 1}
+            onClick={() => move(index, 1)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 // A numbered, titled group of fields across the whole form ("1  Basic details")

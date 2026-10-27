@@ -85,6 +85,14 @@ const samplePlans: Omit<AdminSubscription, "id" | "customerName" | "area" | "sin
   { milkType: "A2", quantity: "1 L", litresPerDelivery: 1, container: "Glass bottle", frequency: "Daily" },
 ];
 
+/*
+  A plan name saved with an old milk name, as today's milks are named (Customers and Pause requests):
+  "Cow Milk 1 L" → "Jersey Milk 1 L", "Buffalo Milk 1 L" → "Skimmed Milk 1 L", "A2 Milk 1 L" → "A2 (Gir Cow) Milk 1 L"
+*/
+export function withCurrentMilkPlanName(plan: string) {
+  return plan.replace(/^Cow Milk/, "Jersey Milk").replace(/^Buffalo Milk/, "Skimmed Milk").replace(/^A2 Milk/, "A2 (Gir Cow) Milk");
+}
+
 // Plans saved with the old milk names: Cow is now Jersey, Buffalo is now Skimmed
 const OLD_MILK_TYPES: Record<string, MilkType> = { Cow: "Jersey", Buffalo: "Skimmed" };
 function withCurrentMilkType(subscription: AdminSubscription): AdminSubscription {

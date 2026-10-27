@@ -18,6 +18,8 @@ import {
   type PlanLength,
   type SubscriptionStatus,
 } from "@/store/admin-subscriptions-store";
+import { customerIdForMobile } from "@/store/admin-customers-store";
+import { useAdminOrders, type AdminOrder } from "@/store/admin-orders-store";
 import { AdminFeatureGate } from "./admin-panel-layout";
 import {
   AdminDialog,
@@ -34,6 +36,7 @@ import {
 } from "./admin-shared";
 import dashboardStyles from "./admin-dashboard.module.css";
 import sharedStyles from "./admin-shared.module.css";
+import leadStyles from "./admin-leads-page.module.css";
 
 /*
   Subscriptions (/admin/subscriptions), from the design 03-subscriptions: milk only, daily or
@@ -42,7 +45,8 @@ import sharedStyles from "./admin-shared.module.css";
     numbers    active plans, milk per day (with the A2 / Jersey / Skimmed split), paused, cancelled this week
     table      All / A2 (Gir Cow) / Jersey / Skimmed / Paused tabs; 14 a page;
                the Plan column shows how long the customer subscribed for (3 months, 6 months, 1 year);
-               "..." pauses, resumes or cancels a plan
+               "..." shows the plan's details (customer, address, order ID, payment, like an order's
+               details on Orders), pauses, resumes or cancels a plan
   Subscriptions come from store/admin-subscriptions-store.ts (saved in this browser for now), plans bought on
   the website included; a plan inside a pause approved on Pause requests shows as Paused.
 */
@@ -113,6 +117,10 @@ function SubscriptionsPage() {
   const [isNewPlanOpen, setIsNewPlanOpen] = useState(false);
   const [newPlan, setNewPlan] = useState(EMPTY_NEW_PLAN);
   const { showToast, toast } = useAdminToast();
+  // The plan whose details are open ("View details"), and the website orders to find its order in
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const viewing = subscriptions.find((subscription) => subscription.id === viewingId);
+  const orders = useAdminOrders();
 
   const matchingSearch = useMemo(() => {
     const words = searchText.trim().toLowerCase();
@@ -306,6 +314,7 @@ function SubscriptionsPage() {
                         label={`Actions for ${subscription.customerName}'s plan`}
                         title="Plan"
                         options={[
+                          { label: "View details", onSelect: () => setViewingId(subscription.id) },
                           subscription.isPaused
                             ? {
                                 label: "Resume deliveries",
@@ -354,6 +363,15 @@ function SubscriptionsPage() {
           itemName="milk subscriptions"
         />
       </section>
+
+      {viewing && (
+        <SubscriptionDetailsDialog
+          subscription={viewing}
+          order={viewing.websiteOrderId ? orders.find((order) => order.websiteOrderId === viewing.websiteOrderId) : undefined}
+          today={today}
+          onClose={() => setViewingId(null)}
+        />
+      )}
 
       {isNewPlanOpen && (
         <AdminDialog title="New milk plan" submitLabel="Add plan" onClose={() => setIsNewPlanOpen(false)} onSubmit={saveNewPlan}>
@@ -433,5 +451,119 @@ function SubscriptionsPage() {
 
       {toast}
     </div>
+  );
+}
+
+const formatDay = (isoDate: string) => new Date(isoDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+const formatMobile = (tenDigits: string) => `${tenDigits.slice(0, 5)} ${tenDigits.slice(5)}`;
+
+/*
+  "View details" on a plan: the customer, the delivery address, the order it was bought with (order ID,
+  amount, payment method) and the plan itself, laid out like an order's details on the Orders page.
+  Plans bought on the website have their order; plans added in the panel show "—" for the order details.
+*/
+function SubscriptionDetailsDialog({
+  subscription,
+  order,
+  today,
+  onClose,
+}: {
+  subscription: AdminSubscription;
+  order?: AdminOrder;
+  today: Date;
+  onClose: () => void;
+}) {
+  const status = getSubscriptionStatus(subscription, today);
+  const mobile = order?.customerMobile ?? subscription.customerMobile;
+  const customerId = order?.customerId ?? (mobile ? customerIdForMobile(mobile) : undefined);
+  return (
+    <AdminDialog title={`${subscription.customerName}'s plan`} submitLabel="Close" onClose={onClose} onSubmit={onClose}>
+      <dl className={leadStyles["admin-lead-details"]}>
+        <div>
+          <dt>Order ID</dt>
+          <dd>{order?.orderNumber ?? (subscription.websiteOrderId ? `#${subscription.websiteOrderId}` : "—")}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <span className={`${dashboardStyles["admin-status"]} ${STATUS_CLASS_NAMES[status]}`}>{status}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Customer ID</dt>
+          <dd>{customerId ?? "—"}</dd>
+        </div>
+        <div>
+          <dt>Customer name</dt>
+          <dd>{subscription.customerName}</dd>
+        </div>
+        <div>
+          <dt>Mobile</dt>
+          <dd>{mobile ? <a href={`tel:+91${mobile}`}>{formatMobile(mobile)}</a> : "—"}</dd>
+        </div>
+        <div>
+          <dt>Location</dt>
+          <dd>{subscription.area || "—"}</dd>
+        </div>
+        {/* Bought for someone else: the number on the delivery address */}
+        {order?.deliveryMobile && (
+          <div>
+            <dt>Delivery contact</dt>
+            <dd>
+              <a href={`tel:+91${order.deliveryMobile}`}>{formatMobile(order.deliveryMobile)}</a>
+            </dd>
+          </div>
+        )}
+        <div className={leadStyles["admin-lead-details-wide"]}>
+          <dt>Deliver to</dt>
+          <dd>{order?.deliverTo ?? "—"}</dd>
+        </div>
+        <div>
+          <dt>Amount paid</dt>
+          <dd>{order ? `₹${order.amount.toLocaleString("en-IN")}` : "—"}</dd>
+        </div>
+        <div>
+          <dt>Payment method</dt>
+          <dd>{order?.payment ?? "—"}</dd>
+        </div>
+      </dl>
+
+      {/* The plan itself */}
+      <div className={leadStyles["admin-lead-bulk-order"]}>
+        <h3>Milk plan</h3>
+        <ul>
+          <li>
+            <span>
+              {MILK_TYPE_NAMES[subscription.milkType]} Milk {subscription.quantity} · {planDetail(subscription)}
+            </span>
+            <strong>{getPlanLength(subscription)}</strong>
+          </li>
+        </ul>
+      </div>
+      <dl className={leadStyles["admin-lead-details"]}>
+        <div>
+          <dt>Frequency</dt>
+          <dd>{subscription.frequency}</dd>
+        </div>
+        <div>
+          <dt>Next delivery</dt>
+          <dd>{getNextDelivery(subscription, today)}</dd>
+        </div>
+        <div>
+          <dt>Since</dt>
+          <dd>{formatDay(subscription.since)}</dd>
+        </div>
+        <div>
+          <dt>Pause</dt>
+          <dd>
+            {subscription.pauseFrom && subscription.resumeOn
+              ? `${formatDay(subscription.pauseFrom)} → resumes ${formatDay(subscription.resumeOn)}`
+              : subscription.isPaused
+                ? "Paused in the panel"
+                : "—"}
+          </dd>
+        </div>
+      </dl>
+    </AdminDialog>
   );
 }

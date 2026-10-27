@@ -71,6 +71,82 @@
   gap: calc(12 * var(--admin-pixel));
 }
 
+/*
+  Product row (Fast selling / You may also like): five numbered places, each a product picker with ↑ ↓.
+  Used in "Product row on this page" here and in Products & pricing → Product rows.
+*/
+.admin-product-row-own {
+  grid-column: 1 / -1;
+}
+
+.admin-product-row-slots {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--admin-pixel));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-product-row-slot {
+  display: grid;
+  grid-template-columns: calc(26 * var(--admin-pixel)) 1fr auto auto;
+  align-items: center;
+  gap: calc(8 * var(--admin-pixel));
+}
+
+/* The place number: a small green circle */
+.admin-product-row-slot-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(26 * var(--admin-pixel));
+  height: calc(26 * var(--admin-pixel));
+  border-radius: 50%;
+  background: #e6f0e1;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-product-row-move-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(34 * var(--admin-pixel));
+  height: calc(34 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: calc(9 * var(--admin-pixel));
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.admin-product-row-move-button:hover:not(:disabled),
+.admin-product-row-move-button:focus-visible {
+  border-color: #2f6b3a;
+  background: #e6f0e1;
+  outline: none;
+}
+
+.admin-product-row-move-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.admin-product-row-move-button svg {
+  width: calc(16 * var(--admin-pixel));
+  height: calc(16 * var(--admin-pixel));
+  fill: none;
+  stroke: #1f4d2e;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* Step 1: two big choices */
 .admin-product-page-kind-choices {
   display: flex;

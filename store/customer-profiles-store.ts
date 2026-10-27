@@ -22,7 +22,7 @@ export type CustomerProfileDetails = {
   email: string;
   primaryAddress: string;
   secondaryAddress: string;
-  location: string; // a Bengaluru area from bengaluru-locations.ts
+  location: string; // a Bengaluru area from the area picker (components/area-picker), or the typed area for "Others"
   pincode: string; // 6 digits
   // Optional (asked under "More about you")
   dateOfBirth: string; // yyyy-mm-dd or empty

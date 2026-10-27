@@ -9,8 +9,9 @@ import SiteFooter from "@/components/footer/site-footer";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { addProductToCart, changeCartItemQuantity, rememberPendingCartProduct, useCartItems, type CartProduct } from "@/store/cart-store";
 import { getDiscountPercent } from "@/store/products-store";
+import { ROW_SIZE, productRowFor, useProductRows } from "@/store/admin-product-rows-store";
 import { FREE_DELIVERY_FROM } from "./product-page-data";
-import type { DeliveryStepIcon, FastSellingCard, OneTimePack, OneTimeProductPage as OneTimePageData, PictureFit } from "./product-page-data";
+import type { DeliveryStepIcon, OneTimePack, OneTimeProductPage as OneTimePageData, PictureFit } from "./product-page-data";
 import { ProductCardTile, useProductCards } from "./all-products-page";
 import styles from "./one-time-product-page.module.css";
 
@@ -130,29 +131,42 @@ function CartIcon() {
   );
 }
 
-// "Fast selling products": heading, View all, and the cards
-// The product's own card is left out on its own page (clicking it would only open this page again)
-// The Fast selling row always shows this many products
-const FAST_SELLING_COUNT = 5;
+/*
+  The row of five products under the page, set in the Chiranvi Panel (Products & pricing → Product rows, or
+  this page's own order in Edit page; store/admin-product-rows-store.ts):
+    - "Fast selling products" on most pages; "View all" opens All products.
+    - "You may also like" on the noodles, pasta and macaroni pages; "View all" opens Pasta & Noodles.
+  The product's own card is left out on its own page (clicking it would only open this page again). When
+  fewer than five are left (a product deleted in the panel), the next products of the All products page
+  fill the row (for "You may also like": only noodles, pasta, macaroni, milk and ghee).
+*/
+const YOU_MAY_ALSO_LIKE_EXTRA_CATEGORIES = ["Noodles", "Pasta", "Macaroni", "Milk", "Ghee"];
 
-function FastSellingRow({ cards, currentSlug }: { cards: FastSellingCard[]; currentSlug: string }) {
-  // The products this row lists, as full cards with prices (in the row's order), without this page's own
-  // product; when that leaves fewer than five, the next products of the All products page fill the row
+export function FastSellingRow({ currentSlug, override }: { currentSlug: string; override?: string[] }) {
   const allCards = useProductCards();
-  const listedCards = cards
-    .filter((listed) => listed.productId !== currentSlug)
-    .flatMap((listed) => allCards.filter((card) => card.slug === listed.productId));
-  const extraCards = allCards.filter(
-    (card) => card.hasPage && card.slug !== currentSlug && !listedCards.some((listed) => listed.slug === card.slug),
-  );
-  const rowCards = [...listedCards, ...extraCards].slice(0, FAST_SELLING_COUNT);
+  const { slugs, isYouMayAlsoLike } = productRowFor(currentSlug, useProductRows(), override);
+  const listedCards = slugs.flatMap((slug) => allCards.filter((card) => card.slug === slug));
+  const extraCards = allCards
+    .filter(
+      (card) =>
+        card.hasPage &&
+        card.slug !== currentSlug &&
+        !listedCards.some((listed) => listed.slug === card.slug) &&
+        (!isYouMayAlsoLike || YOU_MAY_ALSO_LIKE_EXTRA_CATEGORIES.includes(card.category)),
+    )
+    // "You may also like": other noodles, pasta and macaroni fill empty places before milk and ghee
+    .sort((first, second) =>
+      isYouMayAlsoLike ? Number(["Milk", "Ghee"].includes(first.category)) - Number(["Milk", "Ghee"].includes(second.category)) : 0,
+    );
+  const rowCards = [...listedCards, ...extraCards].slice(0, ROW_SIZE);
+  const recommendedSlugs = isYouMayAlsoLike;
   return (
     <section className={styles["fast-selling-section"]} aria-labelledby="fast-selling-heading">
       <div className={styles["fast-selling-heading-row"]}>
         <h2 id="fast-selling-heading" className={styles["fast-selling-heading"]}>
-          Fast selling products
+          {recommendedSlugs ? "You may also like" : "Fast selling products"}
         </h2>
-        <Link href="/products" className={styles["fast-selling-view-all-link"]}>
+        <Link href={recommendedSlugs ? `/products?category=${encodeURIComponent("Pasta & Noodles")}` : "/products"} className={styles["fast-selling-view-all-link"]}>
           View all Products
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 12h14M13 6l6 6-6 6" />
@@ -501,7 +515,7 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
         </div>
         )}
 
-        <FastSellingRow cards={page.fastSellingCards} currentSlug={page.slug} />
+        <FastSellingRow currentSlug={page.slug} override={page.productRowOverride} />
       </main>
 
       {/* Shared site footer with the Refer a Friend banner (same as the landing page) */}

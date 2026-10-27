@@ -799,6 +799,100 @@
   background: #e6f0e1;
 }
 
+/* "Product rows" bar under the number cards: a short line and the Arrange button (light green) */
+.admin-product-rows-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--admin-pixel));
+  padding: calc(10 * var(--admin-pixel)) calc(16 * var(--admin-pixel));
+  border: 1px solid #d4e3cc;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #e6f0e1;
+}
+
+.admin-product-rows-bar-text {
+  font-size: calc(13 * var(--admin-pixel));
+  color: #2c4a35;
+}
+
+.admin-product-rows-bar-text strong {
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-product-rows-bar-button {
+  flex-shrink: 0;
+  padding: calc(7 * var(--admin-pixel)) calc(16 * var(--admin-pixel));
+  border: 1px solid #1f4d2e;
+  border-radius: 9999px;
+  background: #1f4d2e;
+  color: #ffffff;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-product-rows-bar-button:hover,
+.admin-product-rows-bar-button:focus-visible {
+  background: #285c3a;
+}
+
+/* Inside the "Product rows" pop-up: one group per row, across the pop-up's whole width */
+.admin-product-rows-intro,
+.admin-product-rows-group,
+.admin-product-rows-reset-button {
+  grid-column: 1 / -1;
+}
+
+.admin-product-rows-intro {
+  font-size: calc(12.5 * var(--admin-pixel));
+  color: #5d6b62;
+}
+
+.admin-product-rows-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--admin-pixel));
+  padding-top: calc(12 * var(--admin-pixel));
+  border-top: 1px solid #ecede7;
+}
+
+.admin-product-rows-group-title {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--admin-pixel));
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.admin-product-rows-group-note {
+  margin-top: calc(-4 * var(--admin-pixel));
+  font-size: calc(12 * var(--admin-pixel));
+  color: #6e7a72;
+}
+
+.admin-product-rows-reset-button {
+  justify-self: start;
+  padding: calc(4 * var(--admin-pixel)) 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 600;
+  color: #2f6b3a;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Phones: the bar's text above its button */
+@media (max-width: 600px) {
+  .admin-product-rows-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .admin-product-filter-clear svg {
   width: calc(13 * var(--admin-pixel));
   height: calc(13 * var(--admin-pixel));

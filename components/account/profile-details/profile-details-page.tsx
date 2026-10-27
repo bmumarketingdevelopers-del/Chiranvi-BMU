@@ -9,14 +9,15 @@ import { useAccountProfile } from "../account-profile";
 import { saveCustomerProfile, type CustomerProfile, type CustomerProfileDetails } from "@/store/customer-profiles-store";
 import { useOrders, type Order } from "@/store/orders-store";
 import { addProductToCart } from "@/store/cart-store";
-import { BENGALURU_LOCATIONS } from "./bengaluru-locations";
+import BengaluruAreaPicker, { OTHER_AREA, PincodeCheckNote, areaChoiceFor, otherAreaTextFor, pincodeForArea } from "@/components/area-picker/bengaluru-area-picker";
 import styles from "./profile-details-page.module.css";
 
 /*
   "My Profile" dashboard page (design): welcome banner, the personal details form and the notification
   switches. A new customer lands here after logging in: until they save, a note asks them to fill in
   their details (needed for smooth ordering and delivery). Required: first and last name, email,
-  primary address, location and pincode (picking a location fills in its pincode). The secondary
+  primary address, location and pincode (picking a location fills in its pincode; "Others" opens a box
+  to type the location, which is what gets saved). The secondary
   mobile and address, and "More about you", are optional. The primary mobile is the login number.
   Saving keeps the details in this browser (store/customer-profiles-store.ts) and gives the customer
   a Customer ID; they then show on the Chiranvi Panel's Customers page.
@@ -270,16 +271,22 @@ function PersonalDetailsForm({
   // The date box shows its example text until clicked, then becomes a date picker.
   const [isDateFieldFocused, setIsDateFieldFocused] = useState(false);
   const primaryMobileDigits = primaryMobileNumber.replace(/\D/g, "").slice(-10);
+  // The Location box: a listed area, "Others" (then formValues.location is the typed text) or nothing yet
+  const [locationChoice, setLocationChoice] = useState(() => areaChoiceFor(savedProfile?.location ?? ""));
 
   function updateFormValue(field: keyof ProfileForm, value: string) {
     setFormValues((previousValues) => ({ ...previousValues, [field]: value }));
     onEdited();
   }
 
-  // Picking a location fills in its pincode
+  // Picking a location fills in its pincode (Others: the typed location and an empty pincode, to fill in)
   function chooseLocation(locationName: string) {
-    const location = BENGALURU_LOCATIONS.find((oneLocation) => oneLocation.name === locationName);
-    setFormValues((previousValues) => ({ ...previousValues, location: locationName, pincode: location?.pincode ?? previousValues.pincode }));
+    setLocationChoice(locationName);
+    setFormValues((previousValues) =>
+      locationName === OTHER_AREA
+        ? { ...previousValues, location: otherAreaTextFor(previousValues.location), pincode: "" }
+        : { ...previousValues, location: locationName, pincode: pincodeForArea(locationName) },
+    );
     onEdited();
   }
 
@@ -312,6 +319,7 @@ function PersonalDetailsForm({
   // Cancel: back to the saved details, locked again
   function cancelEditing() {
     setFormValues(toForm(savedProfile));
+    setLocationChoice(areaChoiceFor(savedProfile?.location ?? ""));
     setHasTriedSaving(false);
     setIsEditing(false);
   }
@@ -405,17 +413,20 @@ function PersonalDetailsForm({
             onChange={(event) => updateFormValue("secondaryAddress", event.target.value)}
           />
         </label>
-        <label className={styles["profile-form-field"]}>
-          <span className={styles["profile-form-label"]}>Location *</span>
-          <select className={selectClassName(!formValues.location, "Location")} value={formValues.location} onChange={(event) => chooseLocation(event.target.value)}>
-            <option value="" disabled hidden>
-              Choose your area in Bengaluru
-            </option>
-            {BENGALURU_LOCATIONS.map((location) => (
-              <option key={location.name}>{location.name}</option>
-            ))}
-          </select>
-        </label>
+        <div className={styles["profile-form-field"]}>
+          <span id="profile-form-location-label" className={styles["profile-form-label"]}>
+            Location *
+          </span>
+          <BengaluruAreaPicker
+            area={locationChoice}
+            onChoose={chooseLocation}
+            labelId="profile-form-location-label"
+            look="account"
+            hasError={isMissing("Location") && !locationChoice}
+            isDisabled={!isEditing}
+            className={styles["profile-form-area-picker"]}
+          />
+        </div>
         <label className={styles["profile-form-field"]}>
           <span className={styles["profile-form-label"]}>Pincode *</span>
           <input
@@ -426,7 +437,21 @@ function PersonalDetailsForm({
             placeholder={fieldExamples.pincode}
             onChange={(event) => updateFormValue("pincode", event.target.value.replace(/\D/g, "").slice(0, 6))}
           />
+          {/* Filled from a listed area: ask the customer to check it (while editing) */}
+          {isEditing && pincodeForArea(locationChoice) && <PincodeCheckNote look="account" />}
         </label>
+        {/* "Others": the location in the customer's own words */}
+        {locationChoice === OTHER_AREA && (
+          <label className={`${styles["profile-form-field"]} ${styles["profile-form-field-wide"]}`}>
+            <span className={styles["profile-form-label"]}>Your location *</span>
+            <input
+              className={inputClassName("Location")}
+              value={formValues.location}
+              placeholder="Area or landmark"
+              onChange={(event) => updateFormValue("location", event.target.value)}
+            />
+          </label>
+        )}
       </div>
 
       {/* Optional extras */}

@@ -8,12 +8,12 @@ import styles from "./shop-by-category-section.module.css";
 
 /*
   Landing page section below the purity promises: "Shop By Category" heading
-  with six round category pictures (Milk, Paneer, Ghee, Butter, Flours, Batter).
+  with seven round category pictures (Milk, Paneer, Ghee, Butter, Flours, Batter, Pasta & Noodles).
   Logged in, each category opens All products with that category's filter chosen (/products?category=Milk):
   Milk shows A2, Jersey and Skimmed milk; Ghee and Butter their A2 and Jersey kinds; the others one product.
   Logged out, every category leads to the login page first (logging in comes before shopping), which then
   comes back to that category.
-  Scroll reveal: when the section scrolls into view, the heading and the six
+  Scroll reveal: when the section scrolls into view, the heading and the seven
   categories fade and slide up together.
 */
 
@@ -26,6 +26,8 @@ const productCategories = [
   { name: "Butter", imageSource: "/images/categories/butter-category.webp", imageWidth: 412, imageHeight: 272 },
   { name: "Flours", imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276 },
   { name: "Batter", imageSource: "/images/categories/batter-category-chiranvi-farm.webp", imageWidth: 372, imageHeight: 248 },
+  // One circle for the three: opens All products showing Noodles, Pasta and Macaroni together
+  { name: "Pasta & Noodles", imageSource: "/images/categories/pasta-noodles-category.webp", imageWidth: 420, imageHeight: 280 },
 ];
 
 export default function ShopByCategorySection() {

@@ -59,6 +59,9 @@ const FILTER_PICTURES: Record<ShopCategory, { imageSource: string; imageWidth: n
   Flours: { imageSource: "/images/products/whole-wheat-atta-pack.webp", imageWidth: 1984, imageHeight: 1806 },
   Batter: { imageSource: "/images/products/idli-batter-powder-pack.webp", imageWidth: 1808, imageHeight: 2744 },
   Powders: { imageSource: "/images/products/turmeric-powder-pouch.webp", imageWidth: 360, imageHeight: 548 },
+  Noodles: { imageSource: "/images/products/carrot-instant-noodles-pack.webp", imageWidth: 850, imageHeight: 1000 },
+  Pasta: { imageSource: "/images/products/tomato-pasta-pack.webp", imageWidth: 714, imageHeight: 1000 },
+  Macaroni: { imageSource: "/images/products/palak-macaroni-label.webp", imageWidth: 1000, imageHeight: 1000 },
   Others: { imageSource: "/images/categories/flours-category-chiranvi-farm.webp", imageWidth: 412, imageHeight: 276 },
 };
 
@@ -417,12 +420,22 @@ export function ProductCardTile({ card }: { card: ProductCard }) {
   );
 }
 
+/*
+  The home page's "Pasta & Noodles" circle opens /products?category=Pasta & Noodles: the Noodles, Pasta and
+  Macaroni cards together, with those three filters shown as chosen. Tapping one filter then shows only it.
+*/
+const PASTA_AND_NOODLES = "Pasta & Noodles";
+const PASTA_AND_NOODLES_CATEGORIES: ShopCategory[] = ["Noodles", "Pasta", "Macaroni"];
+type ChosenCategory = ShopCategory | "All" | typeof PASTA_AND_NOODLES;
+
 // startingCategory: from /products?category=Milk (Shop by Category on the home page); missing: All
-export default function AllProductsPage({ startingCategory }: { startingCategory?: ShopCategory }) {
-  const [chosenCategory, setChosenCategory] = useState<ShopCategory | "All">(startingCategory ?? "All");
+export default function AllProductsPage({ startingCategory }: { startingCategory?: ShopCategory | typeof PASTA_AND_NOODLES }) {
+  const [chosenCategory, setChosenCategory] = useState<ChosenCategory>(startingCategory ?? "All");
   const cards = useProductCards();
   const categoriesWithCards = SHOP_CATEGORIES.filter((category) => cards.some((card) => card.category === category));
-  const shownCards = chosenCategory === "All" ? cards : cards.filter((card) => card.category === chosenCategory);
+  const isCategoryChosen = (category: ShopCategory) =>
+    chosenCategory === category || (chosenCategory === PASTA_AND_NOODLES && PASTA_AND_NOODLES_CATEGORIES.includes(category));
+  const shownCards = chosenCategory === "All" ? cards : cards.filter((card) => isCategoryChosen(card.category));
   const isLoggedIn = useIsLoggedIn();
   const isLoginStatusKnown = useIsLoginStatusKnown();
   const router = useRouter();
@@ -444,7 +457,7 @@ export default function AllProductsPage({ startingCategory }: { startingCategory
       <main className={styles["all-products-page-content"]}>
         <h1 className={styles["all-products-title"]}>All products</h1>
         <p className={styles["all-products-description"]}>
-          Fresh from our farm: milk, ghee, paneer, butter, flours and batter. Delivered by 7 AM.
+          Fresh from our farm: milk, ghee, paneer, butter, flours, batter, powders, pasta and noodles. Delivered by 7 AM.
         </p>
 
         {/* Category filters */}
@@ -463,8 +476,8 @@ export default function AllProductsPage({ startingCategory }: { startingCategory
               <button
                 key={category}
                 type="button"
-                aria-pressed={chosenCategory === category}
-                className={`${styles["all-products-filter"]} ${chosenCategory === category ? styles["all-products-filter-chosen"] : ""}`}
+                aria-pressed={isCategoryChosen(category)}
+                className={`${styles["all-products-filter"]} ${isCategoryChosen(category) ? styles["all-products-filter-chosen"] : ""}`}
                 onClick={() => setChosenCategory(category)}
               >
                 <span className={styles["all-products-filter-picture"]} aria-hidden="true">

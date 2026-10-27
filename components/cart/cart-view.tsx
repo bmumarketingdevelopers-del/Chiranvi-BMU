@@ -70,6 +70,12 @@ const MILK_PRODUCT_ID = "a2-desi-milk";
 
 const rupees = (amount: number) => `₹${Math.round(amount).toLocaleString("en-IN")}`;
 
+// The address's mobile number as 10 digits ("+91 98450 12345" → "9845012345"), for the order's delivery contact
+function deliveryMobileOf(address: { mobileNumber: string } | null | undefined) {
+  const digits = address?.mobileNumber.replace(/[^0-9]/g, "").replace(/^91(?=[0-9]{10}$)/, "") ?? "";
+  return digits.length === 10 ? digits : undefined;
+}
+
 // The cart is saved in the browser, so it is only known after the page has loaded there.
 function subscribeToNothing() {
   return () => {};
@@ -465,6 +471,7 @@ export default function CartView() {
         couponDiscount: planCouponDiscount || undefined,
         deliveryFee: 0,
         deliverTo: planToExtend ? planToExtend.deliverTo : deliverTo,
+        deliveryMobile: deliveryMobileOf(chosenAddress),
         area: chosenAddress?.area,
         paymentMethod,
         subscription: {
@@ -501,6 +508,7 @@ export default function CartView() {
       couponDiscount: itemsCouponDiscount || undefined,
       deliveryFee,
       deliverTo,
+      deliveryMobile: deliveryMobileOf(chosenAddress),
       area: chosenAddress.area,
       paymentMethod,
     });

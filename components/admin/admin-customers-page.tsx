@@ -16,6 +16,7 @@ import {
 } from "@/store/admin-customers-store";
 import { getPlanLength, getSubscriptionStatus, useAdminSubscriptions } from "@/store/admin-subscriptions-store";
 import { useAdminOrders } from "@/store/admin-orders-store";
+import BengaluruAreaPicker, { OTHER_AREA, PincodeCheckNote, pincodeForArea } from "@/components/area-picker/bengaluru-area-picker";
 import { AdminFeatureGate } from "./admin-panel-layout";
 import {
   AdminDialog,
@@ -40,7 +41,8 @@ import leadStyles from "./admin-leads-page.module.css";
 /*
   Customers (/admin/customers), from the design 05-customers: everyone who orders from Chiranvi.
   (The design's wallet column, card and tab are left out: Chiranvi does not use a wallet.)
-    top        search (name, phone or area), Add customer (pop-up form), Custom range, Export
+    top        search (name, phone or area), Add customer (pop-up form: the area from the Bengaluru list
+               fills its pincode; "Others" opens a box to type it), Custom range, Export
     numbers    total customers (new this month), active, average lifetime value, inactive
     table      All / New / Active / Paused / Inactive tabs; 14 a page; name with Customer ID, mobile,
                location, plan (subscription / one-time), orders, last order, status; "View details"
@@ -69,8 +71,18 @@ function lastOrderText(daysAgo: number, orderCount = 1) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-const EMPTY_NEW_CUSTOMER = { name: "", area: "", phone: "", plan: "Cow Milk 1 L" };
-const PLAN_CHOICES = ["Cow Milk 1 L", "Cow Milk 500 ml", "Cow Milk 2 L", "A2 Milk 1 L", "Buffalo Milk 1 L", "One-time orders"];
+// area: the choice in the area box; otherArea: typed when it is "Others"
+const EMPTY_NEW_CUSTOMER = { name: "", area: "", otherArea: "", pincode: "", phone: "", plan: "A2 (Gir Cow) Milk 1 L" };
+// Today's milks (1 L glass bottle or 500 ml), or one-time orders only
+const PLAN_CHOICES = [
+  "A2 (Gir Cow) Milk 1 L",
+  "A2 (Gir Cow) Milk 500 ml",
+  "Jersey Milk 1 L",
+  "Jersey Milk 500 ml",
+  "Skimmed Milk 1 L",
+  "Skimmed Milk 500 ml",
+  "One-time orders",
+];
 
 export default function AdminCustomersPage() {
   return (
@@ -129,9 +141,15 @@ function CustomersPage() {
       showToast("Enter the name and a 10-digit phone number");
       return;
     }
+    if (newCustomer.pincode && newCustomer.pincode.length !== 6) {
+      showToast("Enter a 6-digit pincode, or leave it empty");
+      return;
+    }
+    const area = newCustomer.area === OTHER_AREA ? newCustomer.otherArea.trim() : newCustomer.area;
     const added = addCustomer({
       name: newCustomer.name.trim(),
-      area: newCustomer.area.trim() || "—",
+      area: area || "—",
+      pincode: newCustomer.pincode || undefined,
       phone: `${phoneDigits.slice(0, 5)} ${phoneDigits.slice(5, 7)} ${phoneDigits.slice(7)}`,
       plan: newCustomer.plan,
     });
@@ -174,7 +192,7 @@ function CustomersPage() {
           profile?.primaryAddress ?? "",
           profile?.secondaryAddress ?? "",
           customer.area,
-          profile?.pincode ?? "",
+          profile?.pincode ?? customer.pincode ?? "",
           getCustomerPlanKind(customer),
           customer.plan,
           customer.lifetimeValue,
@@ -391,12 +409,39 @@ function CustomersPage() {
               }
             />
           </AdminDialogField>
-          <AdminDialogField label="Area">
+          <div className={sharedStyles["admin-dialog-field"]}>
+            <span id="admin-new-customer-area-label" className={sharedStyles["admin-dialog-label"]}>
+              Area
+            </span>
+            <BengaluruAreaPicker
+              area={newCustomer.area}
+              onChoose={(chosenArea) => setNewCustomer({ ...newCustomer, area: chosenArea, pincode: pincodeForArea(chosenArea) })}
+              labelId="admin-new-customer-area-label"
+              look="admin"
+            />
+          </div>
+          {newCustomer.area === OTHER_AREA && (
+            <AdminDialogField label="Area name">
+              <input
+                className={adminInputClassName}
+                placeholder="Area or landmark"
+                value={newCustomer.otherArea}
+                onChange={(changeEvent) => setNewCustomer({ ...newCustomer, otherArea: changeEvent.target.value })}
+                autoFocus
+              />
+            </AdminDialogField>
+          )}
+          <AdminDialogField label="Pincode">
             <input
               className={adminInputClassName}
-              value={newCustomer.area}
-              onChange={(changeEvent) => setNewCustomer({ ...newCustomer, area: changeEvent.target.value })}
+              inputMode="numeric"
+              placeholder="6-digit pincode"
+              value={newCustomer.pincode}
+              onChange={(changeEvent) =>
+                setNewCustomer({ ...newCustomer, pincode: changeEvent.target.value.replace(/[^0-9]/g, "").slice(0, 6) })
+              }
             />
+            {pincodeForArea(newCustomer.area) && <PincodeCheckNote look="admin" />}
           </AdminDialogField>
           <AdminDialogField label="Plan">
             <select
@@ -503,7 +548,7 @@ function CustomerDetailsDialog({ customer, onClose }: { customer: AdminCustomer;
         </div>
         <div>
           <dt>Pincode</dt>
-          <dd>{shown(profile?.pincode)}</dd>
+          <dd>{shown(profile?.pincode ?? customer.pincode)}</dd>
         </div>
         <div>
           <dt>Joined</dt>

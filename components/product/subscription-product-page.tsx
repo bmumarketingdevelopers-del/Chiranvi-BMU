@@ -16,7 +16,8 @@ import {
   type CartProduct,
 } from "@/store/cart-store";
 import { getDiscountPercent } from "@/store/products-store";
-import type { DeliveryStepIcon, FastSellingCard, PictureFit, SubscriptionPlanSetting, SubscriptionProductPage as SubscriptionPageData } from "./product-page-data";
+import { ROW_SIZE, productRowFor, useProductRows } from "@/store/admin-product-rows-store";
+import type { DeliveryStepIcon, PictureFit, SubscriptionPlanSetting, SubscriptionProductPage as SubscriptionPageData } from "./product-page-data";
 import { ProductCardTile, useProductCards } from "./all-products-page";
 import styles from "./subscription-product-page.module.css";
 
@@ -261,22 +262,21 @@ function CheckoutToCartButton({
   );
 }
 
-// "Fast selling products": heading, View all, and the cards
-// The product's own card is left out on its own page (its View product would only open this page again)
-// The Fast selling rows always show this many products
-const FAST_SELLING_COUNT = 5;
-
-function FastSellingRow({ cards, currentSlug }: { cards: FastSellingCard[]; currentSlug: string }) {
-  // The products this row lists, as full cards with prices (in the row's order), without this page's own
-  // product; when that leaves fewer than five, the next products of the All products page fill the row
+/*
+  "Fast selling products": heading, View all, and the cards, on both the subscription and one-time tabs.
+  The products and their order come from the Chiranvi Panel (Products & pricing → Product rows, or this
+  page's own order in Edit page; store/admin-product-rows-store.ts).
+  The product's own card is left out on its own page (its View product would only open this page again);
+  when fewer than five are left, the next products of the All products page fill the row.
+*/
+function FastSellingRow({ currentSlug, override }: { currentSlug: string; override?: string[] }) {
   const allCards = useProductCards();
-  const listedCards = cards
-    .filter((listed) => listed.productId !== currentSlug)
-    .flatMap((listed) => allCards.filter((card) => card.slug === listed.productId));
+  const { slugs } = productRowFor(currentSlug, useProductRows(), override);
+  const listedCards = slugs.flatMap((slug) => allCards.filter((card) => card.slug === slug));
   const extraCards = allCards.filter(
     (card) => card.hasPage && card.slug !== currentSlug && !listedCards.some((listed) => listed.slug === card.slug),
   );
-  const rowCards = [...listedCards, ...extraCards].slice(0, FAST_SELLING_COUNT);
+  const rowCards = [...listedCards, ...extraCards].slice(0, ROW_SIZE);
   return (
     <section className={styles["fast-selling-section"]} aria-labelledby="fast-selling-heading">
       <div className={styles["fast-selling-heading-row"]}>
@@ -758,10 +758,7 @@ export default function SubscriptionProductPage({ page: fullPage }: { page: Subs
           </div>
         </div>
 
-        <FastSellingRow
-          cards={purchaseType === "one-time" ? page.fastSellingCards : page.subscriptionFastSellingCards}
-          currentSlug={page.slug}
-        />
+        <FastSellingRow currentSlug={page.slug} override={page.productRowOverride} />
       </main>
 
       {/* Shared site footer with the Refer a Friend banner (same as the landing page) */}

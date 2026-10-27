@@ -527,6 +527,13 @@
     font-size: 14px;
   }
 
+  /* The Location box: the same height and text size as the boxes beside it */
+  .profile-form-area-picker {
+    --area-picker-height: 40px;
+    --area-picker-side-padding: 10px;
+    --area-picker-font-size: 14px;
+  }
+
   .profile-form-select {
     padding-right: 28px;
     background-position: right 8px center;

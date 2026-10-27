@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { POWDER_PRODUCT_IDS, useProductCards } from "@/components/product/all-products-page";
+import BengaluruAreaPicker, { OTHER_AREA, PincodeCheckNote, pincodeForArea } from "@/components/area-picker/bengaluru-area-picker";
 import { addLead } from "@/store/admin-leads-store";
 import styles from "./location-request-section.module.css";
 
@@ -40,46 +41,6 @@ function usePinPictures() {
 }
 
 const chiranviLogo: PinPicture = { imageSource: "/images/brand/chiranvi-farm-logo.webp", imageWidth: 516, imageHeight: 240 };
-
-/*
-  Bengaluru areas in the "Your area" list (A to Z) with each area's main pincode, which fills the Pincode
-  box when the area is chosen (an area can have more than one pincode, so the box can still be changed).
-  Anything else is "Others", with its own box and an empty pincode.
-*/
-const BENGALURU_AREA_PINCODES: Record<string, string> = {
-  Banashankari: "560050",
-  "Bannerghatta Road": "560076",
-  Basavanagudi: "560004",
-  Bellandur: "560103",
-  "BTM Layout": "560076",
-  Domlur: "560071",
-  "Electronic City": "560100",
-  "Frazer Town": "560005",
-  Hebbal: "560024",
-  Hennur: "560043",
-  "HSR Layout": "560102",
-  Indiranagar: "560038",
-  Jayanagar: "560041",
-  "JP Nagar": "560078",
-  "Kalyan Nagar": "560043",
-  Kengeri: "560060",
-  Koramangala: "560034",
-  "KR Puram": "560036",
-  Malleshwaram: "560003",
-  Marathahalli: "560037",
-  Rajajinagar: "560010",
-  "RT Nagar": "560032",
-  Sadashivanagar: "560080",
-  "Sarjapur Road": "560035",
-  Ulsoor: "560008",
-  Varthur: "560087",
-  Vijayanagar: "560040",
-  Whitefield: "560066",
-  Yelahanka: "560064",
-  Yeshwanthpur: "560022",
-};
-const BENGALURU_AREAS = Object.keys(BENGALURU_AREA_PINCODES);
-const OTHER_AREA = "Others";
 
 export default function LocationRequestSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -255,112 +216,6 @@ export default function LocationRequestSection() {
 }
 
 /*
-  "Your area": a box that opens its list inside itself (the box grows downwards in the pop-up and the list
-  scrolls), instead of the browser's own dropdown. The chosen area is shown light green with a tick.
-  Keyboard: Enter / Space / ↓ open it, ↑ ↓ move, Enter chooses, Escape closes the list only.
-  A click outside the box closes the list.
-*/
-const AREA_CHOICES = [...BENGALURU_AREAS, OTHER_AREA];
-
-function AreaPicker({ area, onChoose }: { area: string; onChoose: (area: string) => void }) {
-  const [isOpen, setIsOpen] = useState(false);
-  // The highlighted row while the list is open (keyboard and mouse)
-  const [activeIndex, setActiveIndex] = useState(0);
-  const pickerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-
-  function open() {
-    setActiveIndex(Math.max(0, AREA_CHOICES.indexOf(area)));
-    setIsOpen(true);
-  }
-  function choose(choice: string) {
-    onChoose(choice);
-    setIsOpen(false);
-  }
-
-  // Click outside the box: close the list
-  useEffect(() => {
-    if (!isOpen) return;
-    function closeOnOutsideClick(event: PointerEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) setIsOpen(false);
-    }
-    document.addEventListener("pointerdown", closeOnOutsideClick);
-    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
-  }, [isOpen]);
-
-  // Keep the highlighted row in view inside the list
-  useEffect(() => {
-    if (!isOpen) return;
-    listRef.current?.children[activeIndex]?.scrollIntoView({ block: "nearest" });
-  }, [isOpen, activeIndex]);
-
-  function handleKeyDown(event: React.KeyboardEvent) {
-    if (!isOpen) {
-      if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
-        event.preventDefault();
-        open();
-      }
-      return;
-    }
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveIndex((index) => Math.min(AREA_CHOICES.length - 1, Math.max(0, index + (event.key === "ArrowDown" ? 1 : -1))));
-    } else if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      choose(AREA_CHOICES[activeIndex]);
-    } else if (event.key === "Escape") {
-      // Closes the list, not the whole pop-up
-      event.preventDefault();
-      event.stopPropagation();
-      event.nativeEvent.stopImmediatePropagation();
-      setIsOpen(false);
-    }
-  }
-
-  return (
-    <div ref={pickerRef} className={`${styles["location-area-picker"]} ${isOpen ? styles["location-area-picker-open"] : ""}`}>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-labelledby="location-popup-area-label"
-        className={`${styles["location-area-picker-button"]} ${area ? "" : styles["location-area-picker-placeholder"]}`}
-        onClick={() => (isOpen ? setIsOpen(false) : open())}
-        onKeyDown={handleKeyDown}
-      >
-        {area || "Choose your area in Bengaluru"}
-        <svg viewBox="0 0 24 24" aria-hidden="true" className={styles["location-area-picker-arrow"]}>
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-      {isOpen && (
-        <ul ref={listRef} role="listbox" aria-labelledby="location-popup-area-label" className={styles["location-area-picker-list"]} data-lenis-prevent>
-          {AREA_CHOICES.map((choice, index) => (
-            <li
-              key={choice}
-              role="option"
-              aria-selected={choice === area}
-              className={`${styles["location-area-picker-option"]} ${index === activeIndex ? styles["location-area-picker-option-active"] : ""} ${
-                choice === area ? styles["location-area-picker-option-chosen"] : ""
-              }`}
-              onPointerEnter={() => setActiveIndex(index)}
-              onClick={() => choose(choice)}
-            >
-              {choice}
-              {choice === area && (
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M5 12.5l4.5 4.5L19 7.5" />
-                </svg>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-/*
   Delivery request pop-up ("Request"): over the landing page, which stays behind it, dimmed.
   Name, phone number (10 digits) and the area: a Bengaluru area from the list, or "Others", which opens a
   box to type the location; then the pincode, filled from the chosen area (optional, 6 digits when given).
@@ -386,7 +241,7 @@ function LocationRequestPopup({ onClose }: { onClose: () => void }) {
   // Choosing an area fills its pincode (Others: empty, for the customer to type)
   function chooseArea(chosenArea: string) {
     setArea(chosenArea);
-    setPincode(BENGALURU_AREA_PINCODES[chosenArea] ?? "");
+    setPincode(pincodeForArea(chosenArea));
   }
 
   // The latest onClose, so the set-up below runs only once (not again on every keystroke)
@@ -455,7 +310,7 @@ function LocationRequestPopup({ onClose }: { onClose: () => void }) {
             </label>
             <div className={styles["location-popup-field"]}>
               <span id="location-popup-area-label">Your area *</span>
-              <AreaPicker area={area} onChoose={chooseArea} />
+              <BengaluruAreaPicker area={area} onChoose={chooseArea} labelId="location-popup-area-label" look="landing" />
             </div>
             {/* "Others": the location in the customer's own words */}
             {area === OTHER_AREA && (
@@ -474,6 +329,7 @@ function LocationRequestPopup({ onClose }: { onClose: () => void }) {
                 autoComplete="postal-code"
                 placeholder="6-digit pincode"
               />
+              {pincodeForArea(area) && <PincodeCheckNote look="landing" />}
             </label>
 
             <button type="submit" className={styles["location-popup-submit-button"]} disabled={!isFormComplete}>
