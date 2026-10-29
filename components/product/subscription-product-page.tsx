@@ -18,7 +18,7 @@ import {
 import { getDiscountPercent } from "@/store/products-store";
 import { ROW_SIZE, productRowFor, useProductRows } from "@/store/admin-product-rows-store";
 import type { DeliveryStepIcon, PictureFit, SubscriptionPlanSetting, SubscriptionProductPage as SubscriptionPageData } from "./product-page-data";
-import { ProductCardTile, useProductCards } from "./all-products-page";
+import { ProductCardTile, SoldOutNotice, useProductCards, useSoldOutPanelCardId } from "./all-products-page";
 import styles from "./subscription-product-page.module.css";
 
 /*
@@ -351,6 +351,8 @@ export default function SubscriptionProductPage({ page: fullPage }: { page: Subs
   const biggestPlanSavingPercent = Math.max(0, ...plans.map((plan) => plan.percentOff));
 
   const isLoggedIn = useIsLoggedIn();
+  // Switched off or out of stock in the panel: it cannot be ordered (its card id, for Notify me)
+  const soldOutPanelCardId = useSoldOutPanelCardId(fullPage);
   const cartItems = useCartItems();
   const quantityInCart = cartItems.find((cartItem) => cartItem.productId === cartProduct.productId)?.quantity ?? 0;
   // Units every morning for the plans: the cart quantity, or 1 before the product is in the cart
@@ -545,6 +547,11 @@ export default function SubscriptionProductPage({ page: fullPage }: { page: Subs
                 ))}
               </div>
             )}
+            {/* Out of stock in the panel: no quantity, plans or ordering, only Notify me */}
+            {soldOutPanelCardId ? (
+              <SoldOutNotice cardId={cartProduct.productId} panelCardId={soldOutPanelCardId} />
+            ) : (
+            <>
             <p className={styles["subscription-quantity-label"]}>
               <strong>Quantity</strong> · {page.packSize} each
             </p>
@@ -754,6 +761,8 @@ export default function SubscriptionProductPage({ page: fullPage }: { page: Subs
                 Order within {orderCutoff.timeLeft} for your first {page.itemWord.one} {orderCutoff.deliveryDay} by{" "}
                 {page.deliveryByTime}
               </p>
+            )}
+            </>
             )}
           </div>
         </div>

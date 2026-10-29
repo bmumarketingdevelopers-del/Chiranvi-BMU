@@ -12,7 +12,7 @@ import { getDiscountPercent } from "@/store/products-store";
 import { ROW_SIZE, productRowFor, useProductRows } from "@/store/admin-product-rows-store";
 import { FREE_DELIVERY_FROM } from "./product-page-data";
 import type { DeliveryStepIcon, OneTimePack, OneTimeProductPage as OneTimePageData, PictureFit } from "./product-page-data";
-import { ProductCardTile, useProductCards } from "./all-products-page";
+import { ProductCardTile, SoldOutNotice, useProductCards, useSoldOutPanelCardId } from "./all-products-page";
 import styles from "./one-time-product-page.module.css";
 
 /*
@@ -196,6 +196,8 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
     Add to cart shake and glow with an "Add to cart first" tip (like Add Quantity on the milk page).
   */
   const isLoggedIn = useIsLoggedIn();
+  // Switched off or out of stock in the panel: it cannot be ordered (its card id, for Notify me)
+  const soldOutPanelCardId = useSoldOutPanelCardId(page);
   const cartItems = useCartItems();
   const chosenPackCartProduct = chosenPack ? toCartProduct(page, chosenPack) : null;
   const router = useRouter();
@@ -387,6 +389,11 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
               </p>
             )}
 
+            {/* Out of stock in the panel: no quantity or ordering, only Notify me */}
+            {soldOutPanelCardId ? (
+              <SoldOutNotice cardId={chosenPackCartId} panelCardId={soldOutPanelCardId} />
+            ) : (
+            <>
             {/* Quantity: Add to cart (then "− n +") and Buy now */}
             <p className={styles["one-time-section-label"]}>Quantity</p>
             <div ref={buyRowRef} className={styles["one-time-buy-row"]}>
@@ -473,6 +480,8 @@ export default function OneTimeProductPage({ page }: { page: OneTimePageData }) 
                 style={{ width: `${freeDeliveryProgressPercent}%` }}
               />
             </span>
+            </>
+            )}
           </div>
         </div>
 

@@ -205,17 +205,19 @@
   color: #285c3a;
 }
 
-/* "Out of stock" over the middle of the picture (dark pill, design); the picture fades */
+/* "Out of stock" over the middle of the picture (compact grey pill, like the product page's); the picture fades */
 .all-products-out-of-stock {
   position: absolute;
   z-index: 1;
   top: 50%;
   left: 50%;
-  padding: calc(5 * var(--all-products-design-pixel)) calc(14 * var(--all-products-design-pixel));
+  /* max(): never smaller than this on a phone, where the card's unit shrinks */
+  padding: max(4px, calc(5 * var(--all-products-design-pixel))) max(10px, calc(13 * var(--all-products-design-pixel)));
   border-radius: 9999px;
-  background: rgba(26, 26, 26, 0.75);
-  font-size: calc(11.5 * var(--all-products-design-pixel));
-  font-weight: 600;
+  background: #5f5f5f;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: max(12px, calc(13 * var(--all-products-design-pixel)));
+  font-weight: 700;
   white-space: nowrap;
   color: #ffffff;
   transform: translate(-50%, -50%);
@@ -556,4 +558,80 @@
     font-size: 17px;
   }
 
+}
+
+/*
+  Product page's Notify me: a little bigger than the card's. Inside the box (three classes), so the cards'
+  phone rule above (full width, also used on tablets) does not reach it.
+*/
+.all-products-sold-out-notice .all-products-notify-button.all-products-notify-large,
+.all-products-sold-out-notice .all-products-notify-done.all-products-notify-large {
+  flex-shrink: 0;
+  width: auto;
+  height: 40px;
+  padding: 0 22px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.all-products-sold-out-notice .all-products-notify-button.all-products-notify-large {
+  border-color: #1f4d2e;
+  color: #1f4d2e;
+}
+
+/*
+  Product page, out of stock: one compact grey row in place of the quantity and the ordering buttons:
+  "Out of stock" and the line under it on the left, Notify me on the right (stacked on a phone)
+*/
+.all-products-sold-out-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid #e2e2dd;
+  border-radius: 12px;
+  background: #f5f5f2;
+}
+
+.all-products-sold-out-notice-words {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  gap: 6px;
+  min-width: 0;
+}
+
+.all-products-sold-out-notice-badge {
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: #5f5f5f;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #ffffff;
+}
+
+.all-products-sold-out-notice-text {
+  margin: 0;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #5f5f5f;
+}
+
+@media (max-width: 600px) {
+  .all-products-sold-out-notice {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .all-products-sold-out-notice .all-products-notify-button.all-products-notify-large,
+  .all-products-sold-out-notice .all-products-notify-done.all-products-notify-large {
+    width: 100%;
+  }
 }

@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { rememberPageAfterLogin, useIsLoggedIn, useIsLoginStatusKnown } from "@/components/login/login-status";
+import { rememberPageAfterLogin, useIsLoggedIn, useIsLoginStatusKnown, useLoggedInMobileNumber } from "@/components/login/login-status";
 import SiteFooter from "@/components/footer/site-footer";
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { addProductToCart, changeCartItemQuantity, rememberPendingCartProduct, useCartItems, type CartProduct } from "@/store/cart-store";
 import { useProductPages } from "@/store/product-pages-store";
-import { isAvailableToOrder, useShopProducts, type ShopProduct } from "@/store/products-store";
+import { askToBeNotified, isAvailableToOrder, useShopProducts, type ShopProduct } from "@/store/products-store";
 import { toggleWishlistItem, useWishlist, type WishlistItem } from "@/store/wishlist-store";
 import { SHOP_CATEGORIES, type ProductPage, type ShopCategory } from "./product-page-data";
 import styles from "./all-products-page.module.css";
@@ -44,6 +44,7 @@ export type ProductCard = {
   originalPrice?: number;
   tag?: string; // on the picture: "Subscribe & save", "Best value", "Most popular"
   isSoldOut?: boolean;
+  panelCardId?: string; // its card on the panel's Products & pricing (Notify me is kept there)
   isSubscription?: boolean; // milk: View product (subscription or one-time is chosen on its page)
 };
 
@@ -69,6 +70,17 @@ function formatRupees(amount: number) {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
+// A product page's card on the panel's Products & pricing: the same address, or made with the page
+function findPanelCardOfPage(page: ProductPage, shopProducts: ShopProduct[]) {
+  return shopProducts.find((product) => product.productId === page.slug || page.panelCardIds?.includes(product.productId));
+}
+
+// The panel card's id when the product page is switched off or out of stock there (then it cannot be ordered)
+export function useSoldOutPanelCardId(page: ProductPage) {
+  const panelCard = findPanelCardOfPage(page, useShopProducts());
+  return panelCard && !isAvailableToOrder(panelCard) ? panelCard.productId : null;
+}
+
 /*
   One card per product page: a one-time product shows its main pack (the one its page opens on, e.g.
   ghee 1 litre), a subscription product its one-time price per unit. The other sizes are chosen on the page.
@@ -78,9 +90,10 @@ function toPageCards(pages: ProductPage[], shopProducts: ShopProduct[]): Product
     .filter((page) => page.status === "published")
     .flatMap((page): ProductCard[] => {
       // Its card on the panel's Products & pricing: switched off or out of stock there shows Sold out here
-      const panelCard = shopProducts.find((product) => product.productId === page.slug || page.panelCardIds?.includes(product.productId));
+      const panelCard = findPanelCardOfPage(page, shopProducts);
       const shared = {
         isSoldOut: panelCard ? !isAvailableToOrder(panelCard) : undefined,
+        panelCardId: panelCard?.productId,
         slug: page.slug,
         hasPage: true,
         name: page.name,
@@ -131,6 +144,7 @@ function toPowderCards(shopProducts: ShopProduct[], pageSlugs: Set<string>): Pro
         price: product.price,
         originalPrice: product.originalPrice,
         isSoldOut: !isAvailableToOrder(product),
+        panelCardId: product.productId,
       },
     ];
   });
@@ -164,7 +178,7 @@ function toUpcomingFlourCards(pageSlugs: Set<string>) {
   return UPCOMING_FLOUR_CARDS.filter((card) => !pageSlugs.has(card.slug));
 }
 
-// "Notify me" on an out-of-stock card: remembered in this browser until stock alerts are kept in Supabase
+// "Notify me" for a card that is not on the panel yet (the upcoming flours): remembered in this browser
 const NOTIFY_STORAGE_KEY = "chiranvi-notify-me";
 
 function readNotifyRequests(): string[] {
@@ -185,18 +199,28 @@ function goToLoginAndBack(router: ReturnType<typeof useRouter>) {
   router.push("/login");
 }
 
-function NotifyMeButton({ cardId, isLoggedIn }: { cardId: string; isLoggedIn: boolean }) {
+/*
+  Notify me: for a card on the panel the request is kept in the database (the panel's "waiting" list, and
+  "✓ We'll notify you" on every device); isLarge is the product page's bigger button.
+*/
+function NotifyMeButton({ cardId, panelCardId, isLoggedIn, isLarge = false }: { cardId: string; panelCardId?: string; isLoggedIn: boolean; isLarge?: boolean }) {
   const router = useRouter();
-  const [isRequested, setIsRequested] = useState(false);
+  const shopProducts = useShopProducts();
+  const mobileNumber = useLoggedInMobileNumber();
+  const [isRequestedHere, setIsRequestedHere] = useState(false);
   useEffect(() => {
     // Read once in the browser (localStorage is not there while the page is drawn on the server)
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsRequested(readNotifyRequests().includes(cardId));
-  }, [cardId]);
+    if (!panelCardId) setIsRequestedHere(readNotifyRequests().includes(cardId));
+  }, [cardId, panelCardId]);
+  const isRequested = panelCardId
+    ? Boolean(mobileNumber && shopProducts.find((product) => product.productId === panelCardId)?.waitingCustomers?.includes(mobileNumber.slice(-10)))
+    : isRequestedHere;
+  const sizeClass = isLarge ? styles["all-products-notify-large"] : "";
 
   if (isRequested) {
     return (
-      <span className={styles["all-products-notify-done"]} role="status">
+      <span className={`${styles["all-products-notify-done"]} ${sizeClass}`} role="status">
         ✓ We&rsquo;ll notify you
       </span>
     );
@@ -204,10 +228,14 @@ function NotifyMeButton({ cardId, isLoggedIn }: { cardId: string; isLoggedIn: bo
   return (
     <button
       type="button"
-      className={styles["all-products-notify-button"]}
+      className={`${styles["all-products-notify-button"]} ${sizeClass}`}
       onClick={() => {
         if (!isLoggedIn) {
           goToLoginAndBack(router);
+          return;
+        }
+        if (panelCardId && mobileNumber) {
+          askToBeNotified(panelCardId, mobileNumber);
           return;
         }
         try {
@@ -215,11 +243,28 @@ function NotifyMeButton({ cardId, isLoggedIn }: { cardId: string; isLoggedIn: bo
         } catch {
           // Storage blocked: shown as requested until the page is refreshed.
         }
-        setIsRequested(true);
+        setIsRequestedHere(true);
       }}
     >
       Notify me
     </button>
+  );
+}
+
+/*
+  A product page whose card is switched off or out of stock in the panel: this box stands in place of the
+  quantity and the ordering buttons, so it cannot be ordered; Notify me asks for a message when it is back.
+*/
+export function SoldOutNotice({ cardId, panelCardId }: { cardId: string; panelCardId: string }) {
+  const isLoggedIn = useIsLoggedIn();
+  return (
+    <div className={styles["all-products-sold-out-notice"]} role="status">
+      <div className={styles["all-products-sold-out-notice-words"]}>
+        <span className={styles["all-products-sold-out-notice-badge"]}>Out of stock</span>
+        <p className={styles["all-products-sold-out-notice-text"]}>This can&rsquo;t be ordered right now. Tap Notify me and we&rsquo;ll tell you when it&rsquo;s back.</p>
+      </div>
+      <NotifyMeButton cardId={cardId} panelCardId={panelCardId} isLoggedIn={isLoggedIn} isLarge />
+    </div>
   );
 }
 
@@ -329,7 +374,8 @@ export function useProductCards() {
   One product card (All products page and the product pages' Fast selling row): picture with tag and heart,
   name, pack, rating, price, and the button:
   - milk (bought by subscription or one-time): "View product", to choose on its page;
-  - others: ADD → "− n +"; out of stock: Notify me.
+  - others: ADD → "− n +";
+  - out of stock (milk too): Notify me.
   Clicking anywhere else on the card opens the product page (when it has one).
 */
 export function ProductCardTile({ card }: { card: ProductCard }) {
@@ -406,12 +452,12 @@ export function ProductCardTile({ card }: { card: ProductCard }) {
             </s>
           )}
         </p>
-        {card.isSubscription ? (
+        {card.isSoldOut ? (
+          <NotifyMeButton cardId={card.cardId} panelCardId={card.panelCardId} isLoggedIn={isLoggedIn} />
+        ) : card.isSubscription ? (
           <Link href={`/products/${card.slug}`} className={styles["all-products-add-button"]}>
             View product
           </Link>
-        ) : card.isSoldOut ? (
-          <NotifyMeButton cardId={card.cardId} isLoggedIn={isLoggedIn} />
         ) : (
           <CardCartControl card={card} quantityInCart={quantityInCart} isLoggedIn={isLoggedIn} />
         )}
