@@ -36,10 +36,10 @@ const AdminModuleContext = createContext<PanelModule | null>(null);
 export const AdminModuleProvider = AdminModuleContext.Provider;
 
 export function useAdminCan(action: PermissionAction) {
-  const module = useContext(AdminModuleContext);
+  const pageModule = useContext(AdminModuleContext);
   const access = useCurrentStaffAccess();
   if (!access) return false;
-  return module ? access.can(module, action) : true;
+  return pageModule ? access.can(pageModule, action) : true;
 }
 
 export function useIsPanelOwner() {
@@ -215,6 +215,8 @@ export function AdminPageTop({
   onRangeChange,
   onExport,
   belowSearch,
+  isBellFirst = false,
+  headerEnd,
 }: {
   title: string;
   description: string;
@@ -230,6 +232,9 @@ export function AdminPageTop({
   onExport?: () => void;
   // Shown on the left of the second row instead of nothing (Products: the category tabs)
   belowSearch?: ReactNode;
+  // Roles & permissions only: the bell before the search, and the owner's profile chip at the end
+  isBellFirst?: boolean;
+  headerEnd?: ReactNode;
 }) {
   const [isRangePickerOpen, setIsRangePickerOpen] = useState(false);
   // The role decides whether the main (New / Add) button and Export show
@@ -249,6 +254,7 @@ export function AdminPageTop({
         </div>
 
         <div className={dashboardStyles["admin-dashboard-header-tools"]}>
+          {isBellFirst && <AdminNotificationsBell />}
           <label className={dashboardStyles["admin-search"]}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" />
@@ -263,7 +269,7 @@ export function AdminPageTop({
             />
           </label>
 
-          <AdminNotificationsBell />
+          {!isBellFirst && <AdminNotificationsBell />}
 
           {actionLabel && onAction && (
             <button type="button" className={dashboardStyles["admin-new-order-button"]} onClick={onAction}>
@@ -273,6 +279,7 @@ export function AdminPageTop({
               {actionLabel}
             </button>
           )}
+          {headerEnd}
         </div>
       </div>
 

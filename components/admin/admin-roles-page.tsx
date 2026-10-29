@@ -10,9 +10,14 @@ import {
   deleteRole,
   removeStaffMember,
   renameRole,
-  saveOwnerDetails,
+  changeOwnerNumber,
+  checkOwnerResetCode,
+  saveOwnerName,
+  saveOwnPassword,
   saveRolePermissions,
   saveStaffMember,
+  sendOwnerResetCode,
+  transferOwnership,
   useOwnerDetails,
   usePanelRoles,
   useStaffMembers,
@@ -23,6 +28,7 @@ import {
   type StaffMember,
 } from "@/store/staff-access-store";
 import { useStaffList } from "@/store/admin-staff-store";
+import { saveCustomerProfile, useCustomerProfile } from "@/store/customer-profiles-store";
 import { AdminFeatureGate } from "./admin-panel-layout";
 import {
   AdminDialog,
@@ -40,7 +46,7 @@ import styles from "./admin-roles-page.module.css";
 /*
   Roles & permissions (/admin/roles), from the design 15-roles-permissions: who in the team can see and
   change what.
-    left       the roles (Owner, Admin, Manager, Delivery agent, and any added) with how many people
+    left       the roles (Owner, Manager, Delivery agent, and any added) with how many people
                have each; "Add new role"; the people with the chosen role ("Invite person" gives a
                mobile number that role, "..." changes their role or removes their access; the owner can
                change their own name and number); what each role can do
@@ -108,7 +114,8 @@ function RolesPage() {
   const [roleName, setRoleName] = useState("");
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [personForm, setPersonForm] = useState<PersonForm | null>(null);
-  const [ownerForm, setOwnerForm] = useState<{ name: string; mobileNumber: string } | null>(null);
+  // The owner's profile pop-up (details, password, transfer ownership), from the chip at the top right
+  const [isOwnerPanelOpen, setIsOwnerPanelOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<StaffMember | null>(null);
   const { showToast, toast } = useAdminToast();
 
@@ -234,21 +241,9 @@ function RolesPage() {
     );
   }
 
-  function saveOwner() {
-    if (!ownerForm) return;
-    const mobileNumber = ownerForm.mobileNumber.replace(/\D/g, "");
-    if (!ownerForm.name.trim() || mobileNumber.length !== 10) {
-      showToast("Enter your name and a 10-digit mobile number");
-      return;
-    }
-    if (team.some((member) => member.mobileNumber === mobileNumber)) {
-      showToast("That number belongs to someone on the team");
-      return;
-    }
-    saveOwnerDetails({ name: ownerForm.name.trim(), mobileNumber });
-    setOwnerForm(null);
-    showToast(mobileNumber === owner.mobileNumber ? "Your name is saved" : `Saved. Log in with ${formatIndianMobileNumber(mobileNumber)} from now on`);
-  }
+  // The roles a person can be moved between from their Actions menu
+  const managerRole = roles.find((role) => role.id === "manager");
+  const staffRole = roles.find((role) => role.id === "staff");
 
   return (
     <div className={dashboardStyles["admin-dashboard"]}>
@@ -258,6 +253,21 @@ function RolesPage() {
         searchText={searchText}
         onSearchTextChange={setSearchText}
         searchPlaceholder="Search people..."
+        isBellFirst
+        headerEnd={
+          isOwner && owner.name ? (
+            <button
+              type="button"
+              className={styles["admin-owner-chip"]}
+              onClick={() => setIsOwnerPanelOpen(true)}
+              aria-haspopup="dialog"
+              aria-label={`Your owner profile: ${owner.name}`}
+              title={`${owner.name} · Owner`}
+            >
+              {initialsOf(owner.name)}
+            </button>
+          ) : null
+        }
       />
 
       <div className={styles["admin-roles-columns"]}>
@@ -342,11 +352,7 @@ function RolesPage() {
                   </span>
                 </span>
                 {isOwner && person.isOwnerRow && (
-                  <button
-                    type="button"
-                    className={styles["admin-roles-text-button"]}
-                    onClick={() => setOwnerForm({ name: owner.name, mobileNumber: owner.mobileNumber })}
-                  >
+                  <button type="button" className={styles["admin-roles-text-button"]} onClick={() => setIsOwnerPanelOpen(true)}>
                     Edit
                   </button>
                 )}
@@ -355,17 +361,32 @@ function RolesPage() {
                     label={`Actions for ${person.name}`}
                     title={person.name}
                     options={[
-                      ...panelRoles
-                        .filter((role) => role.id !== person.member!.roleId)
-                        .map((role) => ({
-                          label: `Make ${role.name}`,
-                          onSelect: () => {
-                            saveStaffMember({ ...person.member!, roleId: role.id });
-                            showToast(`${person.name} is now ${role.name}`);
-                          },
-                        })),
+                      // A Manager can be moved back to normal Staff; anyone else can be promoted to Manager
+                      ...(person.member.roleId === "manager"
+                        ? staffRole
+                          ? [
+                              {
+                                label: "Move back to Staff",
+                                onSelect: () => {
+                                  saveStaffMember({ ...person.member!, roleId: staffRole.id });
+                                  showToast(`${person.name} is now Staff`);
+                                },
+                              },
+                            ]
+                          : []
+                        : managerRole
+                          ? [
+                              {
+                                label: "Promote to Manager",
+                                onSelect: () => {
+                                  saveStaffMember({ ...person.member!, roleId: managerRole.id });
+                                  showToast(`${person.name} is now a Manager`);
+                                },
+                              },
+                            ]
+                          : []),
                       {
-                        label: "Edit name or title",
+                        label: "Edit details",
                         onSelect: () =>
                           setPersonForm({
                             name: person.member!.name,
@@ -374,7 +395,7 @@ function RolesPage() {
                             title: person.member!.title ?? "",
                           }),
                       },
-                      { label: "Remove access", isDanger: true, permission: "delete", onSelect: () => setMemberToRemove(person.member!) },
+                      { label: "Remove from team", isDanger: true, permission: "delete", onSelect: () => setMemberToRemove(person.member!) },
                     ]}
                   />
                 )}
@@ -608,32 +629,17 @@ function RolesPage() {
         </AdminDialog>
       )}
 
-      {ownerForm && (
-        <AdminDialog title="Your name and number" submitLabel="Save" onClose={() => setOwnerForm(null)} onSubmit={saveOwner}>
-          <AdminDialogField label="Name">
-            <input className={adminInputClassName} value={ownerForm.name} onChange={(changeEvent) => setOwnerForm({ ...ownerForm, name: changeEvent.target.value })} autoFocus />
-          </AdminDialogField>
-          <AdminDialogField label="Mobile number">
-            <input
-              className={adminInputClassName}
-              inputMode="numeric"
-              value={ownerForm.mobileNumber}
-              onChange={(changeEvent) => setOwnerForm({ ...ownerForm, mobileNumber: changeEvent.target.value.replace(/\D/g, "").slice(0, 10) })}
-            />
-          </AdminDialogField>
-          <p className={styles["admin-roles-dialog-note"]}>A new number becomes your login straight away; you stay logged in.</p>
-        </AdminDialog>
-      )}
+      {isOwnerPanelOpen && <OwnerProfileDialog onClose={() => setIsOwnerPanelOpen(false)} showToast={showToast} />}
 
       {memberToRemove && (
         <AdminDialog
-          title={`Remove ${memberToRemove.name}'s access?`}
-          submitLabel="Remove access"
+          title={`Remove ${memberToRemove.name} from the team?`}
+          submitLabel="Remove from team"
           isDanger
           onClose={() => setMemberToRemove(null)}
           onSubmit={() => {
             removeStaffMember(memberToRemove.mobileNumber);
-            showToast(`${memberToRemove.name} can no longer open the panel`);
+            showToast(`${memberToRemove.name} is removed from the team`);
             setMemberToRemove(null);
           }}
         >
@@ -646,5 +652,324 @@ function RolesPage() {
 
       {toast}
     </div>
+  );
+}
+
+/*
+  The owner's profile (the round icon at the top right). The owner's admin profile and their user Profile
+  are one person: the name and email come from their Profile page, and saving the name updates both.
+  Steps inside the one pop-up:
+    set-secret      first time only: choose a 6-digit PIN or a password (8+ characters), typed twice;
+                    the profile opens only after this
+    profile         name (edit freely), mobile number with "Change number", email; "Forgot PIN / password?"
+    number-question "Are you transferring ownership?" Yes / No, just my number
+    transfer        new owner's name and number + the owner's PIN / password: they become the Owner, this
+                    owner stays as a Manager
+    own-number      the owner's new number + PIN / password: still the owner, logs in with the new number
+    forgot          an OTP to the login number, then a new PIN / password
+  While someone is the owner, their name and number can be changed but not removed (the business always
+  has one owner); the database enforces the PIN / password checks (supabase/migrations/0007_…sql).
+*/
+type OwnerStep = "set-secret" | "profile" | "number-question" | "transfer" | "own-number" | "forgot";
+
+function OwnerProfileDialog({ onClose, showToast }: { onClose: () => void; showToast: (message: string) => void }) {
+  const owner = useOwnerDetails();
+  const profile = useCustomerProfile(owner.mobileNumber || null);
+  const profileName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : "";
+  const [step, setStep] = useState<OwnerStep>(owner.passwordKind ? "profile" : "set-secret");
+  const [name, setName] = useState(profileName || owner.name);
+  // New PIN / password (set-secret, forgot)
+  const [secretKind, setSecretKind] = useState<"pin" | "password">(owner.passwordKind ?? "pin");
+  const [secret, setSecret] = useState("");
+  const [secretAgain, setSecretAgain] = useState("");
+  // Change number (transfer, own-number)
+  const [newMobile, setNewMobile] = useState("");
+  const [newOwnerName, setNewOwnerName] = useState("");
+  const [confirmSecret, setConfirmSecret] = useState("");
+  // Forgot: the OTP step
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isCodeChecked, setIsCodeChecked] = useState(false);
+  const [code, setCode] = useState("");
+  const [problem, setProblem] = useState("");
+  const [isWorking, setIsWorking] = useState(false);
+  const kindWord = (kind: "pin" | "password" | null | undefined) => (kind === "password" ? "password" : "PIN");
+
+  function goTo(nextStep: OwnerStep) {
+    setProblem("");
+    setStep(nextStep);
+  }
+
+  // Runs a step's action; shows its problem, or calls done
+  async function run(action: () => Promise<string | null>, done: () => void) {
+    setProblem("");
+    setIsWorking(true);
+    const result = await action();
+    setIsWorking(false);
+    if (result) setProblem(result);
+    else done();
+  }
+
+  function saveNewSecret(after: () => void) {
+    if (secret !== secretAgain) {
+      setProblem(`The two ${secretKind === "pin" ? "PINs" : "passwords"} don't match`);
+      return;
+    }
+    void run(
+      () => saveOwnPassword(secret, secretKind),
+      () => {
+        setSecret("");
+        setSecretAgain("");
+        showToast(`${secretKind === "pin" ? "PIN" : "Password"} saved`);
+        after();
+      },
+    );
+  }
+
+  function saveName() {
+    if (!name.trim()) {
+      setProblem("Your name can't be empty while you are the owner");
+      return;
+    }
+    saveOwnerName(name.trim());
+    if (profile) {
+      const [firstName, ...rest] = name.trim().split(/\s+/);
+      saveCustomerProfile({ ...profile, firstName, lastName: rest.join(" ") || profile.lastName });
+    }
+    onClose();
+    showToast("Your name is saved");
+  }
+
+  function checkNewMobile() {
+    const digits = newMobile.replace(/\D/g, "");
+    if (digits.length !== 10) return "Enter a 10-digit mobile number";
+    if (digits === owner.mobileNumber) return "That's your current number";
+    if (!confirmSecret) return `Enter your ${kindWord(owner.passwordKind)} to confirm`;
+    return null;
+  }
+
+  function submit() {
+    if (step === "set-secret") saveNewSecret(() => goTo("profile"));
+    else if (step === "profile") saveName();
+    else if (step === "number-question") goTo("profile");
+    else if (step === "transfer") {
+      const found = checkNewMobile() ?? (newOwnerName.trim() ? null : "Enter the new owner's name");
+      if (found) return setProblem(found);
+      void run(
+        () => transferOwnership(newMobile, newOwnerName.trim(), confirmSecret),
+        () => {
+          onClose();
+          showToast(`${newOwnerName.trim()} is now the owner. You stay on the team as a Manager.`);
+        },
+      );
+    } else if (step === "own-number") {
+      const found = checkNewMobile();
+      if (found) return setProblem(found);
+      void run(
+        () => changeOwnerNumber(newMobile, confirmSecret),
+        () => {
+          onClose();
+          showToast(`Saved. Log in with ${formatIndianMobileNumber(newMobile)} and its OTP from now on`);
+        },
+      );
+    } else if (step === "forgot") {
+      if (!isCodeSent) void run(sendOwnerResetCode, () => setIsCodeSent(true));
+      else if (!isCodeChecked) void run(() => checkOwnerResetCode(code), () => setIsCodeChecked(true));
+      else saveNewSecret(() => goTo("profile"));
+    }
+  }
+
+  const titles: Record<OwnerStep, string> = {
+    "set-secret": "Set your PIN or password first",
+    profile: "Your owner profile",
+    "number-question": "Are you transferring ownership?",
+    transfer: "Transfer ownership",
+    "own-number": "Update your number",
+    forgot: `Forgot ${kindWord(owner.passwordKind)}?`,
+  };
+  const submitLabels: Record<OwnerStep, string> = {
+    "set-secret": "Save and open profile",
+    profile: "Save name",
+    "number-question": "Back",
+    transfer: "Transfer ownership",
+    "own-number": "Update my number",
+    forgot: !isCodeSent ? "Send OTP" : !isCodeChecked ? "Check OTP" : `Save new ${secretKind === "pin" ? "PIN" : "password"}`,
+  };
+
+  // Choose PIN or password, then type it twice (first time, and after Forgot)
+  const newSecretFields = (
+    <>
+      <div className={styles["admin-owner-kind-choice"]} role="radiogroup" aria-label="PIN or password">
+        {(["pin", "password"] as const).map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            role="radio"
+            aria-checked={secretKind === kind}
+            className={`${styles["admin-owner-kind-option"]} ${secretKind === kind ? styles["admin-owner-kind-option-chosen"] : ""}`}
+            onClick={() => {
+              setSecretKind(kind);
+              setSecret("");
+              setSecretAgain("");
+            }}
+          >
+            <strong>{kind === "pin" ? "PIN" : "Password"}</strong>
+            <span>{kind === "pin" ? "6 digits" : "At least 8 characters"}</span>
+          </button>
+        ))}
+      </div>
+      <AdminDialogField label={secretKind === "pin" ? "New PIN" : "New password"}>
+        <input
+          className={adminInputClassName}
+          type="password"
+          autoComplete="new-password"
+          inputMode={secretKind === "pin" ? "numeric" : undefined}
+          maxLength={secretKind === "pin" ? 6 : undefined}
+          value={secret}
+          onChange={(changeEvent) => setSecret(secretKind === "pin" ? changeEvent.target.value.replace(/\D/g, "") : changeEvent.target.value)}
+          autoFocus
+        />
+      </AdminDialogField>
+      <AdminDialogField label="Type it again">
+        <input
+          className={adminInputClassName}
+          type="password"
+          autoComplete="new-password"
+          inputMode={secretKind === "pin" ? "numeric" : undefined}
+          maxLength={secretKind === "pin" ? 6 : undefined}
+          value={secretAgain}
+          onChange={(changeEvent) => setSecretAgain(secretKind === "pin" ? changeEvent.target.value.replace(/\D/g, "") : changeEvent.target.value)}
+        />
+      </AdminDialogField>
+    </>
+  );
+
+  // The owner's PIN / password, to confirm a number change
+  const confirmField = (
+    <AdminDialogField label={`Your ${kindWord(owner.passwordKind)}, to confirm`} isWide>
+      <input
+        className={adminInputClassName}
+        type="password"
+        autoComplete="current-password"
+        inputMode={owner.passwordKind === "pin" ? "numeric" : undefined}
+        value={confirmSecret}
+        onChange={(changeEvent) => setConfirmSecret(changeEvent.target.value)}
+      />
+    </AdminDialogField>
+  );
+
+  return (
+    <AdminDialog title={titles[step]} submitLabel={isWorking ? "Please wait…" : submitLabels[step]} onClose={onClose} onSubmit={() => !isWorking && submit()}>
+      {step === "set-secret" && (
+        <>
+          <p className={styles["admin-roles-dialog-note"]}>
+            Before your profile opens, choose a PIN or a password. You&apos;ll use it to confirm big changes, like changing the
+            owner&apos;s number.
+          </p>
+          {newSecretFields}
+        </>
+      )}
+
+      {step === "profile" && (
+        <>
+          <AdminDialogField label="Name" isWide>
+            <input className={adminInputClassName} value={name} onChange={(changeEvent) => setName(changeEvent.target.value)} autoFocus />
+          </AdminDialogField>
+          <AdminDialogField label="Mobile number" isWide>
+            <span className={styles["admin-owner-number-row"]}>
+              <input className={adminInputClassName} value={formatIndianMobileNumber(owner.mobileNumber)} readOnly />
+              <button type="button" className={styles["admin-owner-secondary-button"]} onClick={() => goTo("number-question")}>
+                Change number
+              </button>
+            </span>
+          </AdminDialogField>
+          <AdminDialogField label="Email (from your Profile)" isWide>
+            <input className={adminInputClassName} value={profile?.email || "Not added yet: add it on your Profile page"} readOnly />
+          </AdminDialogField>
+          <p className={styles["admin-roles-dialog-note"]}>
+            Your name is the same on your Profile. While you are the owner, your name and number can be changed but not removed.{" "}
+            <button type="button" className={styles["admin-roles-text-button"]} onClick={() => goTo("forgot")}>
+              Forgot {kindWord(owner.passwordKind)}?
+            </button>
+          </p>
+        </>
+      )}
+
+      {step === "number-question" && (
+        <div className={styles["admin-owner-question"]}>
+          <button type="button" className={styles["admin-owner-question-option"]} onClick={() => goTo("transfer")}>
+            <strong>Yes, transfer ownership</strong>
+            <span>Someone else becomes the owner. You stay on the team as a Manager.</span>
+          </button>
+          <button type="button" className={styles["admin-owner-question-option"]} onClick={() => goTo("own-number")}>
+            <strong>No, just update my number</strong>
+            <span>You stay the owner and log in with your new number.</span>
+          </button>
+        </div>
+      )}
+
+      {step === "transfer" && (
+        <>
+          <AdminDialogField label="New owner's name">
+            <input className={adminInputClassName} value={newOwnerName} onChange={(changeEvent) => setNewOwnerName(changeEvent.target.value)} autoFocus />
+          </AdminDialogField>
+          <AdminDialogField label="New owner's mobile number">
+            <input
+              className={adminInputClassName}
+              inputMode="numeric"
+              placeholder="10 digits"
+              value={newMobile}
+              onChange={(changeEvent) => setNewMobile(changeEvent.target.value.replace(/\D/g, "").slice(0, 10))}
+            />
+          </AdminDialogField>
+          {confirmField}
+          <p className={styles["admin-roles-dialog-note"]}>They become the Owner straight away and set their own PIN or password. You stay on the team as a Manager.</p>
+        </>
+      )}
+
+      {step === "own-number" && (
+        <>
+          <AdminDialogField label="Your new mobile number" isWide>
+            <input
+              className={adminInputClassName}
+              inputMode="numeric"
+              placeholder="10 digits"
+              value={newMobile}
+              onChange={(changeEvent) => setNewMobile(changeEvent.target.value.replace(/\D/g, "").slice(0, 10))}
+              autoFocus
+            />
+          </AdminDialogField>
+          {confirmField}
+          <p className={styles["admin-roles-dialog-note"]}>You stay the owner. From now on you log in with the new number and its OTP, and set your PIN or password again there.</p>
+        </>
+      )}
+
+      {step === "forgot" && (
+        <>
+          {!isCodeSent && (
+            <p className={styles["admin-roles-dialog-note"]}>We&apos;ll send an OTP to your login number, {formatIndianMobileNumber(owner.mobileNumber)}.</p>
+          )}
+          {isCodeSent && !isCodeChecked && (
+            <AdminDialogField label={`OTP sent to ${formatIndianMobileNumber(owner.mobileNumber)}`} isWide>
+              <input
+                className={adminInputClassName}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={code}
+                onChange={(changeEvent) => setCode(changeEvent.target.value.replace(/\D/g, ""))}
+                autoFocus
+              />
+            </AdminDialogField>
+          )}
+          {isCodeChecked && newSecretFields}
+        </>
+      )}
+
+      {problem && (
+        <p className={`${styles["admin-roles-dialog-note"]} ${styles["admin-owner-problem"]}`} role="alert">
+          {problem}
+        </p>
+      )}
+    </AdminDialog>
   );
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { addPendingProductToCart, forgetPendingCartProduct } from "@/store/cart-store";
 import { createClient } from "@/lib/supabase/client";
-import { getCustomerProfile } from "@/store/customer-profiles-store";
+import { loadCustomerProfile } from "@/store/customer-profiles-store";
 import { rememberLogin, takePageAfterLogin } from "./login-status";
 import styles from "./login-panel.module.css";
 
@@ -136,11 +136,13 @@ export default function LoginPanel({
       return;
     }
     rememberLogin(mobileNumberDigits);
+    // Their saved Profile, read from the database (null: a new customer)
+    const savedProfile = await loadCustomerProfile(mobileNumberDigits, true);
     // A new customer (no saved profile yet): straight to the Profile page to fill in their details
     // (a product they were adding still goes into the cart first). Back from Profile returns to where they
     // started (e.g. Best Sellers), not to the login: the login page is replaced by Profile in the history
     // (the phone sheet is not a page of its own, so there Profile is simply opened on top).
-    if (!getCustomerProfile(mobileNumberDigits)) {
+    if (!savedProfile) {
       addPendingProductToCart();
       takePageAfterLogin();
       onClose?.();

@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AccountPageHeading } from "../account-dashboard-layout";
 import { useAccountProfile } from "../account-profile";
-import { saveCustomerProfile, type CustomerProfile, type CustomerProfileDetails } from "@/store/customer-profiles-store";
+import { useLoggedInMobileNumber } from "@/components/login/login-status";
+import { saveCustomerProfile, useIsCustomerProfileKnown, type CustomerProfile, type CustomerProfileDetails } from "@/store/customer-profiles-store";
 import { useOrders, type Order } from "@/store/orders-store";
 import { addProductToCart } from "@/store/cart-store";
 import BengaluruAreaPicker, { OTHER_AREA, PincodeCheckNote, areaChoiceFor, otherAreaTextFor, pincodeForArea } from "@/components/area-picker/bengaluru-area-picker";
@@ -91,6 +92,8 @@ function toForm(profile: CustomerProfile | null): ProfileForm {
 export default function ProfileDetailsPage() {
   const accountProfile = useAccountProfile();
   const savedProfile = accountProfile.savedProfile;
+  // The saved details come from the database: "Please fill in" waits until they have been read
+  const isProfileKnown = useIsCustomerProfileKnown(useLoggedInMobileNumber());
   const [isSavedMessageShown, setIsSavedMessageShown] = useState(false);
   const [switchedOnNotifications, setSwitchedOnNotifications] = useState(
     () => new Set(notificationSettings.filter((setting) => setting.isOnAtStart).map((setting) => setting.id)),
@@ -115,7 +118,7 @@ export default function ProfileDetailsPage() {
       <AccountPageHeading title="My Profile" description="Your details, used for delivery and order updates." />
 
       {/* A new customer who has not saved their details yet */}
-      {!savedProfile && (
+      {isProfileKnown && !savedProfile && (
         <p className={styles["profile-required-notice"]} role="status">
           <strong>Please fill in your details below.</strong> They are important for a smooth experience when you buy and
           for getting your deliveries right.

@@ -10,8 +10,9 @@ import "./shared-data-sync";
   page, saved in the Supabase database (tables panel_roles and staff_members, see
   supabase/migrations/0002_people_and_login.sql), so the same team and roles apply on every laptop and
   phone, on localhost and on the live site.
-  - Roles: Owner (can do everything and is the only one who can change roles and people), Admin, Manager,
-    Delivery agent (delivery app only, no panel), and any role the owner adds. Each role has, for every
+  - Roles: Owner (the only admin: can do everything and is the only one who can change roles and people),
+    Manager, Delivery agent (delivery app only, no panel), and any role the owner adds. (There is no
+    Admin role: removed in supabase/migrations/0004_roles_owner_manager_agent.sql.) Each role has, for every
     panel page (module): View, Create, Edit, Delete, Export. View decides whether the page opens at all.
   - People: a mobile number with a role. They log in with their OTP and find "Chiranvi Panel" in their
     account.
@@ -24,7 +25,8 @@ import "./shared-data-sync";
 // Before the team has loaded (and on the server): nobody is the owner
 const NO_OWNER: OwnerDetails = { name: "", mobileNumber: "" };
 
-export type OwnerDetails = { name: string; mobileNumber: string };
+// passwordKind: the PIN or password the owner chose (empty: not set yet, the panel asks for it first)
+export type OwnerDetails = { name: string; mobileNumber: string; passwordKind?: "pin" | "password" | null };
 
 // Panel pages that sit in the sales / operations / business groups: store/panel-features.ts
 export { PANEL_FEATURES, type PanelFeature };
@@ -51,7 +53,7 @@ export type ActionSet = Record<PermissionAction, boolean>;
 export type RolePermissions = Record<PanelModule, ActionSet>;
 
 export type PanelRole = {
-  id: string; // "owner", "admin", "manager", "delivery-agent", or made by the owner
+  id: string; // "owner", "manager", "delivery-agent", or made by the owner
   name: string;
   isBuiltIn: boolean;
   // false: no panel at all (delivery agents use the delivery app)
@@ -114,7 +116,7 @@ function completePermissions(permissions: Partial<RolePermissions> | undefined):
 
 // The rows as the database keeps them
 type RoleRow = { id: string; name: string; is_built_in: boolean; has_panel_access: boolean; permissions: Partial<RolePermissions> };
-type StaffRow = { mobile_number: string; name: string; role_id: string; title: string | null; is_active: boolean };
+type StaffRow = { mobile_number: string; name: string; role_id: string; title: string | null; is_active: boolean; password_kind: "pin" | "password" | null };
 
 const NO_ROLES: PanelRole[] = [];
 const NO_TEAM: StaffMember[] = [];
@@ -145,18 +147,22 @@ async function loadTeam(mobileNumber: string | null) {
     const supabase = createClient();
     const [roleAnswer, staffAnswer] = await Promise.all([
       supabase.from("panel_roles").select("id, name, is_built_in, has_panel_access, permissions").order("created_at"),
-      supabase.from("staff_members").select("mobile_number, name, role_id, title, is_active").order("created_at"),
+      supabase.from("staff_members").select("mobile_number, name, role_id, title, is_active, password_kind").order("created_at"),
     ]);
     // A newer login started meanwhile: its own read wins
     if (loadingForMobile !== mobileNumber) return;
     if (roleAnswer.error || staffAnswer.error) console.error("Could not read the team", roleAnswer.error ?? staffAnswer.error);
     const roleRows = (roleAnswer.data ?? []) as RoleRow[];
     const staffRows = ((staffAnswer.data ?? []) as StaffRow[]).filter((row) => row.is_active);
+    // Built-in roles from highest to lowest (Owner, Manager, Staff, Delivery agent), then roles the owner added
+    const builtInOrder = ["owner", "manager", "staff", "delivery-agent"];
+    const rank = (id: string) => (builtInOrder.includes(id) ? builtInOrder.indexOf(id) : builtInOrder.length);
     roles = roleRows
       .filter((row) => row.id !== "owner")
+      .sort((first, second) => rank(first.id) - rank(second.id))
       .map((row) => ({ id: row.id, name: row.name, isBuiltIn: row.is_built_in, hasPanelAccess: row.has_panel_access, permissions: completePermissions(row.permissions) }));
     const ownerRow = staffRows.find((row) => row.role_id === "owner");
-    ownerDetails = ownerRow ? { name: ownerRow.name, mobileNumber: ownerRow.mobile_number } : NO_OWNER;
+    ownerDetails = ownerRow ? { name: ownerRow.name, mobileNumber: ownerRow.mobile_number, passwordKind: ownerRow.password_kind } : NO_OWNER;
     staffMembers = staffRows
       .filter((row) => row.role_id !== "owner")
       .map((row) => ({ mobileNumber: row.mobile_number, name: row.name, roleId: row.role_id, title: row.title ?? undefined }));
@@ -253,18 +259,79 @@ export function deleteRole(roleId: string) {
   );
 }
 
-/*
-  The owner changes their name or number. A new number is the owner's login from then on: the owner logs
-  in again with it (with its OTP), and the old number no longer opens the panel (this is how the panel is
-  handed over to Praveen's own number).
-*/
-export function saveOwnerDetails(newDetails: OwnerDetails) {
+// The owner changes their name (no password needed; the number changes through changeOwnerNumber)
+export function saveOwnerName(name: string) {
   void saveThenCheck(
     () => {
-      ownerDetails = newDetails;
+      ownerDetails = { ...ownerDetails, name };
     },
-    () => createClient().from("staff_members").update({ name: newDetails.name, mobile_number: newDetails.mobileNumber }).eq("role_id", "owner"),
+    () => createClient().from("staff_members").update({ name }).eq("role_id", "owner"),
   );
+}
+
+/*
+  The owner's PIN (6 digits) or password (at least 8 characters). Supabase Auth keeps it scrambled; nobody
+  can read it back. The team row only notes which kind they chose, so the panel knows it is set.
+  Returns a problem to show, or null when saved.
+*/
+export async function saveOwnPassword(secret: string, kind: "pin" | "password"): Promise<string | null> {
+  if (kind === "pin" && !/^\d{6}$/.test(secret)) return "A PIN is exactly 6 digits";
+  if (kind === "password" && secret.length < 8) return "Use at least 8 characters";
+  const supabase = createClient();
+  const { error } = await supabase.auth.updateUser({ password: secret });
+  if (error) return `Couldn't save the ${kind === "pin" ? "PIN" : "password"}. Please try again.`;
+  const marked = await supabase.from("staff_members").update({ password_kind: kind }).eq("role_id", "owner");
+  if (marked.error) return "Saved, but the panel couldn't note it. Please try again.";
+  ownerDetails = { ...ownerDetails, passwordKind: kind };
+  announceTeamChange();
+  return null;
+}
+
+// Supabase checks the owner's PIN or password and marks this login "password confirmed" for 10 minutes
+async function confirmOwnerSecret(secret: string): Promise<string | null> {
+  const ownerMobile = ownerDetails.mobileNumber;
+  if (!ownerMobile) return "Only the owner can do this";
+  const { error } = await createClient().auth.signInWithPassword({ phone: `+91${ownerMobile}`, password: secret });
+  return error ? "That PIN or password isn't right" : null;
+}
+
+/*
+  Transfer ownership: after the PIN / password check, the database function transfer_ownership() makes
+  the new number the Owner and this owner a Manager, in one step (supabase/migrations/0007_…sql).
+*/
+export async function transferOwnership(newOwnerMobile: string, newOwnerName: string, secret: string): Promise<string | null> {
+  const problem = await confirmOwnerSecret(secret);
+  if (problem) return problem;
+  const { error } = await createClient().rpc("transfer_ownership", { new_owner_mobile: newOwnerMobile, new_owner_name: newOwnerName });
+  if (error) return error.message || "Couldn't transfer ownership. Please try again.";
+  ensureTeamFor(loadedForMobile ?? null, true);
+  return null;
+}
+
+/*
+  The owner moves to a new mobile number (still the owner). After the PIN / password check, the database
+  function change_owner_mobile() changes it. The new number is their login from then on: they log in with
+  it and its OTP, and set a PIN or password again there.
+*/
+export async function changeOwnerNumber(newMobile: string, secret: string): Promise<string | null> {
+  const problem = await confirmOwnerSecret(secret);
+  if (problem) return problem;
+  const { error } = await createClient().rpc("change_owner_mobile", { new_mobile: newMobile });
+  if (error) return error.message || "Couldn't change the number. Please try again.";
+  ensureTeamFor(loadedForMobile ?? null, true);
+  return null;
+}
+
+// Forgot PIN / password: an OTP to the owner's login number …
+export async function sendOwnerResetCode(): Promise<string | null> {
+  const { error } = await createClient().auth.signInWithOtp({ phone: `+91${ownerDetails.mobileNumber}` });
+  return error ? "Couldn't send the OTP. Please try again in a moment." : null;
+}
+
+// … and the code typed back; then a new PIN / password can be saved with saveOwnPassword
+export async function checkOwnerResetCode(code: string): Promise<string | null> {
+  const { error } = await createClient().auth.verifyOtp({ phone: `+91${ownerDetails.mobileNumber}`, token: code, type: "sms" });
+  return error ? "Wrong code. Check it and try again." : null;
 }
 
 // ---------- Hooks ----------

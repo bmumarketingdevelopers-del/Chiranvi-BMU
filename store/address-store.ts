@@ -1,14 +1,18 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useLoggedInMobileNumber } from "@/components/login/login-status";
-import { getCustomerProfile, useCustomerProfile, type CustomerProfile } from "./customer-profiles-store";
+import { createClient } from "@/lib/supabase/client";
+import { ensureCustomerRowId, useCustomerProfile, type CustomerProfile } from "./customer-profiles-store";
 
 /*
   The logged-in customer's saved delivery addresses and which one is the default, shared by My Addresses
-  (account dashboard) and the address step of the cart checkout. Each customer (login number) has their
-  own address book, saved in this browser (localStorage), so a customer only ever sees their own.
+  (account dashboard) and the address step of the cart checkout. Saved in the Supabase "addresses" table
+  (supabase/migrations/0002_people_and_login.sql, 0005_address_profile_slot.sql), linked to the customer's
+  row, so the book follows them to any phone; the database's rules let a customer see only their own.
   A customer's book starts with the addresses from their Profile page: the primary address ("Home",
-  the default) and the secondary address ("Other"); saving the Profile again updates those two.
-  Addresses they add, edit or remove here are kept with them. Logged out: no addresses.
+  the default) and the secondary address ("Other"), marked with profile_slot; saving the Profile again
+  updates those two. Addresses they add, edit or remove here are kept with them. Logged out: no addresses.
+  The page shows a change at once and then sends it; if the database refuses it, the book is read again.
+  A book saved earlier only in this browser (before the database) is moved into the database once.
 */
 
 export type SavedAddress = {
@@ -26,36 +30,63 @@ export type AddressDetails = Omit<SavedAddress, "id">;
 
 type AddressBook = { addresses: SavedAddress[]; defaultAddressId: string };
 
-const EMPTY_ADDRESS_BOOK: AddressBook = { addresses: [], defaultAddressId: "" };
-// The two addresses that come from the Profile page
-const PROFILE_PRIMARY_ID = "profile-primary";
-const PROFILE_SECONDARY_ID = "profile-secondary";
+// The row as the database keeps it
+type AddressRow = {
+  id: string;
+  label: string;
+  name: string;
+  mobile_number: string;
+  house_and_street: string;
+  area: string;
+  city: string;
+  pincode: string;
+  is_default: boolean;
+  profile_slot: "primary" | "secondary" | null;
+};
 
-const addressStorageKey = (mobileNumber: string) => `chiranvi-addresses-${mobileNumber}`;
-// Each customer's book once read (or made from their profile), by login number
-const addressBooks = new Map<string, { book: AddressBook; isSaved: boolean; fromProfileUpdatedAt?: string }>();
+const EMPTY_ADDRESS_BOOK: AddressBook = { addresses: [], defaultAddressId: "" };
+
+// The old browser copy of a book (moved into the database once)
+const oldAddressStorageKey = (mobileNumber: string) => `chiranvi-addresses-${mobileNumber}`;
+// Each customer's book once read, by login number
+const addressBooks = new Map<string, AddressBook>();
+const loadingBooks = new Set<string>();
 const addressBookListeners = new Set<() => void>();
 
 // "+919845012345" or "98450 12345" -> "+91 98450 12345"
 function formatMobileNumber(mobileNumber: string) {
-  const digits = mobileNumber.replace(/\D/g, "").slice(-10);
+  const digits = tenDigits(mobileNumber);
   return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
 }
 
-// The Profile page's addresses as address book entries (the secondary one only when filled in)
-function addressesFromProfile(profile: CustomerProfile): SavedAddress[] {
-  const shared = {
-    name: `${profile.firstName} ${profile.lastName}`.trim(),
-    mobileNumber: formatMobileNumber(profile.primaryMobile),
-    area: profile.location,
-    city: "Bengaluru",
-    pincode: profile.pincode,
+// "+91 98450 12345" -> "9845012345" (how the database keeps it)
+function tenDigits(mobileNumber: string) {
+  return mobileNumber.replace(/\D/g, "").slice(-10);
+}
+
+function toAddress(row: AddressRow): SavedAddress {
+  return {
+    id: row.id,
+    label: row.label,
+    name: row.name,
+    mobileNumber: formatMobileNumber(row.mobile_number),
+    houseAndStreet: row.house_and_street,
+    area: row.area,
+    city: row.city,
+    pincode: row.pincode,
   };
-  const addresses: SavedAddress[] = [{ ...shared, id: PROFILE_PRIMARY_ID, label: "Home", houseAndStreet: profile.primaryAddress }];
-  if (profile.secondaryAddress.trim()) {
-    addresses.push({ ...shared, id: PROFILE_SECONDARY_ID, label: "Other", houseAndStreet: profile.secondaryAddress });
-  }
-  return addresses;
+}
+
+function toRow(details: AddressDetails) {
+  return {
+    label: details.label,
+    name: details.name.trim(),
+    mobile_number: tenDigits(details.mobileNumber),
+    house_and_street: details.houseAndStreet.trim(),
+    area: details.area.trim(),
+    city: details.city || "Bengaluru",
+    pincode: details.pincode.trim(),
+  };
 }
 
 // The logged-in number, read from the login saved in this browser (store functions are not hooks)
@@ -68,96 +99,135 @@ function readLoggedInMobileNumber(): string | null {
   }
 }
 
-function getAddressBook(mobileNumber: string | null): AddressBook {
-  if (!mobileNumber || typeof window === "undefined") return EMPTY_ADDRESS_BOOK;
-  const cached = addressBooks.get(mobileNumber);
-  const profile = getCustomerProfile(mobileNumber);
-  // A book made from the profile (nothing changed yet) follows the profile when it is saved again
-  if (cached && (cached.isSaved || cached.fromProfileUpdatedAt === profile?.updatedAt)) return cached.book;
-  try {
-    const saved = JSON.parse(window.localStorage.getItem(addressStorageKey(mobileNumber)) ?? "null");
-    if (saved && Array.isArray(saved.addresses)) {
-      addressBooks.set(mobileNumber, { book: saved, isSaved: true });
-      return saved;
-    }
-  } catch {
-    // Nothing saved, or storage blocked: made from the profile below.
-  }
-  const fromProfile = profile ? addressesFromProfile(profile) : [];
-  const book: AddressBook = { addresses: fromProfile, defaultAddressId: fromProfile[0]?.id ?? "" };
-  addressBooks.set(mobileNumber, { book, isSaved: false, fromProfileUpdatedAt: profile?.updatedAt });
-  return book;
-}
-
-function saveAddressBook(mobileNumber: string, newAddressBook: AddressBook) {
-  addressBooks.set(mobileNumber, { book: newAddressBook, isSaved: true });
-  try {
-    window.localStorage.setItem(addressStorageKey(mobileNumber), JSON.stringify(newAddressBook));
-  } catch {
-    // Storage blocked: changes last until the page is refreshed.
-  }
+function announce() {
   addressBookListeners.forEach((onChange) => onChange());
 }
 
-// Changes the logged-in customer's book (nothing happens when logged out)
-function changeAddressBook(change: (addressBook: AddressBook) => AddressBook) {
-  const mobileNumber = readLoggedInMobileNumber();
-  if (!mobileNumber) return;
-  saveAddressBook(mobileNumber, change(getAddressBook(mobileNumber)));
+function setBook(mobileNumber: string, book: AddressBook) {
+  addressBooks.set(mobileNumber, book);
+  announce();
+}
+
+// A book this browser saved before the database existed (or null)
+function oldBrowserBook(mobileNumber: string): AddressBook | null {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(oldAddressStorageKey(mobileNumber)) ?? "null");
+    return saved && Array.isArray(saved.addresses) && saved.addresses.length ? saved : null;
+  } catch {
+    return null;
+  }
 }
 
 /*
-  The customer saved their Profile again: their Home / Other addresses take the new details (put back
-  if they had removed them); addresses they added themselves stay. A book not changed yet follows the
-  profile by itself.
+  Reads the customer's addresses from the database (once; again with refresh). The first time, an older
+  browser-only book is moved in (its Home / Other from the Profile come from the Profile itself).
 */
-export function updateAddressesFromProfile(profile: CustomerProfile) {
-  const cached = addressBooks.get(profile.primaryMobile);
-  let savedBook: AddressBook | null = cached?.isSaved ? cached.book : null;
-  if (!savedBook) {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(addressStorageKey(profile.primaryMobile)) ?? "null");
-      if (saved && Array.isArray(saved.addresses)) savedBook = saved;
-    } catch {
-      // Not saved yet: the book follows the profile by itself.
+async function loadAddressBook(mobileNumber: string, refresh = false) {
+  if ((!refresh && addressBooks.has(mobileNumber)) || loadingBooks.has(mobileNumber)) return;
+  loadingBooks.add(mobileNumber);
+  const supabase = createClient();
+  const readRows = async () => {
+    const { data, error } = await supabase
+      .from("addresses")
+      .select("id, label, name, mobile_number, house_and_street, area, city, pincode, is_default, profile_slot, customers!inner(mobile_number)")
+      .eq("customers.mobile_number", mobileNumber)
+      .order("created_at");
+    if (error) console.error("Could not read the addresses", error);
+    return (data ?? []) as unknown as AddressRow[];
+  };
+  let rows = await readRows();
+  if (rows.length === 0) {
+    const fromBrowser = oldBrowserBook(mobileNumber);
+    const ownAddresses = fromBrowser?.addresses.filter((address) => !address.id.startsWith("profile-")) ?? [];
+    const customerId = ownAddresses.length ? await ensureCustomerRowId(mobileNumber) : null;
+    if (customerId && fromBrowser) {
+      await supabase.from("addresses").insert(
+        ownAddresses.map((address) => ({ ...toRow(address), customer_id: customerId, is_default: address.id === fromBrowser.defaultAddressId })),
+      );
+      rows = await readRows();
     }
   }
-  if (!savedBook) {
-    addressBookListeners.forEach((onChange) => onChange());
-    return;
+  const addresses = rows.map(toAddress);
+  const defaultAddressId = rows.find((row) => row.is_default)?.id ?? addresses[0]?.id ?? "";
+  loadingBooks.delete(mobileNumber);
+  setBook(mobileNumber, { addresses, defaultAddressId });
+}
+
+// After a change: show it at once, save it, and read the book again if the database refused it
+async function saveThenCheck(mobileNumber: string, newBook: AddressBook, write: () => Promise<{ error: unknown } | null>) {
+  setBook(mobileNumber, newBook);
+  const result = await write();
+  if (!result || result.error) {
+    console.error("The database did not accept the address change", result?.error);
+    void loadAddressBook(mobileNumber, true);
   }
-  const fromProfile = addressesFromProfile(profile);
-  const others = savedBook.addresses.filter((address) => address.id !== PROFILE_PRIMARY_ID && address.id !== PROFILE_SECONDARY_ID);
-  const addresses = [...fromProfile, ...others];
-  const defaultAddressId = addresses.some((address) => address.id === savedBook.defaultAddressId)
-    ? savedBook.defaultAddressId
-    : (addresses[0]?.id ?? "");
-  saveAddressBook(profile.primaryMobile, { addresses, defaultAddressId });
+}
+
+// Makes one address the default (the database allows only one: the old one is cleared first)
+async function writeDefault(customerId: string, addressId: string) {
+  const supabase = createClient();
+  const cleared = await supabase.from("addresses").update({ is_default: false }).eq("customer_id", customerId).eq("is_default", true);
+  if (cleared.error) return cleared;
+  return supabase.from("addresses").update({ is_default: true }).eq("id", addressId);
+}
+
+/*
+  The customer saved their Profile: their Home / Other addresses take the new details (put back if they
+  had removed them); addresses they added themselves stay. The first address becomes the default.
+*/
+export async function updateAddressesFromProfile(profile: CustomerProfile) {
+  const customerId = await ensureCustomerRowId(profile.primaryMobile);
+  if (!customerId) return;
+  const supabase = createClient();
+  const shared = {
+    name: `${profile.firstName} ${profile.lastName}`.trim(),
+    mobile_number: profile.primaryMobile,
+    area: profile.location,
+    city: "Bengaluru",
+    pincode: profile.pincode,
+  };
+  const slots: { slot: "primary" | "secondary"; label: string; street: string }[] = [
+    { slot: "primary", label: "Home", street: profile.primaryAddress },
+    { slot: "secondary", label: "Other", street: profile.secondaryAddress },
+  ];
+  for (const { slot, label, street } of slots) {
+    const { data: existing } = await supabase.from("addresses").select("id").eq("customer_id", customerId).eq("profile_slot", slot).maybeSingle();
+    if (!street.trim() || !/^\d{6}$/.test(profile.pincode)) {
+      // No secondary address on the Profile any more: its row goes
+      if (existing && slot === "secondary") await supabase.from("addresses").delete().eq("id", existing.id);
+      continue;
+    }
+    const row = { ...shared, label, house_and_street: street.trim(), profile_slot: slot };
+    if (existing) await supabase.from("addresses").update(row).eq("id", existing.id);
+    else await supabase.from("addresses").insert({ ...row, customer_id: customerId });
+  }
+  // No default yet (a new book): Home is the default
+  const { data: defaults } = await supabase.from("addresses").select("id").eq("customer_id", customerId).eq("is_default", true);
+  if (!defaults?.length) {
+    const { data: home } = await supabase.from("addresses").select("id").eq("customer_id", customerId).eq("profile_slot", "primary").maybeSingle();
+    if (home) await supabase.from("addresses").update({ is_default: true }).eq("id", home.id);
+  }
+  await loadAddressBook(profile.primaryMobile, true);
 }
 
 function subscribeToAddressBook(onChange: () => void) {
   addressBookListeners.add(onChange);
-  // An address book changed in another tab or browser (shared data)
-  function followOtherTabs(event: StorageEvent) {
-    if (!event.key?.startsWith("chiranvi-addresses-")) return;
-    addressBooks.delete(event.key.replace("chiranvi-addresses-", ""));
-    onChange();
-  }
-  window.addEventListener("storage", followOtherTabs);
   return () => {
     addressBookListeners.delete(onChange);
-    window.removeEventListener("storage", followOtherTabs);
   };
 }
 
-// The logged-in customer's { addresses, defaultAddressId }
+// The logged-in customer's { addresses, defaultAddressId } (read from the database the first time)
 export function useAddressBook() {
   const mobileNumber = useLoggedInMobileNumber();
-  // Read so the book follows the profile when it is saved (the book itself is made from it)
+  // Also reads their Profile (orders take the customer's name and Customer ID from it)
   useCustomerProfile(mobileNumber);
+  useEffect(() => {
+    if (mobileNumber) void loadAddressBook(mobileNumber);
+  }, [mobileNumber]);
   return useSyncExternalStore(
     subscribeToAddressBook,
-    () => getAddressBook(mobileNumber),
+    () => (mobileNumber ? (addressBooks.get(mobileNumber) ?? EMPTY_ADDRESS_BOOK) : EMPTY_ADDRESS_BOOK),
     () => EMPTY_ADDRESS_BOOK,
   );
 }
@@ -180,36 +250,70 @@ export function formatAddressLine(address: AddressDetails) {
 
 // Adds an address and returns its id. The first address, or shouldBeDefault, becomes the default.
 export function addAddress(details: AddressDetails, shouldBeDefault: boolean) {
-  const newAddressId = `address-${Date.now()}`;
-  const newAddress = { ...details, mobileNumber: formatMobileNumber(details.mobileNumber), id: newAddressId };
-  changeAddressBook((addressBook) => ({
-    addresses: [...addressBook.addresses, newAddress],
-    defaultAddressId: shouldBeDefault || addressBook.addresses.length === 0 ? newAddressId : addressBook.defaultAddressId,
-  }));
+  const mobileNumber = readLoggedInMobileNumber();
+  const newAddressId = crypto.randomUUID();
+  if (!mobileNumber) return newAddressId;
+  const book = addressBooks.get(mobileNumber) ?? EMPTY_ADDRESS_BOOK;
+  const becomesDefault = shouldBeDefault || book.addresses.length === 0;
+  void saveThenCheck(
+    mobileNumber,
+    {
+      addresses: [...book.addresses, { ...details, mobileNumber: formatMobileNumber(details.mobileNumber), id: newAddressId }],
+      defaultAddressId: becomesDefault ? newAddressId : book.defaultAddressId,
+    },
+    async () => {
+      const customerId = await ensureCustomerRowId(mobileNumber);
+      if (!customerId) return null;
+      const inserted = await createClient().from("addresses").insert({ ...toRow(details), id: newAddressId, customer_id: customerId });
+      if (inserted.error || !becomesDefault) return inserted;
+      return writeDefault(customerId, newAddressId);
+    },
+  );
   return newAddressId;
 }
 
 export function updateAddress(addressId: string, details: AddressDetails, shouldBeDefault: boolean) {
-  changeAddressBook((addressBook) => ({
-    addresses: addressBook.addresses.map((address) =>
-      address.id === addressId ? { ...details, mobileNumber: formatMobileNumber(details.mobileNumber), id: addressId } : address,
-    ),
-    defaultAddressId: shouldBeDefault ? addressId : addressBook.defaultAddressId,
-  }));
+  const mobileNumber = readLoggedInMobileNumber();
+  if (!mobileNumber) return;
+  const book = addressBooks.get(mobileNumber) ?? EMPTY_ADDRESS_BOOK;
+  void saveThenCheck(
+    mobileNumber,
+    {
+      addresses: book.addresses.map((address) =>
+        address.id === addressId ? { ...details, mobileNumber: formatMobileNumber(details.mobileNumber), id: addressId } : address,
+      ),
+      defaultAddressId: shouldBeDefault ? addressId : book.defaultAddressId,
+    },
+    async () => {
+      const updated = await createClient().from("addresses").update(toRow(details)).eq("id", addressId);
+      if (updated.error || !shouldBeDefault) return updated;
+      const customerId = await ensureCustomerRowId(mobileNumber);
+      return customerId ? writeDefault(customerId, addressId) : null;
+    },
+  );
 }
 
 // Removing the default address makes the next one the default.
 export function removeAddress(addressId: string) {
-  changeAddressBook((addressBook) => {
-    const remainingAddresses = addressBook.addresses.filter((address) => address.id !== addressId);
-    return {
-      addresses: remainingAddresses,
-      defaultAddressId:
-        addressId === addressBook.defaultAddressId ? (remainingAddresses[0]?.id ?? "") : addressBook.defaultAddressId,
-    };
+  const mobileNumber = readLoggedInMobileNumber();
+  if (!mobileNumber) return;
+  const book = addressBooks.get(mobileNumber) ?? EMPTY_ADDRESS_BOOK;
+  const remainingAddresses = book.addresses.filter((address) => address.id !== addressId);
+  const nextDefaultId = addressId === book.defaultAddressId ? (remainingAddresses[0]?.id ?? "") : book.defaultAddressId;
+  void saveThenCheck(mobileNumber, { addresses: remainingAddresses, defaultAddressId: nextDefaultId }, async () => {
+    const removed = await createClient().from("addresses").delete().eq("id", addressId);
+    if (removed.error || !nextDefaultId || nextDefaultId === book.defaultAddressId) return removed;
+    const customerId = await ensureCustomerRowId(mobileNumber);
+    return customerId ? writeDefault(customerId, nextDefaultId) : null;
   });
 }
 
 export function setDefaultAddress(addressId: string) {
-  changeAddressBook((addressBook) => ({ ...addressBook, defaultAddressId: addressId }));
+  const mobileNumber = readLoggedInMobileNumber();
+  if (!mobileNumber) return;
+  const book = addressBooks.get(mobileNumber) ?? EMPTY_ADDRESS_BOOK;
+  void saveThenCheck(mobileNumber, { ...book, defaultAddressId: addressId }, async () => {
+    const customerId = await ensureCustomerRowId(mobileNumber);
+    return customerId ? writeDefault(customerId, addressId) : null;
+  });
 }

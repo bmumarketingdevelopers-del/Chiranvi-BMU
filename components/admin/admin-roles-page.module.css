@@ -446,6 +446,126 @@
   color: #5c655e;
 }
 
+/* ---------- Owner profile icon (top right, after the search) ---------- */
+
+/* A round green icon with the owner's initials in gold, the size of the bell next to it */
+.admin-owner-chip {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(40 * var(--admin-pixel));
+  height: calc(40 * var(--admin-pixel));
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #1f4d2e;
+  box-shadow: 0 0 0 1px #e0e2da;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(13 * var(--admin-pixel));
+  font-weight: 700;
+  color: #f5bf2c;
+  cursor: pointer;
+  transition: box-shadow 150ms ease;
+}
+
+.admin-owner-chip:hover,
+.admin-owner-chip:focus-visible {
+  box-shadow: 0 0 0 2px #2f6b3a;
+  outline: none;
+}
+
+/* ---------- Owner profile pop-up ---------- */
+
+/* PIN or Password: two choice cards side by side */
+.admin-owner-kind-choice {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-owner-kind-option,
+.admin-owner-question-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(2 * var(--admin-pixel));
+  padding: calc(10 * var(--admin-pixel)) calc(14 * var(--admin-pixel));
+  border: 1px solid #e0e2da;
+  border-radius: calc(12 * var(--admin-pixel));
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.admin-owner-kind-option strong,
+.admin-owner-question-option strong {
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: calc(14 * var(--admin-pixel));
+  color: #1f4d2e;
+}
+
+.admin-owner-kind-option span,
+.admin-owner-question-option span {
+  font-size: calc(12 * var(--admin-pixel));
+  color: #5d6b62;
+}
+
+.admin-owner-kind-option:hover,
+.admin-owner-kind-option:focus-visible,
+.admin-owner-question-option:hover,
+.admin-owner-question-option:focus-visible {
+  border-color: #2f6b3a;
+  outline: none;
+}
+
+.admin-owner-kind-option-chosen {
+  border-color: #2f6b3a;
+  background: #e6f0e1;
+}
+
+/* "Are you transferring ownership?": the two answers, one under the other */
+.admin-owner-question {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+/* The number (read only) with "Change number" beside it */
+.admin-owner-number-row {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--admin-pixel));
+}
+
+.admin-owner-problem {
+  color: #c0392b;
+}
+
+.admin-owner-secondary-button {
+  flex-shrink: 0;
+  height: calc(38 * var(--admin-pixel));
+  padding: 0 calc(16 * var(--admin-pixel));
+  border: 1px solid #1f4d2e;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #1f4d2e;
+  font: inherit;
+  font-size: calc(12.5 * var(--admin-pixel));
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-owner-secondary-button:hover,
+.admin-owner-secondary-button:focus-visible {
+  background: #e6f0e1;
+  outline: none;
+}
+
 @media (max-width: 1100px) {
   .admin-roles-columns {
     grid-template-columns: 1fr;
@@ -454,6 +574,10 @@
 
 /* Phones: narrower tick columns so all five fit beside the page names */
 @media (max-width: 600px) {
+  .admin-owner-kind-choice {
+    grid-template-columns: 1fr;
+  }
+
   .admin-permissions-column {
     width: 44px;
   }
