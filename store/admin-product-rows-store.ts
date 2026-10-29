@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 /*
   The row of five products under every product page, set in the Chiranvi Panel (Products & pricing →
@@ -10,7 +11,7 @@ import { useSyncExternalStore } from "react";
   A page can also have its own order (Edit page → "Product row on this page"), which it uses instead.
   The page's own product never shows in its row; a slot whose product is gone is skipped, and the page fills
   the row up to five (see FastSellingRow in components/product/one-time-product-page.tsx).
-  Saved in this browser (and shared through the dev server's sync, as every chiranvi-admin- key).
+  Saved in the database (app_settings → product_rows), so every customer sees the same rows.
 */
 
 export type NoodlesKind = "instant-noodles" | "pasta" | "macaroni";
@@ -40,44 +41,60 @@ export const DEFAULT_PRODUCT_ROWS: ProductRows = {
   },
 };
 
-const STORAGE_KEY = "chiranvi-admin-product-rows";
-let productRows: ProductRows | null = null;
+// Saved in the database: the "product_rows" setting in the app_settings table (everyone reads it; staff
+// with Products → Edit change it). Read when first needed and again when the window comes back into focus.
+let productRows: ProductRows = DEFAULT_PRODUCT_ROWS;
 const listeners = new Set<() => void>();
+let isFollowing = false;
 
-function getProductRows(): ProductRows {
-  if (productRows) return productRows;
-  if (typeof window === "undefined") return DEFAULT_PRODUCT_ROWS;
-  try {
-    const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
-    productRows = saved && Array.isArray(saved.fastSelling) ? { ...DEFAULT_PRODUCT_ROWS, ...saved, youMayAlsoLike: { ...DEFAULT_PRODUCT_ROWS.youMayAlsoLike, ...saved.youMayAlsoLike } } : DEFAULT_PRODUCT_ROWS;
-  } catch {
-    productRows = DEFAULT_PRODUCT_ROWS;
-  }
-  return productRows as ProductRows;
+// A saved setting with every list filled in (lists missing from it keep their starting order)
+function withEveryList(saved: Partial<ProductRows> | null): ProductRows {
+  if (!saved || !Array.isArray(saved.fastSelling)) return DEFAULT_PRODUCT_ROWS;
+  return { ...DEFAULT_PRODUCT_ROWS, ...saved, youMayAlsoLike: { ...DEFAULT_PRODUCT_ROWS.youMayAlsoLike, ...saved.youMayAlsoLike } } as ProductRows;
 }
 
+async function loadProductRows() {
+  const { data, error } = await createClient().from("app_settings").select("value").eq("key", "product_rows").maybeSingle();
+  if (error) {
+    console.error("Could not read the product rows", error);
+    return;
+  }
+  productRows = withEveryList(data?.value as Partial<ProductRows> | null);
+  listeners.forEach((onChange) => onChange());
+}
+
+function startFollowingProductRows() {
+  if (isFollowing || typeof window === "undefined") return;
+  isFollowing = true;
+  void loadProductRows();
+  window.addEventListener("focus", () => void loadProductRows());
+}
+
+function getProductRows(): ProductRows {
+  return productRows;
+}
+
+// Shown at once, then saved; read again if the database refused it
 export function saveProductRows(rows: ProductRows) {
   productRows = rows;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
-  } catch {
-    // Storage blocked: the rows last until the page is refreshed.
-  }
   listeners.forEach((onChange) => onChange());
+  void createClient()
+    .from("app_settings")
+    .update({ value: rows })
+    .eq("key", "product_rows")
+    .then(({ error }) => {
+      if (error) {
+        console.error("The database did not accept the product rows", error);
+        void loadProductRows();
+      }
+    });
 }
 
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
-  // Saved in another tab, or by another browser through the shared-data sync
-  function followOtherTabs(event: StorageEvent) {
-    if (event.key !== STORAGE_KEY) return;
-    productRows = null;
-    onChange();
-  }
-  window.addEventListener("storage", followOtherTabs);
+  startFollowingProductRows();
   return () => {
     listeners.delete(onChange);
-    window.removeEventListener("storage", followOtherTabs);
   };
 }
 

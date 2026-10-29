@@ -1,24 +1,28 @@
 import { useSyncExternalStore } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { startingProductPages, type ProductPage } from "@/components/product/product-page-data";
 
 /*
-  Product pages shown at /products/<slug>: the starting pages from components/product/product-page-data.ts
-  plus the pages added in the Chiranvi Panel ("Add product" on Products & pricing).
-  The panel can also edit and delete any page:
+  Product pages shown at /products/<slug>, saved in the Supabase "product_pages" table
+  (supabase/migrations/0008_products.sql): the website's 34 starting pages (copied in once from
+  components/product/product-page-data.ts) plus the pages added in the Chiranvi Panel ("Add product").
+  The panel can edit and delete any page:
   - a panel page: edited or deleted as it is;
-  - a starting page: an edit is saved as a changed copy that replaces it, a delete hides it, and
-    "Restore original" takes both back (the starting pages themselves stay in the code).
-  Saved in this browser: until Supabase is connected, the panel's changes show only in the browser they were
-  made in; connecting Supabase means changing only this file (save to / read from the table instead).
+  - a starting page: an edit is marked "changed", a delete hides it, and "Restore original" puts the
+    code's version back (shown again, changes dropped).
+  Every browser reads the same pages, so a change in the panel reaches every customer. Prices change only
+  by the owner (the database refuses anyone else). The pages are read when first needed and again when the
+  window comes back into focus; until then the code's starting pages are shown.
 */
 
-const PAGES_STORAGE_KEY = "chiranvi-product-pages"; // pages added or changed in the panel
-const HIDDEN_STORAGE_KEY = "chiranvi-hidden-product-pages"; // starting pages deleted in the panel
+type PageRow = { slug: string; page: ProductPage; is_starting_page: boolean; is_changed: boolean; is_hidden: boolean; sort_order: number };
 
-let savedPages: ProductPage[] | null = null;
-let hiddenSlugs: string[] = [];
+let rows: PageRow[] | null = null;
 let allPages: ProductPage[] = startingProductPages;
+let hiddenSlugs: string[] = [];
 const listeners = new Set<() => void>();
+let isFollowing = false;
+let isLoading = false;
 
 const startingSlugs = new Set(startingProductPages.map((page) => page.slug));
 
@@ -26,76 +30,74 @@ export function isStartingProductPage(slug: string) {
   return startingSlugs.has(slug);
 }
 
-// Starting pages in their order (a changed copy in place of the original, deleted ones left out), then
-// the pages added in the panel
+// The shown pages in their order (deleted starting pages left out), and the deleted ones' addresses
 function combinePages() {
-  const saved = savedPages ?? [];
-  allPages = [
-    ...startingProductPages
-      .filter((page) => !hiddenSlugs.includes(page.slug))
-      .map((page) => saved.find((savedPage) => savedPage.slug === page.slug) ?? page),
-    ...saved.filter((page) => !startingSlugs.has(page.slug)),
-  ];
+  const sorted = [...(rows ?? [])].sort((first, second) => first.sort_order - second.sort_order);
+  allPages = sorted.filter((row) => !row.is_hidden).map((row) => ({ ...row.page, addedInPanel: !row.is_starting_page }));
+  hiddenSlugs = sorted.filter((row) => row.is_hidden).map((row) => row.slug);
+  listeners.forEach((onChange) => onChange());
 }
 
-function readSavedPages() {
-  if (savedPages) return;
-  try {
-    const pages = JSON.parse(window.localStorage.getItem(PAGES_STORAGE_KEY) ?? "[]");
-    const hidden = JSON.parse(window.localStorage.getItem(HIDDEN_STORAGE_KEY) ?? "[]");
-    savedPages = Array.isArray(pages) ? pages : [];
-    hiddenSlugs = Array.isArray(hidden) ? hidden : [];
-  } catch {
-    savedPages = [];
-    hiddenSlugs = [];
+async function loadPages() {
+  if (isLoading) return;
+  isLoading = true;
+  const { data, error } = await createClient().from("product_pages").select("slug, page, is_starting_page, is_changed, is_hidden, sort_order");
+  isLoading = false;
+  if (error) {
+    console.error("Could not read the product pages", error);
+    return;
   }
+  // Nothing readable yet (e.g. the table is empty): keep the code's pages
+  if (!data?.length) return;
+  rows = data as PageRow[];
   combinePages();
+}
+
+// Reads the pages once, then again when the window comes back into focus or someone logs in / out (staff
+// also see drafts and deleted pages)
+function startFollowingPages() {
+  if (isFollowing || typeof window === "undefined") return;
+  isFollowing = true;
+  void loadPages();
+  window.addEventListener("focus", () => void loadPages());
+  createClient().auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_IN" || event === "SIGNED_OUT") window.setTimeout(() => void loadPages(), 0);
+  });
 }
 
 function getAllPages() {
-  if (typeof window === "undefined") return startingProductPages;
-  readSavedPages();
   return allPages;
 }
 
-// Saves both lists; false when the browser could not (usually uploaded pictures too big for its storage)
-function save(newSavedPages: ProductPage[], newHiddenSlugs: string[]) {
-  try {
-    window.localStorage.setItem(PAGES_STORAGE_KEY, JSON.stringify(newSavedPages));
-    window.localStorage.setItem(HIDDEN_STORAGE_KEY, JSON.stringify(newHiddenSlugs));
-  } catch {
-    return false;
-  }
-  savedPages = newSavedPages;
-  hiddenSlugs = newHiddenSlugs;
+// After a change: show it at once, save it, and read the pages again if the database refused it (e.g. a
+// price changed by someone who is not the owner)
+function saveThenCheck(change: (current: PageRow[]) => PageRow[], write: () => PromiseLike<{ error: unknown }>) {
+  rows = change(rows ?? startingProductPages.map((page, index) => ({ slug: page.slug, page, is_starting_page: true, is_changed: false, is_hidden: false, sort_order: index })));
   combinePages();
-  listeners.forEach((onChange) => onChange());
+  void Promise.resolve(write()).then(({ error }) => {
+    if (error) {
+      console.error("The database did not accept the page change", error);
+      void loadPages();
+    }
+  });
   return true;
 }
 
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
-  // Changes made in the panel in another tab
-  function followOtherTabs(event: StorageEvent) {
-    if (event.key !== PAGES_STORAGE_KEY && event.key !== HIDDEN_STORAGE_KEY) return;
-    savedPages = null;
-    onChange();
-  }
-  window.addEventListener("storage", followOtherTabs);
+  startFollowingPages();
   return () => {
     listeners.delete(onChange);
-    window.removeEventListener("storage", followOtherTabs);
   };
 }
 
-// Every product page shown on the website (on the server: the starting pages only)
+// Every product page shown on the website (on the server: the code's starting pages)
 export function useProductPages() {
   return useSyncExternalStore(subscribe, getAllPages, () => startingProductPages);
 }
 
 // Starting pages deleted in the panel (listed there with "Restore original")
 function getHiddenSlugs() {
-  if (typeof window !== "undefined") readSavedPages();
   return hiddenSlugs;
 }
 
@@ -104,46 +106,55 @@ export function useHiddenStartingProductSlugs() {
   return useSyncExternalStore(subscribe, getHiddenSlugs, () => noHiddenSlugs);
 }
 
-// A starting page changed in the panel (its saved copy replaces the code's version)
+// A starting page changed in the panel
 export function isChangedStartingProductPage(slug: string) {
-  readSavedPages();
-  return startingSlugs.has(slug) && (savedPages ?? []).some((page) => page.slug === slug);
+  return Boolean(rows?.some((row) => row.slug === slug && row.is_starting_page && row.is_changed));
 }
 
 export function isProductSlugTaken(slug: string) {
-  return getAllPages().some((page) => page.slug === slug) || hiddenSlugs.includes(slug);
+  return allPages.some((page) => page.slug === slug) || hiddenSlugs.includes(slug);
 }
 
 // A new page from the panel's "Add product"
 export function addProductPage(page: ProductPage) {
-  readSavedPages();
-  return save([...(savedPages ?? []), { ...page, addedInPanel: true }], hiddenSlugs);
-}
-
-// An edited page (same address): replaces the panel page, or saves a changed copy of a starting page
-export function updateProductPage(page: ProductPage) {
-  readSavedPages();
-  const saved = savedPages ?? [];
-  const isAlreadySaved = saved.some((savedPage) => savedPage.slug === page.slug);
-  const updated = { ...page, addedInPanel: !startingSlugs.has(page.slug) };
-  return save(
-    isAlreadySaved ? saved.map((savedPage) => (savedPage.slug === page.slug ? updated : savedPage)) : [...saved, updated],
-    hiddenSlugs,
+  const sortOrder = Math.max(0, ...(rows ?? []).map((row) => row.sort_order)) + 1;
+  const newPage = { ...page, addedInPanel: true };
+  return saveThenCheck(
+    (current) => [...current, { slug: page.slug, page: newPage, is_starting_page: false, is_changed: false, is_hidden: false, sort_order: sortOrder }],
+    () => createClient().from("product_pages").insert({ slug: page.slug, page: newPage, sort_order: sortOrder, is_starting_page: false }),
   );
 }
 
-// Delete: a panel page goes; a starting page is hidden (its changed copy goes too)
+// An edited page (same address); a starting page is marked changed
+export function updateProductPage(page: ProductPage) {
+  const isStarting = startingSlugs.has(page.slug);
+  const updated = { ...page, addedInPanel: !isStarting };
+  return saveThenCheck(
+    (current) => current.map((row) => (row.slug === page.slug ? { ...row, page: updated, is_changed: isStarting || row.is_changed } : row)),
+    () => createClient().from("product_pages").update({ page: updated, is_changed: isStarting }).eq("slug", page.slug),
+  );
+}
+
+// Delete: a panel page goes; a starting page is hidden
 export function deleteProductPage(slug: string) {
-  readSavedPages();
-  const saved = (savedPages ?? []).filter((page) => page.slug !== slug);
-  return save(saved, startingSlugs.has(slug) && !hiddenSlugs.includes(slug) ? [...hiddenSlugs, slug] : hiddenSlugs);
+  if (!startingSlugs.has(slug)) {
+    return saveThenCheck(
+      (current) => current.filter((row) => row.slug !== slug),
+      () => createClient().from("product_pages").delete().eq("slug", slug),
+    );
+  }
+  return saveThenCheck(
+    (current) => current.map((row) => (row.slug === slug ? { ...row, is_hidden: true } : row)),
+    () => createClient().from("product_pages").update({ is_hidden: true }).eq("slug", slug),
+  );
 }
 
 // "Restore original": a starting page back to the code's version (shown again, changes dropped)
 export function restoreStartingProductPage(slug: string) {
-  readSavedPages();
-  return save(
-    (savedPages ?? []).filter((page) => page.slug !== slug),
-    hiddenSlugs.filter((hiddenSlug) => hiddenSlug !== slug),
+  const original = startingProductPages.find((page) => page.slug === slug);
+  if (!original) return false;
+  return saveThenCheck(
+    (current) => current.map((row) => (row.slug === slug ? { ...row, page: original, is_changed: false, is_hidden: false } : row)),
+    () => createClient().from("product_pages").update({ page: original, is_changed: false, is_hidden: false }).eq("slug", slug),
   );
 }

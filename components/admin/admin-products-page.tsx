@@ -11,6 +11,7 @@ import {
   removeProduct,
   updateProduct,
   useProductCategories,
+  useHaveProductsLoaded,
   useShopProducts,
   type ProductCategory,
   type ShopProduct,
@@ -320,9 +321,12 @@ function ProductsPage() {
   // The tabs and the Products number count these too
   const pagesWithoutCardMatching = pagesWithoutCard.filter((page) => !words || page.name.toLowerCase().includes(words));
   const pageCategory = (page: ProductPage) => CATEGORY_FROM_SHOP_CATEGORY[page.shopCategory ?? "Others"];
-  // Every product is treated the same: a page without a card gets one (once; the ref stops a second copy)
+  // Every product is treated the same: a page without a card gets one (once; the ref stops a second copy).
+  // Only once the cards have been read from the database, so an existing card is never made again.
   const cardsMadeForSlugs = useRef(new Set<string>());
+  const haveProductsLoaded = useHaveProductsLoaded();
   useEffect(() => {
+    if (!haveProductsLoaded) return;
     pagesWithoutCard.forEach((page) => {
       if (cardsMadeForSlugs.current.has(page.slug)) return;
       cardsMadeForSlugs.current.add(page.slug);
