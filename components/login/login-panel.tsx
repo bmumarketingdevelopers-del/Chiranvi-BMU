@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { addPendingProductToCart, forgetPendingCartProduct } from "@/store/cart-store";
+import { createClient } from "@/lib/supabase/client";
 import { getCustomerProfile } from "@/store/customer-profiles-store";
 import { rememberLogin, takePageAfterLogin } from "./login-status";
 import styles from "./login-panel.module.css";
@@ -13,16 +14,31 @@ import styles from "./login-panel.module.css";
     1. "enter-mobile-number"  - type a 10-digit mobile number, then Send OTP
     2. "verify-otp"           - type the 6-digit code; a countdown shows when a new code can be requested
     3. "otp-expired"          - the code's time ran out; request a new one or change the number
-  Frontend only for now: no OTP is really sent or checked. The places to connect the real
-  service later are marked with "Connect to the OTP service".
+  The OTP is real: Supabase Auth makes the code, sends it (WhatsApp through Gupshup, once connected; the
+  test numbers set in Supabase accept 123456 without a message) and checks it. A correct code logs the
+  visitor in with Supabase; login-status.ts follows that login for the rest of the site.
+  While Supabase answers, the button says "Sending…" / "Checking…"; a problem (wrong code, too many tries,
+  no connection) shows in red under the field.
 */
 
 type LoginStep = "enter-mobile-number" | "verify-otp" | "otp-expired";
 
 const OTP_LENGTH = 6;
-// Seconds a code stays valid. The countdown shows this; when it reaches 00:00 the boxes turn red
-// ("OTP expired") and a new code can be requested.
-const OTP_VALID_SECONDS = 30;
+// Seconds a code stays valid (the same as "SMS OTP Expiry" in Supabase → Authentication → Phone).
+// The countdown shows this; when it reaches 00:00 the boxes turn red ("OTP expired") and a new code can be
+// requested.
+const OTP_VALID_SECONDS = 60;
+
+// Supabase's answer, in words the customer understands
+function loginProblemMessage(error: { message?: string; status?: number; code?: string }) {
+  const text = `${error.code ?? ""} ${error.message ?? ""}`.toLowerCase();
+  // The message service could not send the code (e.g. WhatsApp sending not connected yet)
+  if (text.includes("sms_send_failed") || text.includes("provider")) return "We couldn't send the OTP to this number. Please try again in a moment.";
+  if (text.includes("otp_expired") || text.includes("expired") || text.includes("invalid")) return "Wrong code. Check it and try again.";
+  if (error.status === 429 || text.includes("rate") || text.includes("too many")) return "Too many tries. Please wait a minute and try again.";
+  if (text.includes("fetch") || text.includes("network")) return "No internet connection. Check it and try again.";
+  return "We couldn't send the OTP to this number. Please try again in a moment.";
+}
 
 // "9876543210" -> "98765 43210"
 function formatMobileNumber(digits: string) {
@@ -63,6 +79,10 @@ export default function LoginPanel({
   const otpExpiresAtRef = useRef(0);
   const otpBoxRefs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
+  // Waiting for Supabase: sending the code, or checking it
+  const [waitingFor, setWaitingFor] = useState<"sending" | "checking" | null>(null);
+  // A problem to show in red (wrong code, couldn't send …)
+  const [problem, setProblem] = useState("");
 
   const isMobileNumberComplete = mobileNumberDigits.length === 10;
   const isOtpComplete = otpDigits.every((otpDigit) => otpDigit !== "");
@@ -84,8 +104,17 @@ export default function LoginPanel({
     if (loginStep === "verify-otp") otpBoxRefs.current[0]?.focus();
   }, [loginStep]);
 
-  function sendOtp() {
-    // Connect to the OTP service: send a code to fullMobileNumber by WhatsApp here.
+  // Asks Supabase to send a code to +91 and the number; only then the code boxes open
+  async function sendOtp() {
+    if (waitingFor) return;
+    setWaitingFor("sending");
+    setProblem("");
+    const { error } = await createClient().auth.signInWithOtp({ phone: `+91${mobileNumberDigits}` });
+    setWaitingFor(null);
+    if (error) {
+      setProblem(loginProblemMessage(error));
+      return;
+    }
     setOtpDigits(Array(OTP_LENGTH).fill(""));
     setFocusedOtpBoxIndex(0);
     setSecondsUntilOtpExpires(OTP_VALID_SECONDS);
@@ -93,9 +122,19 @@ export default function LoginPanel({
     setLoginStep("verify-otp");
   }
 
-  function verifyOtpAndLogIn() {
-    if (!isOtpComplete) return;
-    // Connect to the OTP service: check otpDigits.join("") for fullMobileNumber and log the user in here.
+  // Sends the typed code to Supabase; a correct code logs the visitor in
+  async function verifyOtpAndLogIn() {
+    if (!isOtpComplete || waitingFor) return;
+    setWaitingFor("checking");
+    setProblem("");
+    const { error } = await createClient().auth.verifyOtp({ phone: `+91${mobileNumberDigits}`, token: otpDigits.join(""), type: "sms" });
+    setWaitingFor(null);
+    if (error) {
+      setProblem(loginProblemMessage(error));
+      setOtpDigits(Array(OTP_LENGTH).fill(""));
+      otpBoxRefs.current[0]?.focus();
+      return;
+    }
     rememberLogin(mobileNumberDigits);
     // A new customer (no saved profile yet): straight to the Profile page to fill in their details
     // (a product they were adding still goes into the cart first). Back from Profile returns to where they
@@ -135,6 +174,7 @@ export default function LoginPanel({
   }
 
   function changeMobileNumber() {
+    setProblem("");
     setLoginStep("enter-mobile-number");
   }
 
@@ -223,9 +263,17 @@ export default function LoginPanel({
               />
             </div>
             <p className={styles["login-field-hint"]}>OTP will be sent by Whatsapp to this number.</p>
+            {problem && (
+              <p className={styles["login-error-message"]} role="alert">
+                <span className={styles["login-error-icon"]} aria-hidden="true">
+                  !
+                </span>
+                {problem}
+              </p>
+            )}
 
-            <button type="submit" disabled={!isMobileNumberComplete} className={styles["login-primary-button"]}>
-              Send OTP
+            <button type="submit" disabled={!isMobileNumberComplete || waitingFor !== null} className={styles["login-primary-button"]}>
+              {waitingFor === "sending" ? "Sending…" : "Send OTP"}
             </button>
             <p className={styles["login-footnote"]}>
               By continuing you agree to our <Link href="#">Terms</Link> and <Link href="#">Privacy Policy</Link>
@@ -293,7 +341,8 @@ export default function LoginPanel({
               ))}
             </div>
 
-            {loginStep === "verify-otp" ? (
+            {/* A wrong code or a problem sending replaces the countdown line with the red message */}
+            {loginStep === "verify-otp" && !problem ? (
               <p className={styles["login-resend-status"]}>
                 <span className={styles["login-resend-spinner"]} aria-hidden="true" />
                 Resend OTP in <strong>{formatCountdown(secondsUntilOtpExpires)}</strong>
@@ -303,16 +352,22 @@ export default function LoginPanel({
                 <span className={styles["login-error-icon"]} aria-hidden="true">
                   !
                 </span>
-                The code has expired. Request a new one.
+                {problem || "The code has expired. Request a new one."}
               </p>
             )}
 
             <button
               type="submit"
-              disabled={loginStep === "verify-otp" && !isOtpComplete}
+              disabled={(loginStep === "verify-otp" && !isOtpComplete) || waitingFor !== null}
               className={styles["login-primary-button"]}
             >
-              {loginStep === "otp-expired" ? "Resend OTP" : "Verify & log in"}
+              {waitingFor === "checking"
+                ? "Checking…"
+                : waitingFor === "sending"
+                  ? "Sending…"
+                  : loginStep === "otp-expired"
+                    ? "Resend OTP"
+                    : "Verify & log in"}
             </button>
 
             {loginStep === "verify-otp" ? (

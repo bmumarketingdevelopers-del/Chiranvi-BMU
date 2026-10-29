@@ -1,25 +1,28 @@
-import { useSyncExternalStore } from "react";
-import { rememberLogin, useLoggedInMobileNumber } from "@/components/login/login-status";
+import { useEffect, useSyncExternalStore } from "react";
+import { useLoggedInMobileNumber } from "@/components/login/login-status";
+import { createClient } from "@/lib/supabase/client";
 import { PANEL_FEATURES, type PanelFeature } from "./panel-features";
-// The same team, roles and panel data in every browser (until the database is connected)
+// The panel's other data (orders, products …) is still shared through this until it moves to the database
 import "./shared-data-sync";
 
 /*
-  Who can open the Chiranvi Panel (/admin) and what they can do there, until real accounts exist
-  (Supabase). Managed on the Roles & permissions page.
-  - Roles: Owner (Hariprasath, 8754852810 to start with; can do everything and is the only one who can
-    change roles and people), Admin, Manager, Delivery agent (delivery app only, no panel), and any
-    role the owner adds. Each role has, for every panel page (module): View, Create, Edit, Delete,
-    Export. View decides whether the page opens at all.
-  - People: a mobile number with a role. They log in as usual and find "Chiranvi Panel" in their account.
-  Saved in this browser (localStorage), so it stays after a refresh. Like the login, this is not real
-  security yet, and it only applies in this browser.
-  Before roles, people were saved as admin or manager with ticked pages: they keep their access (admins
-  get the Admin role, managers the Manager role).
+  Who can open the Chiranvi Panel (/admin) and what they can do there. Managed on the Roles & permissions
+  page, saved in the Supabase database (tables panel_roles and staff_members, see
+  supabase/migrations/0002_people_and_login.sql), so the same team and roles apply on every laptop and
+  phone, on localhost and on the live site.
+  - Roles: Owner (can do everything and is the only one who can change roles and people), Admin, Manager,
+    Delivery agent (delivery app only, no panel), and any role the owner adds. Each role has, for every
+    panel page (module): View, Create, Edit, Delete, Export. View decides whether the page opens at all.
+  - People: a mobile number with a role. They log in with their OTP and find "Chiranvi Panel" in their
+    account.
+  The team is read after login (and again when the window comes back into focus). The database's rules
+  decide what each person may read and change: anyone sees their own staff row; the owner sees and changes
+  everyone and every role. So a customer, or an Admin trying to change the team, is refused by the
+  database itself, whatever the browser does.
 */
 
-// The owner to start with (until the owner changes their name or number)
-const DEFAULT_OWNER: OwnerDetails = { name: "Hariprasath", mobileNumber: "8754852810" };
+// Before the team has loaded (and on the server): nobody is the owner
+const NO_OWNER: OwnerDetails = { name: "", mobileNumber: "" };
 
 export type OwnerDetails = { name: string; mobileNumber: string };
 
@@ -76,10 +79,6 @@ export type StaffAccess = {
   canManageTeam: boolean;
 };
 
-const STAFF_STORAGE_KEY = "chiranvi-staff-members";
-const ROLES_STORAGE_KEY = "chiranvi-panel-roles";
-const OWNER_STORAGE_KEY = "chiranvi-owner";
-
 // ---------- Permissions ----------
 
 const NONE: ActionSet = { view: false, create: false, edit: false, delete: false, export: false };
@@ -102,44 +101,7 @@ function permissionsFor(letters: Partial<Record<PanelModule, string>>): RolePerm
 
 const ALL_PERMISSIONS = Object.fromEntries(PANEL_MODULES.map((module) => [module.key, ALL])) as RolePermissions;
 
-// The Manager role as in the design
-const MANAGER_PERMISSIONS = permissionsFor({
-  dashboard: "VX",
-  orders: "VCEX",
-  subscriptions: "VCEX",
-  "pause-requests": "VE",
-  customers: "VCEX",
-  leads: "VCEX",
-  payments: "VX",
-  refunds: "VCE",
-  products: "VE",
-  deliveries: "VCEDX",
-  routes: "VCEDX",
-  reports: "VX",
-  staff: "V",
-  coupons: "VCE",
-});
-
 export const OWNER_ROLE: PanelRole = { id: "owner", name: "Owner", isBuiltIn: true, hasPanelAccess: true, permissions: ALL_PERMISSIONS };
-
-const STARTING_ROLES: PanelRole[] = [
-  {
-    id: "admin",
-    name: "Admin",
-    isBuiltIn: true,
-    hasPanelAccess: true,
-    permissions: { ...ALL_PERMISSIONS, staff: NONE, roles: NONE },
-  },
-  { id: "manager", name: "Manager", isBuiltIn: true, hasPanelAccess: true, permissions: MANAGER_PERMISSIONS },
-  { id: "delivery-agent", name: "Delivery agent", isBuiltIn: true, hasPanelAccess: false, permissions: permissionsFor({}) },
-];
-
-// The three managers in the design (their numbers are the ones on the Staff page)
-const STARTING_TEAM: StaffMember[] = [
-  { mobileNumber: "9741239569", name: "Karthik N", roleId: "manager", title: "Hub manager" },
-  { mobileNumber: "9741263753", name: "Anil Kumar", roleId: "manager", title: "Operations" },
-  { mobileNumber: "9741245615", name: "Divya Rao", roleId: "manager", title: "Customer care" },
-];
 
 // A permission grid with every module filled in (roles saved before a module existed get it unticked)
 function completePermissions(permissions: Partial<RolePermissions> | undefined): RolePermissions {
@@ -148,79 +110,109 @@ function completePermissions(permissions: Partial<RolePermissions> | undefined):
   ) as RolePermissions;
 }
 
-// ---------- Saved roles and people ----------
+// ---------- The team, roles and owner, from the database ----------
 
-let roles: PanelRole[] = STARTING_ROLES;
-let staffMembers: StaffMember[] = STARTING_TEAM;
-let hasReadSaved = false;
+// The rows as the database keeps them
+type RoleRow = { id: string; name: string; is_built_in: boolean; has_panel_access: boolean; permissions: Partial<RolePermissions> };
+type StaffRow = { mobile_number: string; name: string; role_id: string; title: string | null; is_active: boolean };
+
+const NO_ROLES: PanelRole[] = [];
+const NO_TEAM: StaffMember[] = [];
+
+let roles: PanelRole[] = NO_ROLES; // every role except Owner (the owner is shown on its own)
+let staffMembers: StaffMember[] = NO_TEAM; // everyone except the owner
+let ownerDetails: OwnerDetails = NO_OWNER;
+// Whose team this is (the logged-in number it was read for), and whether a read is under way
+let loadedForMobile: string | null | undefined = undefined;
+let loadingForMobile: string | null | undefined = undefined;
 const staffListeners = new Set<() => void>();
 
-type OldStaffMember = { mobileNumber: string; name: string; role?: "admin" | "manager"; roleId?: string; title?: string };
-
-function readSaved() {
-  if (hasReadSaved || typeof window === "undefined") return;
-  hasReadSaved = true;
-  try {
-    const savedRoles = JSON.parse(window.localStorage.getItem(ROLES_STORAGE_KEY) ?? "null");
-    roles = Array.isArray(savedRoles)
-      ? savedRoles.map((role: PanelRole) => ({ ...role, permissions: completePermissions(role.permissions) }))
-      : STARTING_ROLES;
-  } catch {
-    roles = STARTING_ROLES;
-  }
-  try {
-    const savedTeam = JSON.parse(window.localStorage.getItem(STAFF_STORAGE_KEY) ?? "null");
-    staffMembers = Array.isArray(savedTeam)
-      ? savedTeam.map((member: OldStaffMember) => ({
-          mobileNumber: member.mobileNumber,
-          name: member.name,
-          title: member.title,
-          // Saved before roles: admin -> Admin, manager -> Manager
-          roleId: member.roleId ?? (member.role === "admin" ? "admin" : "manager"),
-        }))
-      : STARTING_TEAM;
-  } catch {
-    staffMembers = STARTING_TEAM;
-  }
-}
-
-function saveAll(newRoles: PanelRole[], newTeam: StaffMember[]) {
-  roles = newRoles;
-  staffMembers = newTeam;
-  hasReadSaved = true;
-  try {
-    window.localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(newRoles));
-    window.localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(newTeam));
-  } catch {
-    // Storage blocked: the change lasts until the page is refreshed.
-  }
+function announceTeamChange() {
   staffListeners.forEach((onChange) => onChange());
 }
 
-function getRoles() {
-  readSaved();
-  return roles;
+/*
+  Reads the roles and the team the logged-in person may see (the database's rules decide: their own row,
+  or everyone for the owner and people with Staff → View). Logged out: no team.
+*/
+async function loadTeam(mobileNumber: string | null) {
+  loadingForMobile = mobileNumber;
+  if (!mobileNumber) {
+    roles = NO_ROLES;
+    staffMembers = NO_TEAM;
+    ownerDetails = NO_OWNER;
+  } else {
+    const supabase = createClient();
+    const [roleAnswer, staffAnswer] = await Promise.all([
+      supabase.from("panel_roles").select("id, name, is_built_in, has_panel_access, permissions").order("created_at"),
+      supabase.from("staff_members").select("mobile_number, name, role_id, title, is_active").order("created_at"),
+    ]);
+    // A newer login started meanwhile: its own read wins
+    if (loadingForMobile !== mobileNumber) return;
+    if (roleAnswer.error || staffAnswer.error) console.error("Could not read the team", roleAnswer.error ?? staffAnswer.error);
+    const roleRows = (roleAnswer.data ?? []) as RoleRow[];
+    const staffRows = ((staffAnswer.data ?? []) as StaffRow[]).filter((row) => row.is_active);
+    roles = roleRows
+      .filter((row) => row.id !== "owner")
+      .map((row) => ({ id: row.id, name: row.name, isBuiltIn: row.is_built_in, hasPanelAccess: row.has_panel_access, permissions: completePermissions(row.permissions) }));
+    const ownerRow = staffRows.find((row) => row.role_id === "owner");
+    ownerDetails = ownerRow ? { name: ownerRow.name, mobileNumber: ownerRow.mobile_number } : NO_OWNER;
+    staffMembers = staffRows
+      .filter((row) => row.role_id !== "owner")
+      .map((row) => ({ mobileNumber: row.mobile_number, name: row.name, roleId: row.role_id, title: row.title ?? undefined }));
+  }
+  loadedForMobile = mobileNumber;
+  announceTeamChange();
 }
 
-function getTeam() {
-  readSaved();
-  return staffMembers;
+// Reads the team for this login once (again after a change, or when asked to refresh)
+function ensureTeamFor(mobileNumber: string | null, refresh = false) {
+  if (!refresh && (loadedForMobile === mobileNumber || loadingForMobile === mobileNumber)) return;
+  void loadTeam(mobileNumber);
 }
 
-// Adds a person, or replaces them if the number is already on the team.
+// After a change: show it at once, save it, and read the team again if the database refused it
+async function saveThenCheck(change: () => void, write: () => PromiseLike<{ error: unknown }>) {
+  change();
+  announceTeamChange();
+  const { error } = await write();
+  if (error) {
+    console.error("The database did not accept the change", error);
+    ensureTeamFor(loadedForMobile ?? null, true);
+  }
+}
+
+// Adds a person, or replaces them if the number is already on the team (owner only).
 export function saveStaffMember(member: StaffMember) {
-  const others = getTeam().filter((existing) => existing.mobileNumber !== member.mobileNumber);
-  saveAll(getRoles(), [...others, member]);
+  void saveThenCheck(
+    () => {
+      staffMembers = [...staffMembers.filter((existing) => existing.mobileNumber !== member.mobileNumber), member];
+    },
+    () =>
+      createClient()
+        .from("staff_members")
+        .upsert(
+          { mobile_number: member.mobileNumber, name: member.name, role_id: member.roleId, title: member.title ?? null, is_active: true },
+          { onConflict: "mobile_number" },
+        ),
+  );
 }
 
 export function removeStaffMember(mobileNumber: string) {
-  saveAll(getRoles(), getTeam().filter((member) => member.mobileNumber !== mobileNumber));
+  void saveThenCheck(
+    () => {
+      staffMembers = staffMembers.filter((member) => member.mobileNumber !== mobileNumber);
+    },
+    () => createClient().from("staff_members").delete().eq("mobile_number", mobileNumber),
+  );
 }
 
 export function saveRolePermissions(roleId: string, permissions: RolePermissions) {
-  saveAll(
-    getRoles().map((role) => (role.id === roleId ? { ...role, permissions } : role)),
-    getTeam(),
+  void saveThenCheck(
+    () => {
+      roles = roles.map((role) => (role.id === roleId ? { ...role, permissions } : role));
+    },
+    () => createClient().from("panel_roles").update({ permissions }).eq("id", roleId),
   );
 }
 
@@ -228,103 +220,100 @@ export function saveRolePermissions(roleId: string, permissions: RolePermissions
 export function addRole(name: string) {
   const baseId = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "role";
   let id = baseId;
-  for (let copy = 2; [OWNER_ROLE, ...getRoles()].some((role) => role.id === id); copy++) id = `${baseId}-${copy}`;
+  for (let copy = 2; [OWNER_ROLE, ...roles].some((role) => role.id === id); copy++) id = `${baseId}-${copy}`;
   const newRole: PanelRole = { id, name, isBuiltIn: false, hasPanelAccess: true, permissions: permissionsFor({ dashboard: "V" }) };
-  saveAll([...getRoles(), newRole], getTeam());
+  void saveThenCheck(
+    () => {
+      roles = [...roles, newRole];
+    },
+    () =>
+      createClient()
+        .from("panel_roles")
+        .insert({ id, name, is_built_in: false, has_panel_access: true, permissions: newRole.permissions }),
+  );
   return newRole;
 }
 
 export function renameRole(roleId: string, name: string) {
-  saveAll(
-    getRoles().map((role) => (role.id === roleId ? { ...role, name } : role)),
-    getTeam(),
+  void saveThenCheck(
+    () => {
+      roles = roles.map((role) => (role.id === roleId ? { ...role, name } : role));
+    },
+    () => createClient().from("panel_roles").update({ name }).eq("id", roleId),
   );
 }
 
-// Only roles nobody has can be deleted
+// Only roles nobody has can be deleted (the built-in ones never)
 export function deleteRole(roleId: string) {
-  saveAll(
-    getRoles().filter((role) => role.id !== roleId || role.isBuiltIn),
-    getTeam(),
+  void saveThenCheck(
+    () => {
+      roles = roles.filter((role) => role.id !== roleId || role.isBuiltIn);
+    },
+    () => createClient().from("panel_roles").delete().eq("id", roleId).eq("is_built_in", false),
   );
-}
-
-// ---------- Owner ----------
-
-let ownerDetails: OwnerDetails = DEFAULT_OWNER;
-let hasReadSavedOwner = false;
-
-function readSavedOwner() {
-  if (hasReadSavedOwner || typeof window === "undefined") return;
-  hasReadSavedOwner = true;
-  try {
-    const savedOwner = JSON.parse(window.localStorage.getItem(OWNER_STORAGE_KEY) ?? "null");
-    ownerDetails =
-      typeof savedOwner?.name === "string" && typeof savedOwner?.mobileNumber === "string" ? savedOwner : DEFAULT_OWNER;
-  } catch {
-    ownerDetails = DEFAULT_OWNER;
-  }
 }
 
 /*
-  The owner changes their name or number. A new number becomes the owner's login straight away (the
-  owner stays logged in), and from then on the owner logs in with the new number.
+  The owner changes their name or number. A new number is the owner's login from then on: the owner logs
+  in again with it (with its OTP), and the old number no longer opens the panel (this is how the panel is
+  handed over to Praveen's own number).
 */
 export function saveOwnerDetails(newDetails: OwnerDetails) {
-  const loggedInAsOwner = getLoggedInNumberForOwnerChange() === getOwner().mobileNumber;
-  ownerDetails = newDetails;
-  hasReadSavedOwner = true;
-  try {
-    window.localStorage.setItem(OWNER_STORAGE_KEY, JSON.stringify(newDetails));
-  } catch {
-    // Storage blocked: the change lasts until the page is refreshed.
-  }
-  staffListeners.forEach((onChange) => onChange());
-  if (loggedInAsOwner) rememberLogin(newDetails.mobileNumber);
-}
-
-function getLoggedInNumberForOwnerChange() {
-  try {
-    return JSON.parse(window.localStorage.getItem("chiranvi-login") ?? "null")?.mobileNumber ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function getOwner() {
-  readSavedOwner();
-  return ownerDetails;
+  void saveThenCheck(
+    () => {
+      ownerDetails = newDetails;
+    },
+    () => createClient().from("staff_members").update({ name: newDetails.name, mobile_number: newDetails.mobileNumber }).eq("role_id", "owner"),
+  );
 }
 
 // ---------- Hooks ----------
 
 function subscribeToTeam(onChange: () => void) {
   staffListeners.add(onChange);
-  function followOtherTabs(event: StorageEvent) {
-    if (event.key !== STAFF_STORAGE_KEY && event.key !== OWNER_STORAGE_KEY && event.key !== ROLES_STORAGE_KEY) return;
-    hasReadSaved = false;
-    hasReadSavedOwner = false;
-    readSaved();
-    readSavedOwner();
-    onChange();
+  // Back to this window (e.g. after the owner changed the team on another laptop): read the team again
+  function refreshOnFocus() {
+    if (loadedForMobile) ensureTeamFor(loadedForMobile, true);
   }
-  window.addEventListener("storage", followOtherTabs);
+  window.addEventListener("focus", refreshOnFocus);
   return () => {
     staffListeners.delete(onChange);
-    window.removeEventListener("storage", followOtherTabs);
+    window.removeEventListener("focus", refreshOnFocus);
   };
 }
 
+// Reads the team for whoever is logged in now (and again when someone else logs in)
+function useTeamForLogin() {
+  const mobileNumber = useLoggedInMobileNumber();
+  useEffect(() => {
+    ensureTeamFor(mobileNumber);
+  }, [mobileNumber]);
+  return mobileNumber;
+}
+
 export function useOwnerDetails() {
-  return useSyncExternalStore(subscribeToTeam, getOwner, () => DEFAULT_OWNER);
+  useTeamForLogin();
+  return useSyncExternalStore(subscribeToTeam, () => ownerDetails, () => NO_OWNER);
 }
 
 export function useStaffMembers() {
-  return useSyncExternalStore(subscribeToTeam, getTeam, () => STARTING_TEAM);
+  useTeamForLogin();
+  return useSyncExternalStore(subscribeToTeam, () => staffMembers, () => NO_TEAM);
 }
 
 export function usePanelRoles() {
-  return useSyncExternalStore(subscribeToTeam, getRoles, () => STARTING_ROLES);
+  useTeamForLogin();
+  return useSyncExternalStore(subscribeToTeam, () => roles, () => NO_ROLES);
+}
+
+/*
+  True once the team has been read for the person logged in now (or nobody is logged in). The panel waits
+  for this before deciding "staff or customer", so nobody is sent away while it is still loading.
+*/
+export function useIsStaffAccessKnown() {
+  const mobileNumber = useTeamForLogin();
+  const loadedFor = useSyncExternalStore(subscribeToTeam, () => loadedForMobile, () => undefined);
+  return mobileNumber === null || loadedFor === mobileNumber;
 }
 
 // What a mobile number can do in the panel, or null (customers, and people whose role has no panel).
@@ -332,10 +321,10 @@ export function getStaffAccess(
   mobileNumber: string | null,
   team: StaffMember[],
   owner: OwnerDetails,
-  allRoles: PanelRole[] = getRoles(),
+  allRoles: PanelRole[] = roles,
 ): StaffAccess | null {
   if (!mobileNumber) return null;
-  if (mobileNumber === owner.mobileNumber) {
+  if (owner.mobileNumber && mobileNumber === owner.mobileNumber) {
     return {
       roleId: "owner",
       roleName: "Owner",

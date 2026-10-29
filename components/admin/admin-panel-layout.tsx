@@ -10,7 +10,7 @@ import {
   useLoggedInMobileNumber,
 } from "@/components/login/login-status";
 import { getNameInitials } from "@/components/account/account-profile";
-import { useCurrentStaffAccess, type PanelModule, type StaffAccess } from "@/store/staff-access-store";
+import { useCurrentStaffAccess, useIsStaffAccessKnown, type PanelModule, type StaffAccess } from "@/store/staff-access-store";
 import { usePauseRequests } from "@/store/admin-pause-requests-store";
 import { useComplaintTickets } from "@/store/admin-complaints-store";
 import { useTodayDeliveries } from "@/store/admin-deliveries-store";
@@ -190,6 +190,7 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
   const isLoginStatusKnown = useIsLoginStatusKnown();
   const mobileNumber = useLoggedInMobileNumber();
   const staffAccess = useCurrentStaffAccess();
+  const isStaffAccessKnown = useIsStaffAccessKnown();
   const pathname = usePathname();
   const router = useRouter();
   // Live counts: new orders and customers, pause requests waiting, open high-priority complaints and
@@ -227,16 +228,17 @@ export default function AdminPanelLayout({ children }: { children: ReactNode }) 
     };
   }, [isMenuOpen]);
 
-  // Logged out: log in first, then come back. Logged-in customers: their account instead.
+  // Logged out: log in first, then come back. Logged-in customers: their account instead (decided only once
+  // the team has been read from the database, so staff are not sent away while it loads).
   useEffect(() => {
     if (!isLoginStatusKnown) return;
     if (!mobileNumber) {
       rememberPageAfterLogin(pathname);
       router.replace("/login");
-    } else if (!staffAccess) {
+    } else if (isStaffAccessKnown && !staffAccess) {
       router.replace("/account");
     }
-  }, [isLoginStatusKnown, mobileNumber, staffAccess, pathname, router]);
+  }, [isLoginStatusKnown, isStaffAccessKnown, mobileNumber, staffAccess, pathname, router]);
 
   if (!isLoginStatusKnown || !mobileNumber || !staffAccess) {
     return <div className={styles["admin-panel-loading"]} aria-busy="true" />;
