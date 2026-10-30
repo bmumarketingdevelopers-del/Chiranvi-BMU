@@ -7,6 +7,7 @@ import LandingZoomAndLayoutRunner from "@/components/landing/landing-zoom-and-la
 import SiteNavigationPlacement from "@/components/navigation/site-navigation-placement";
 import { logOut, rememberPageAfterLogin, useIsLoggedIn, useIsLoginStatusKnown } from "@/components/login/login-status";
 import { useCurrentStaffAccess } from "@/store/staff-access-store";
+import { useIsDeliveryAgent } from "@/store/delivery-agent-store";
 import { emptyTheCart } from "@/store/cart-store";
 import { countActiveOrders, forgetAllOrders, useOrders } from "@/store/orders-store";
 import { getNameInitials, useAccountProfile } from "./account-profile";
@@ -67,6 +68,8 @@ export default function AccountDashboardLayout({ children }: { children: ReactNo
   const isLoginStatusKnown = useIsLoginStatusKnown();
   // Owner, admin or manager: they get the "Chiranvi Panel" button
   const staffAccess = useCurrentStaffAccess();
+  // Delivery agents: they get the "Delivery Panel" button instead
+  const isDeliveryAgent = useIsDeliveryAgent();
   const accountProfile = useAccountProfile();
   // Orders still on their way: the yellow badge next to "Orders" (design); hidden when there are none.
   const activeOrderCount = countActiveOrders(useOrders());
@@ -158,6 +161,19 @@ export default function AccountDashboardLayout({ children }: { children: ReactNo
                   <path d="M4 13h7v7H4z" />
                 </svg>
                 Chiranvi Panel
+              </Link>
+            )}
+
+            {/* Delivery agents: open the Delivery Panel */}
+            {isDeliveryAgent && (
+              <Link href="/delivery" className={styles["account-sidebar-panel-link"]}>
+                <svg viewBox="0 0 24 24" className={styles["account-sidebar-link-icon"]} aria-hidden="true">
+                  <path d="M2.5 6.5h11v9.5h-11z" />
+                  <path d="M13.5 9.5h4l3.5 3.5v3h-7.5" />
+                  <path d="M6.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                  <path d="M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                </svg>
+                Delivery Panel
               </Link>
             )}
 
