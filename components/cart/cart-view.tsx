@@ -292,6 +292,9 @@ export default function CartView() {
   const setAppliedCode = setAppliedCouponCode;
   const [couponError, setCouponError] = useState("");
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+  // Pay now is waiting for the database, and what to say if it didn't take the order
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [placeOrderError, setPlaceOrderError] = useState("");
   // The address pop-up, and whether an address was confirmed there (ticks Address; the button becomes Pay now)
   const [isAddressPickerOpen, setIsAddressPickerOpen] = useState(false);
   const [hasPickedAddress, setHasPickedAddress] = useState(false);
@@ -454,9 +457,9 @@ export default function CartView() {
     The plan in the cart as one order: every bottle at the plan's price per litre, free delivery.
     With a running plan given, it extends that plan (same address) instead of starting a new one.
   */
-  function placeSubscriptionOrder(deliverTo: string, planToExtend?: RunningPlan) {
+  async function placeSubscriptionOrder(deliverTo: string, planToExtend?: RunningPlan) {
     if (!cartSubscription) return null;
-    const subscriptionOrder = placeOrder(
+    const subscriptionOrder = await placeOrder(
       [
         {
           ...cartSubscription.product,
@@ -487,6 +490,7 @@ export default function CartView() {
         },
       },
     );
+    if ("error" in subscriptionOrder) return subscriptionOrder;
     if (appliedCoupon && isCouponForPlan) {
       const deliverToName = (planToExtend ? planToExtend.deliverTo : deliverTo).split(" · ")[0];
       recordCouponUse(appliedCoupon.coupon.code, {
@@ -501,8 +505,8 @@ export default function CartView() {
   }
 
   // The one-time items as their own order (same address as the plan, when there is one)
-  function placeItemsOrder(deliverTo: string) {
-    const order = placeOrder(oneTimeItems, {
+  async function placeItemsOrder(deliverTo: string) {
+    const order = await placeOrder(oneTimeItems, {
       total: toPay,
       couponCode: appliedCoupon && !isCouponForPlan ? appliedCoupon.coupon.code : undefined,
       couponDiscount: itemsCouponDiscount || undefined,
@@ -512,6 +516,7 @@ export default function CartView() {
       area: chosenAddress.area,
       paymentMethod,
     });
+    if ("error" in order) return order;
     if (appliedCoupon && !isCouponForPlan) {
       recordCouponUse(appliedCoupon.coupon.code, {
         customerName: deliverTo.split(" · ")[0],
@@ -524,16 +529,37 @@ export default function CartView() {
     return order;
   }
 
-  // Pay now: the plan and the items in one go (two orders), then the cart is emptied
-  function placeTheOrder() {
+  /*
+    Pay now: the plan and the items in one go (two orders), then the cart is emptied. Each order shows as
+    placed only once the database has it. If the plan went in but the items didn't, the plan leaves the
+    cart and the items stay, so Pay now can be tried again for them.
+  */
+  async function placeTheOrder() {
     const deliverTo = planBeingExtended
       ? planBeingExtended.deliverTo
       : chosenAddress
         ? `${chosenAddress.name} · ${formatAddressLine(chosenAddress)}`
         : null;
-    if (!deliverTo) return;
-    const planOrder = placeSubscriptionOrder(deliverTo, planBeingExtended ?? undefined);
-    const itemsOrder = oneTimeItems.length > 0 ? placeItemsOrder(deliverTo) : null;
+    if (!deliverTo || isPlacingOrder) return;
+    setIsPlacingOrder(true);
+    setPlaceOrderError("");
+    const planOrder = await placeSubscriptionOrder(deliverTo, planBeingExtended ?? undefined);
+    if (planOrder && "error" in planOrder) {
+      setIsPlacingOrder(false);
+      setPlaceOrderError(planOrder.error);
+      return;
+    }
+    const itemsOrder = oneTimeItems.length > 0 ? await placeItemsOrder(deliverTo) : null;
+    setIsPlacingOrder(false);
+    if (itemsOrder && "error" in itemsOrder) {
+      if (planOrder) {
+        removeSubscriptionFromCart();
+        setPlaceOrderError(`Your milk plan is placed (${planOrder.orderId}), but the other items weren't. ${itemsOrder.error}`);
+      } else {
+        setPlaceOrderError(itemsOrder.error);
+      }
+      return;
+    }
     // Also takes out the milk's quantity from Add Quantity (the plan pays for those bottles now)
     emptyTheCart();
     setPlanAtPickedAddress(null);
@@ -1030,8 +1056,8 @@ export default function CartView() {
                   {planBeingExtended ? (
                     /* Extending a plan: same address, so straight to paying */
                     isLoggedIn ? (
-                      <button type="button" className={styles["checkout-place-button"]} onClick={placeTheOrder}>
-                        Pay now · {rupees(amountToPay)}
+                      <button type="button" className={styles["checkout-place-button"]} onClick={placeTheOrder} disabled={isPlacingOrder}>
+                        {isPlacingOrder ? "Placing your order…" : `Pay now · ${rupees(amountToPay)}`}
                       </button>
                     ) : (
                       <Link href="/login" className={styles["checkout-place-button"]} onClick={() => rememberPageAfterLogin("/cart")}>
@@ -1043,8 +1069,8 @@ export default function CartView() {
                       Select address
                     </button>
                   ) : isLoggedIn ? (
-                    <button type="button" className={styles["checkout-place-button"]} onClick={placeTheOrder}>
-                      Pay now · {rupees(amountToPay)}
+                    <button type="button" className={styles["checkout-place-button"]} onClick={placeTheOrder} disabled={isPlacingOrder}>
+                      {isPlacingOrder ? "Placing your order…" : `Pay now · ${rupees(amountToPay)}`}
                     </button>
                   ) : (
                     <Link href="/login" className={styles["checkout-place-button"]} onClick={() => rememberPageAfterLogin("/cart")}>
@@ -1052,6 +1078,11 @@ export default function CartView() {
                     </Link>
                   )}
                 </div>
+                {placeOrderError && (
+                  <p className={styles["checkout-place-order-error"]} role="alert">
+                    {placeOrderError}
+                  </p>
+                )}
                 <p className={styles["checkout-terms"]}>
                   {!hasPickedAddress && !planBeingExtended ? "Next: select the delivery address. " : ""}By placing this order you agree to our <Link href="/privacy-policy">Privacy policy</Link> and{" "}
                   <Link href="/refund">Refund policy</Link>

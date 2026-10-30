@@ -1,16 +1,24 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { setCustomerOrderStatus, type OrderStatus } from "./orders-store";
+import {
+  followSavedOrders,
+  getSavedOrders,
+  setCustomerOrderStatus,
+  setSavedOrderStatus,
+  type Order,
+  type OrderStatus,
+} from "./orders-store";
 import { customerIdForMobile } from "./admin-customers-store";
 
 /*
-  Orders seen in the Chiranvi Panel (Orders page, and "Recent orders" on the dashboard), until real
-  orders come from the database (Supabase).
-  The first time, 412 sample orders from the last seven days are made (newest first, like the design);
-  after that the list is saved in this browser, so status changes and new orders stay after a refresh.
-  Orders customers pay for on the website are added here too (addWebsiteOrder), with their Customer ID,
-  items, promised delivery and payment method; moving one along (Packed, Out for delivery, Delivered)
-  also moves the customer's own order, so their Orders page tracks it.
-  Later this is an "orders" table (with "order_items") in Supabase, with the same fields.
+  Orders seen in the Chiranvi Panel (Orders page, and "Recent orders" on the dashboard).
+  - Orders customers pay for on the website come from the database (the "orders" and "order_items" tables,
+    read by store/orders-store.ts), with their Customer ID, items, promised delivery and payment method.
+    Moving one along (Packed, Out for delivery, Delivered) changes it in the database, so the customer's
+    Orders page tracks it.
+  - Still kept in this browser: the 412 sample orders from the last seven days (made the first time,
+    newest first, like the design), orders added in the panel itself, and website orders placed before the
+    database kept them. Status changes to these stay after a refresh.
+  Both are shown as one list, newest first.
 */
 
 // The order's steps: Pending (placed, waiting) -> Packed -> Out for delivery -> Delivered (or Cancelled)
@@ -56,6 +64,57 @@ const TO_CUSTOMER_STATUS: Record<AdminOrderStatus, OrderStatus> = {
   Delivered: "delivered",
   Cancelled: "cancelled",
 };
+
+const TO_ADMIN_STATUS: Record<OrderStatus, AdminOrderStatus> = {
+  placed: "Pending",
+  packed: "Packed",
+  "out-for-delivery": "Out for delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+// "Milk 1 L × 2, Paneer 200 g"
+function describeItems(itemList: AdminOrderItem[]) {
+  return itemList.map((item) => `${item.name} ${item.packSize}${item.quantity > 1 ? ` × ${item.quantity}` : ""}`).join(", ");
+}
+
+// A website order saved in the database, as the panel shows it
+function toAdminOrder(order: Order): AdminOrder {
+  const placedAt = new Date(order.placedAt).toISOString();
+  const itemList: AdminOrderItem[] = order.items.map((item) => ({
+    productId: item.productId,
+    name: item.name,
+    packSize: item.packSize,
+    quantity: item.quantity,
+    price: item.price,
+    imageSource: item.imageSource,
+  }));
+  const statusChangedAt: Partial<Record<AdminOrderStatus, string>> = {};
+  for (const [status, time] of Object.entries(order.statusChangedAt ?? {}) as [OrderStatus, number][]) {
+    statusChangedAt[TO_ADMIN_STATUS[status]] = new Date(time).toISOString();
+  }
+  const customerMobile = order.customerMobile ?? "";
+  return {
+    orderNumber: `#${order.orderId}`,
+    placedAt,
+    customerName: order.customerName ?? (order.deliverTo ?? "").split(" · ")[0],
+    area: order.area ?? "",
+    items: describeItems(itemList),
+    amount: order.total,
+    payment: order.paymentMethod ?? "UPI",
+    slot: "By 7 AM",
+    status: TO_ADMIN_STATUS[order.status],
+    websiteOrderId: order.orderId,
+    customerId: customerMobile ? customerIdForMobile(customerMobile) : order.customerId,
+    customerMobile,
+    itemList,
+    deliverTo: order.deliverTo,
+    // Only kept when it differs from the login number (an order for someone else)
+    deliveryMobile: order.deliveryMobile && order.deliveryMobile !== customerMobile ? order.deliveryMobile : undefined,
+    promisedAt: order.promisedAt ? new Date(order.promisedAt).toISOString() : undefined,
+    statusChangedAt,
+  };
+}
 
 const STORAGE_KEY = "chiranvi-admin-orders";
 // When the Orders page was last opened (website orders placed after it are "new": sidebar badge and bell)
@@ -128,7 +187,8 @@ let adminOrders: AdminOrder[] | null = null;
 const listeners = new Set<() => void>();
 const EMPTY: AdminOrder[] = [];
 
-function getOrders() {
+// The orders kept in this browser (samples, panel orders, older website orders)
+function getBrowserOrders() {
   if (adminOrders) return adminOrders;
   if (typeof window === "undefined") return EMPTY;
   try {
@@ -148,6 +208,23 @@ function getOrders() {
   return adminOrders as AdminOrder[];
 }
 
+// Saved website orders and the browser's orders, newest first (kept as one list while neither changes)
+let mergedFrom: { saved: Order[]; browser: AdminOrder[] } | null = null;
+let mergedOrders: AdminOrder[] = EMPTY;
+
+function getOrders() {
+  const savedOrders = getSavedOrders();
+  const browserOrders = getBrowserOrders();
+  if (mergedFrom && mergedFrom.saved === savedOrders && mergedFrom.browser === browserOrders) return mergedOrders;
+  const savedNumbers = new Set(savedOrders.map((order) => `#${order.orderId}`));
+  mergedOrders = [
+    ...savedOrders.map(toAdminOrder),
+    ...browserOrders.filter((order) => !savedNumbers.has(order.orderNumber)),
+  ].sort((first, second) => (first.placedAt < second.placedAt ? 1 : first.placedAt > second.placedAt ? -1 : 0));
+  mergedFrom = { saved: savedOrders, browser: browserOrders };
+  return mergedOrders;
+}
+
 function saveOrders(newOrders: AdminOrder[]) {
   adminOrders = newOrders;
   try {
@@ -160,10 +237,16 @@ function saveOrders(newOrders: AdminOrder[]) {
 
 // Moving an order along; a website order's customer sees the same step on their Orders page
 export function changeAdminOrderStatus(orderNumber: string, status: AdminOrderStatus) {
+  // A website order in the database: changed there (the customer's order is the same row)
+  const savedOrder = getSavedOrders().find((order) => `#${order.orderId}` === orderNumber);
+  if (savedOrder) {
+    void setSavedOrderStatus(savedOrder.orderId, TO_CUSTOMER_STATUS[status]);
+    return;
+  }
   const now = new Date().toISOString();
   let websiteOrderId: string | undefined;
   saveOrders(
-    getOrders().map((order) => {
+    getBrowserOrders().map((order) => {
       if (order.orderNumber !== orderNumber) return order;
       websiteOrderId = order.websiteOrderId;
       return { ...order, status, statusChangedAt: { ...order.statusChangedAt, [status]: now } };
@@ -172,52 +255,9 @@ export function changeAdminOrderStatus(orderNumber: string, status: AdminOrderSt
   if (websiteOrderId) setCustomerOrderStatus(websiteOrderId, TO_CUSTOMER_STATUS[status]);
 }
 
-/*
-  A customer paid for an order on the website: it joins the panel's orders (Pending) under the same order
-  ID, with their Customer ID, items, address, promised delivery and payment method.
-*/
-export function addWebsiteOrder(order: {
-  websiteOrderId: string;
-  placedAt: number;
-  customerId?: string;
-  customerMobile: string;
-  customerName: string;
-  area: string;
-  itemList: AdminOrderItem[];
-  amount: number;
-  payment: OrderPaymentMethod;
-  deliverTo: string;
-  deliveryMobile?: string;
-  promisedAt: number;
-}) {
-  const placedAt = new Date(order.placedAt).toISOString();
-  const newOrder: AdminOrder = {
-    orderNumber: `#${order.websiteOrderId}`,
-    placedAt,
-    customerName: order.customerName,
-    area: order.area,
-    items: order.itemList.map((item) => `${item.name} ${item.packSize}${item.quantity > 1 ? ` × ${item.quantity}` : ""}`).join(", "),
-    amount: order.amount,
-    payment: order.payment,
-    slot: "By 7 AM",
-    status: "Pending",
-    websiteOrderId: order.websiteOrderId,
-    customerId: order.customerId,
-    customerMobile: order.customerMobile,
-    itemList: order.itemList,
-    deliverTo: order.deliverTo,
-    // Only kept when it differs from the login number (an order for someone else)
-    deliveryMobile: order.deliveryMobile && order.deliveryMobile !== order.customerMobile ? order.deliveryMobile : undefined,
-    promisedAt: new Date(order.promisedAt).toISOString(),
-    statusChangedAt: { Pending: placedAt },
-  };
-  saveOrders([newOrder, ...getOrders()]);
-  return newOrder;
-}
-
 // A new order goes to the top, numbered after the newest one (website orders keep their own IDs)
 export function addAdminOrder(order: Omit<AdminOrder, "orderNumber" | "placedAt" | "status">) {
-  const orders = getOrders();
+  const orders = getBrowserOrders();
   const highestNumber = Math.max(
     0,
     ...orders.filter((existing) => !existing.websiteOrderId).map((existing) => Number(existing.orderNumber.replace(/\D/g, ""))),
@@ -266,9 +306,12 @@ function subscribe(onChange: () => void) {
     onChange();
   }
   window.addEventListener("storage", followOtherTabs);
+  // New website orders and steps changed elsewhere, from the database
+  const stopFollowingSavedOrders = followSavedOrders(onChange);
   return () => {
     listeners.delete(onChange);
     window.removeEventListener("storage", followOtherTabs);
+    stopFollowingSavedOrders();
   };
 }
 

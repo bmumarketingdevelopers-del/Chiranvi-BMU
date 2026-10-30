@@ -1,23 +1,28 @@
 import { useMemo, useSyncExternalStore } from "react";
-// The same orders in every browser (until the database is connected)
+// Orders placed before the database kept them are still shared between browsers this way
 import "./shared-data-sync";
+import { createClient } from "@/lib/supabase/client";
 import { useLoggedInMobileNumber } from "@/components/login/login-status";
 import type { CartItem } from "./cart-store";
-import { addWebsiteOrder, type OrderPaymentMethod } from "./admin-orders-store";
+import type { OrderPaymentMethod } from "./admin-orders-store";
 import { recordCustomerOrder } from "./admin-customers-store";
 import { recordWebsitePayment } from "./admin-payments-store";
 import { addSubscription, type MilkType, type PlanLength } from "./admin-subscriptions-store";
 import { getCustomerProfile } from "./customer-profiles-store";
 
 /*
-  Customers' orders, until a real order service exists.
-  "Pay now" on the cart page (checkout) places an order from the cart (Razorpay is not connected yet, so
-  nothing is charged; the payment method chosen, UPI / Net banking / Card, is kept). Saved in this
-  browser (localStorage) under the customer's login number: each customer sees only their own orders
-  on My Orders, and they stay after logging out and in again.
-  Each order also goes to the Chiranvi Panel's Orders page (with the Customer ID and the promised
-  delivery: the next day by 7 AM), and counts on the customer's record there. When the panel moves an
-  order along (Packed, Out for delivery, Delivered), the customer's tracker here follows.
+  Customers' orders, saved in the Supabase "orders" and "order_items" tables
+  (supabase/migrations/0010_orders.sql).
+  "Pay now" on the cart page (checkout) places an order from the cart through the database's
+  place_order(), which fills in who ordered (from the login), the order number (CF-60001 …) and the
+  promised delivery (the next day by 7 AM). The order shows as placed only once the database has it.
+  Razorpay is not connected yet, so nothing is charged; the payment method chosen (UPI / Net banking /
+  Card) is kept, and the database marks the payment "not_charged".
+  The database's rules decide which orders come back: a customer gets their own (My Orders, My
+  Subscription), staff with Orders → View get every order (the Chiranvi Panel's Orders page uses the same
+  list). When the panel moves an order along (Packed, Out for delivery, Delivered), it changes the same row,
+  so the customer's tracker follows.
+  Orders placed before this were kept only in the browser (localStorage); they still show, unchanged.
 
   Order steps, in order: placed -> packed -> out-for-delivery -> delivered (or cancelled).
   A new order starts at "placed".
@@ -44,6 +49,10 @@ export type Order = {
   paymentMethod?: OrderPaymentMethod;
   promisedAt?: number; // time in milliseconds: the next day by 7 AM
   statusChangedAt?: Partial<Record<OrderStatus, number>>; // when each step was reached
+  // Saved in the database (orders placed before that were kept only in the browser)
+  isSaved?: boolean;
+  customerName?: string; // the name the order was saved with (the panel's Customer)
+  area?: string; // the delivery address's area (the panel's Location)
 };
 
 // The plan bought with a subscription order (shown on My Subscription)
@@ -99,11 +108,182 @@ function saveOrders(newOrders: Order[]) {
   } catch {
     // Storage blocked: orders last until the page is refreshed.
   }
+  announceOrders();
+}
+
+function announceOrders() {
   ordersListeners.forEach((onChange) => onChange());
+}
+
+// ---------- Orders in the database ----------
+
+type OrderItemRow = {
+  position: number;
+  product_id: string;
+  name: string;
+  pack_size: string;
+  quantity: number;
+  price_paise: number;
+  item: Partial<CartItem> | null; // the whole cart line as the website showed it
+};
+
+type OrderRow = {
+  order_number: string;
+  customer_mobile: string;
+  customer_code: string | null;
+  customer_name: string;
+  area: string;
+  status: OrderStatus;
+  status_changed_at: Partial<Record<OrderStatus, number>> | null;
+  total_paise: number;
+  delivery_fee_paise: number;
+  coupon_code: string | null;
+  coupon_discount_paise: number | null;
+  payment_method: OrderPaymentMethod;
+  deliver_to: string;
+  delivery_mobile: string | null;
+  subscription: OrderSubscription | null;
+  placed_at: string;
+  promised_at: string;
+  order_items: OrderItemRow[] | null;
+};
+
+// Read again this often while the page is open: new orders reach the panel, and a customer's tracker
+// follows the panel's steps
+const ORDERS_REFRESH_EVERY_MS = 30_000;
+
+let savedOrders: Order[] = noOrders;
+let isLoadingSavedOrders = false;
+let isFollowingSavedOrders = false;
+
+// The database keeps money in paise; the website shows rupees
+function toOrder(row: OrderRow): Order {
+  return {
+    orderId: row.order_number,
+    placedAt: new Date(row.placed_at).getTime(),
+    items: [...(row.order_items ?? [])]
+      .sort((first, second) => first.position - second.position)
+      .map((line) => ({
+        ...(line.item as CartItem),
+        productId: line.product_id,
+        name: line.name,
+        packSize: line.pack_size,
+        quantity: line.quantity,
+        price: line.price_paise / 100,
+      })),
+    total: row.total_paise / 100,
+    status: row.status,
+    couponCode: row.coupon_code ?? undefined,
+    couponDiscount: row.coupon_discount_paise === null ? undefined : row.coupon_discount_paise / 100,
+    deliveryFee: row.delivery_fee_paise / 100,
+    deliverTo: row.deliver_to,
+    deliveryMobile: row.delivery_mobile ?? undefined,
+    subscription: row.subscription ?? undefined,
+    customerMobile: row.customer_mobile,
+    customerId: row.customer_code ?? undefined,
+    paymentMethod: row.payment_method,
+    promisedAt: new Date(row.promised_at).getTime(),
+    statusChangedAt: row.status_changed_at ?? undefined,
+    isSaved: true,
+    customerName: row.customer_name,
+    area: row.area,
+  };
+}
+
+async function loadSavedOrders() {
+  if (isLoadingSavedOrders) return;
+  isLoadingSavedOrders = true;
+  const supabase = createClient();
+  // Logged out: no orders (visitors may not read the table at all, so don't ask)
+  const { data: login } = await supabase.auth.getSession();
+  if (!login.session) {
+    isLoadingSavedOrders = false;
+    if (savedOrders !== noOrders) {
+      savedOrders = noOrders;
+      announceOrders();
+    }
+    return;
+  }
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .order("placed_at", { ascending: false });
+  isLoadingSavedOrders = false;
+  if (error) {
+    console.error("Could not read the orders", error);
+    return;
+  }
+  savedOrders = ((data ?? []) as OrderRow[]).map(toOrder);
+  announceOrders();
+}
+
+// Reads the orders once, then again on focus, when someone logs in / out, and every 30 seconds while visible
+function startFollowingSavedOrders() {
+  if (isFollowingSavedOrders || typeof window === "undefined") return;
+  isFollowingSavedOrders = true;
+  void loadSavedOrders();
+  window.addEventListener("focus", () => void loadSavedOrders());
+  window.setInterval(() => {
+    if (document.visibilityState === "visible") void loadSavedOrders();
+  }, ORDERS_REFRESH_EVERY_MS);
+  createClient().auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_IN" || event === "SIGNED_OUT") window.setTimeout(() => void loadSavedOrders(), 0);
+  });
+}
+
+// For the Chiranvi Panel: every saved order the logged-in staff member may see, newest first
+export function getSavedOrders() {
+  return savedOrders;
+}
+
+export function followSavedOrders(onChange: () => void) {
+  ordersListeners.add(onChange);
+  startFollowingSavedOrders();
+  return () => {
+    ordersListeners.delete(onChange);
+  };
+}
+
+/*
+  The panel moved a saved order along: shown at once, then saved (only the step and its time; the database
+  refuses anything else). If the database refuses it (no Orders → Edit), the orders are read again.
+*/
+export async function setSavedOrderStatus(orderId: string, status: OrderStatus) {
+  const order = savedOrders.find((saved) => saved.orderId === orderId);
+  if (!order) return;
+  const statusChangedAt = { ...order.statusChangedAt, [status]: Date.now() };
+  savedOrders = savedOrders.map((saved) => (saved.orderId === orderId ? { ...saved, status, statusChangedAt } : saved));
+  announceOrders();
+  const { error, count } = await createClient()
+    .from("orders")
+    .update({ status, status_changed_at: statusChangedAt }, { count: "exact" })
+    .eq("order_number", orderId);
+  if (error || count === 0) {
+    console.error("Could not change the order", error);
+    void loadSavedOrders();
+  }
+}
+
+// ---------- Both together ----------
+
+// Saved orders, then the older browser-only ones, newest first (kept as one list while neither changes)
+let mergedFrom: { saved: Order[]; browser: Order[] } | null = null;
+let mergedOrders: Order[] = noOrders;
+
+function getAllOrders() {
+  const browserOrders = getOrders();
+  if (mergedFrom && mergedFrom.saved === savedOrders && mergedFrom.browser === browserOrders) return mergedOrders;
+  const savedIds = new Set(savedOrders.map((order) => order.orderId));
+  mergedOrders = [...savedOrders, ...browserOrders.filter((order) => !savedIds.has(order.orderId))].sort(
+    (first, second) => second.placedAt - first.placedAt,
+  );
+  mergedFrom = { saved: savedOrders, browser: browserOrders };
+  return mergedOrders;
 }
 
 function subscribeToOrders(onChange: () => void) {
   ordersListeners.add(onChange);
+  startFollowingSavedOrders();
   // A step changed in the Chiranvi Panel open in another tab
   function followOtherTabs(event: StorageEvent) {
     if (event.key !== ORDERS_STORAGE_KEY) return;
@@ -119,7 +299,7 @@ function subscribeToOrders(onChange: () => void) {
 
 // The logged-in customer's orders, newest first. Logged out, and on the server, there are none.
 export function useOrders() {
-  const allOrders = useSyncExternalStore(subscribeToOrders, getOrders, () => noOrders);
+  const allOrders = useSyncExternalStore(subscribeToOrders, getAllOrders, () => noOrders);
   const mobileNumber = useLoggedInMobileNumber();
   return useMemo(
     () => (mobileNumber ? allOrders.filter((order) => order.customerMobile === mobileNumber) : noOrders),
@@ -127,7 +307,7 @@ export function useOrders() {
   );
 }
 
-// The panel moved an order along: the customer's tracker shows the same step
+// The panel moved an older browser-only order along: the customer's tracker shows the same step
 export function setCustomerOrderStatus(orderId: string, status: OrderStatus) {
   const now = Date.now();
   saveOrders(
@@ -135,14 +315,6 @@ export function setCustomerOrderStatus(orderId: string, status: OrderStatus) {
       order.orderId === orderId ? { ...order, status, statusChangedAt: { ...order.statusChangedAt, [status]: now } } : order,
     ),
   );
-}
-
-// The delivery promised for an order placed at this time: the next day by 7 AM
-function promisedDeliveryFor(placedAt: number) {
-  const promised = new Date(placedAt);
-  promised.setDate(promised.getDate() + 1);
-  promised.setHours(7, 0, 0, 0);
-  return promised.getTime();
 }
 
 // The logged-in number, read from the login saved in this browser
@@ -160,52 +332,57 @@ export function countActiveOrders(orderList: Order[]) {
   return orderList.filter((order) => order.status !== "delivered" && order.status !== "cancelled").length;
 }
 
+// What place_order() answers
+type PlacedOrderAnswer = {
+  orderNumber: string;
+  placedAt: number;
+  promisedAt: number;
+  customerName: string;
+  customerCode: string | null;
+  area: string;
+};
+
 /*
-  "Pay now": turns the cart into a new order for the logged-in customer (with the checkout's total,
-  coupon, address and payment method), sends it to the Chiranvi Panel's Orders page and counts it on
-  the customer's record there.
+  "Pay now": saves the cart as a new order for the logged-in customer (with the checkout's total, coupon,
+  address and payment method) in the database, which puts it on the Chiranvi Panel's Orders page. Then it
+  counts on the customer's record, the Payments page and (a new milk plan) the Subscriptions page, which
+  are still kept in the browser. Answers the order, or an error to show if the database didn't take it.
 */
-export function placeOrder(cartItems: CartItem[], checkout: CheckoutDetails) {
-  const placedAt = Date.now();
+export async function placeOrder(cartItems: CartItem[], checkout: CheckoutDetails): Promise<Order | { error: string }> {
   const customerMobile = readLoggedInMobileNumber() ?? "";
   const profile = customerMobile ? getCustomerProfile(customerMobile) : null;
   const { area, ...orderDetails } = checkout;
+  const paymentMethod = checkout.paymentMethod ?? "UPI";
+  const { data, error } = await createClient().rpc("place_order", { details: { ...checkout, paymentMethod, items: cartItems } });
+  if (error || !data) {
+    console.error("Could not place the order", error);
+    return {
+      error:
+        error?.message === "Log in to place an order"
+          ? "Please log in again to place your order."
+          : "Couldn't place your order. Check your internet and try again.",
+    };
+  }
+  const answer = data as PlacedOrderAnswer;
   const newOrder: Order = {
-    orderId: `CF-${Math.floor(10000 + Math.random() * 90000)}`,
-    placedAt,
+    orderId: answer.orderNumber,
+    placedAt: answer.placedAt,
     items: cartItems,
     status: "placed",
     ...orderDetails,
-    paymentMethod: checkout.paymentMethod ?? "UPI",
+    paymentMethod,
     customerMobile,
-    customerId: profile?.customerId,
-    promisedAt: promisedDeliveryFor(placedAt),
-    statusChangedAt: { placed: placedAt },
+    customerId: answer.customerCode ?? profile?.customerId,
+    promisedAt: answer.promisedAt,
+    statusChangedAt: { placed: answer.placedAt },
+    isSaved: true,
+    customerName: answer.customerName,
+    area: answer.area,
   };
-  saveOrders([newOrder, ...getOrders()]);
+  savedOrders = [newOrder, ...savedOrders.filter((order) => order.orderId !== newOrder.orderId)];
+  announceOrders();
 
-  const customerName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : checkout.deliverTo.split(" · ")[0];
-  addWebsiteOrder({
-    websiteOrderId: newOrder.orderId,
-    placedAt,
-    customerId: profile?.customerId,
-    customerMobile,
-    customerName,
-    area: area || profile?.location || "",
-    itemList: cartItems.map((item) => ({
-      productId: item.productId,
-      name: item.name,
-      packSize: item.packSize,
-      quantity: item.quantity,
-      price: item.price,
-      imageSource: item.imageSource,
-    })),
-    amount: checkout.total,
-    payment: newOrder.paymentMethod ?? "UPI",
-    deliverTo: checkout.deliverTo,
-    deliveryMobile: checkout.deliveryMobile,
-    promisedAt: newOrder.promisedAt ?? promisedDeliveryFor(placedAt),
-  });
+  const customerName = answer.customerName;
   if (customerMobile) {
     recordCustomerOrder(customerMobile, {
       amount: checkout.total,
@@ -214,12 +391,12 @@ export function placeOrder(cartItems: CartItem[], checkout: CheckoutDetails) {
   }
 
   // The payment, on the panel's Payments page
-  const panelArea = area || profile?.location || "";
+  const panelArea = answer.area || area || profile?.location || "";
   recordWebsitePayment({
     customerName,
     area: panelArea,
     type: checkout.subscription ? "Subscription" : "Order",
-    method: newOrder.paymentMethod ?? "UPI",
+    method: paymentMethod,
     amount: checkout.total,
     websiteOrderId: newOrder.orderId,
   });

@@ -336,16 +336,23 @@ export async function checkOwnerResetCode(code: string): Promise<string | null> 
 
 // ---------- Hooks ----------
 
+// Back to this window (e.g. after the owner changed the team on another laptop): read the team again.
+// One listener for the whole page, not one per component, so a focus is one read, not one per hook.
+let isFollowingFocus = false;
+
+function startRefreshingOnFocus() {
+  if (isFollowingFocus || typeof window === "undefined") return;
+  isFollowingFocus = true;
+  window.addEventListener("focus", () => {
+    if (loadedForMobile) ensureTeamFor(loadedForMobile, true);
+  });
+}
+
 function subscribeToTeam(onChange: () => void) {
   staffListeners.add(onChange);
-  // Back to this window (e.g. after the owner changed the team on another laptop): read the team again
-  function refreshOnFocus() {
-    if (loadedForMobile) ensureTeamFor(loadedForMobile, true);
-  }
-  window.addEventListener("focus", refreshOnFocus);
+  startRefreshingOnFocus();
   return () => {
     staffListeners.delete(onChange);
-    window.removeEventListener("focus", refreshOnFocus);
   };
 }
 
