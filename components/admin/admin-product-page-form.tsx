@@ -45,7 +45,7 @@ import {
   type RowSlot,
 } from "@/store/admin-product-rows-store";
 import { addProduct, addProductCategory, removeProduct, useProductCategories, useShopProducts, type ProductCategory } from "@/store/products-store";
-import { AdminDialog, AdminDialogField, adminInputClassName } from "./admin-shared";
+import { AdminDialog, AdminDialogField, adminInputClassName, useIsPanelOwner } from "./admin-shared";
 import styles from "./admin-product-page-form.module.css";
 
 /*
@@ -573,6 +573,9 @@ export function ProductPageForm({
   onDelete?: () => void; // shows "Delete product" in the form (a page without a card of its own)
 }) {
   const isEditing = Boolean(editingPage);
+  // Editing a product's prices is for the owner only (the database refuses anyone else): the price sections freeze
+  const isOwner = useIsPanelOwner();
+  const pricesLockedNote = isEditing && !isOwner ? "Only the owner can change prices. These stay as they are." : undefined;
   const oneTimeEditing = editingPage?.kind === "one-time" ? editingPage : undefined;
   const subscriptionEditing = editingPage?.kind === "subscription" ? editingPage : undefined;
   const shopProducts = useShopProducts();
@@ -1162,7 +1165,7 @@ export function ProductPageForm({
 
       {isOneTime ? (
         <>
-          <FormSection number={nextSection()} title="Pack sizes & prices">
+          <FormSection number={nextSection()} title="Pack sizes & prices" lockedNote={pricesLockedNote}>
             <div className={styles["admin-product-page-rows"]}>
               {/* Phones: one line (the boxes wrap two a row); larger screens: each label above its own box */}
               <span className={`${styles["admin-product-page-row-heading"]} ${styles["admin-product-page-row-heading-phone"]}`}>
@@ -1260,7 +1263,7 @@ export function ProductPageForm({
         </>
       ) : (
         <>
-          <FormSection number={nextSection()} title="Price & units">
+          <FormSection number={nextSection()} title="Price & units" lockedNote={pricesLockedNote}>
             <AdminDialogField label={`Price per ${unitName || "unit"} ₹ *`}>
               <input className={adminInputClassName} inputMode="decimal" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="95" />
             </AdminDialogField>
@@ -1309,7 +1312,7 @@ export function ProductPageForm({
             </AdminDialogField>
           </FormSection>
 
-          <FormSection number={nextSection()} title="Subscription plans">
+          <FormSection number={nextSection()} title="Subscription plans" lockedNote={pricesLockedNote}>
             <div className={styles["admin-product-page-rows"]}>
               <span className={`${styles["admin-product-page-row-heading"]} ${styles["admin-product-page-row-heading-phone"]}`}>
                 Plan · Months · Days · % off · Tag
@@ -1718,7 +1721,11 @@ export function ProductRowSlotsEditor({
 }
 
 // A numbered, titled group of fields across the whole form ("1  Basic details")
-function FormSection({ number, title, children }: { number: number; title: string; children: ReactNode }) {
+/*
+  lockedNote: the section is frozen (a disabled fieldset greys every box and button inside) and the note says
+  why. Used for the price sections when someone other than the owner edits a product.
+*/
+function FormSection({ number, title, children, lockedNote }: { number: number; title: string; children: ReactNode; lockedNote?: string }) {
   return (
     <section className={styles["admin-product-page-section"]}>
       <h3 className={styles["admin-product-page-section-title"]}>
@@ -1726,8 +1733,12 @@ function FormSection({ number, title, children }: { number: number; title: strin
           {number}
         </span>
         {title}
+        {lockedNote && <span className={styles["admin-product-page-section-locked-tag"]}>Locked</span>}
       </h3>
-      <div className={styles["admin-product-page-section-fields"]}>{children}</div>
+      {lockedNote && <p className={styles["admin-product-page-section-locked-note"]}>{lockedNote}</p>}
+      <fieldset disabled={Boolean(lockedNote)} className={styles["admin-product-page-section-fields"]}>
+        {children}
+      </fieldset>
     </section>
   );
 }

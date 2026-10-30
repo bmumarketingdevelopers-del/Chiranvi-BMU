@@ -65,10 +65,41 @@
   gap: calc(6 * var(--admin-pixel));
 }
 
+/* A fieldset (so a locked section can disable everything inside): the browser's border and spacing removed */
 .admin-product-page-section-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: calc(12 * var(--admin-pixel));
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* Locked price section (not the owner): greyed boxes that cannot be typed in */
+.admin-product-page-section-fields:disabled input,
+.admin-product-page-section-fields:disabled select,
+.admin-product-page-section-fields:disabled button {
+  background: #f3f3f0;
+  color: #8a8a85;
+  cursor: not-allowed;
+}
+
+.admin-product-page-section-locked-tag {
+  padding: calc(2 * var(--admin-pixel)) calc(8 * var(--admin-pixel));
+  border-radius: 9999px;
+  background: #f3f3f0;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(11 * var(--admin-pixel));
+  font-weight: 600;
+  color: #5f5f5f;
+}
+
+.admin-product-page-section-locked-note {
+  margin: 0 0 calc(10 * var(--admin-pixel));
+  font-family: var(--font-poppins), sans-serif;
+  font-size: calc(12 * var(--admin-pixel));
+  color: #5f5f5f;
 }
 
 /*

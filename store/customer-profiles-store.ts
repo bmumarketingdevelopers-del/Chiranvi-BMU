@@ -135,6 +135,16 @@ export function loadCustomerProfile(mobileNumber: string, refresh = false): Prom
   const running = loadingMobiles.get(mobileNumber);
   if (running && !refresh) return running;
   const reading = (async () => {
+    /*
+      Only the logged-in customer can read their row. Read without that login (the session not there yet,
+      or another number's), the answer "no row" would be wrong, so it is not kept: the read runs again
+      once the login is there (see followProfileChanges).
+    */
+    const { data: sessionData } = await createClient().auth.getSession();
+    if ((sessionData.session?.user.phone ?? "").replace(/\D/g, "").slice(-10) !== mobileNumber) {
+      loadingMobiles.delete(mobileNumber);
+      return profiles[mobileNumber] ?? null;
+    }
     const { data, error } = await createClient()
       .from("customers")
       .select("*")
@@ -245,8 +255,30 @@ export function saveCustomerProfile(details: CustomerProfileDetails): CustomerPr
   return profile;
 }
 
+/*
+  Reads the logged-in customer's row again when the window comes back into focus or someone logs in, so
+  a profile saved on another device (or after this tab first looked) shows here too. Without this, a tab
+  that once read "no profile yet" kept showing "New customer" until it was refreshed.
+*/
+let isFollowingChanges = false;
+function followProfileChanges() {
+  if (isFollowingChanges || typeof window === "undefined") return;
+  isFollowingChanges = true;
+  const readAgain = async () => {
+    const { data } = await createClient().auth.getSession();
+    const digits = (data.session?.user.phone ?? "").replace(/\D/g, "").slice(-10);
+    if (digits.length === 10) void loadCustomerProfile(digits, true);
+  };
+  window.addEventListener("focus", () => void readAgain());
+  createClient().auth.onAuthStateChange((event) => {
+    // Called from inside Supabase: the read is done just after, as Supabase advises
+    if (event === "SIGNED_IN") window.setTimeout(() => void readAgain(), 0);
+  });
+}
+
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
+  followProfileChanges();
   return () => {
     listeners.delete(onChange);
   };
