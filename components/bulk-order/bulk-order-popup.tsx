@@ -9,11 +9,12 @@ import styles from "./bulk-order-popup.module.css";
 
 /*
   "We take bulk orders!" pop-up, on every customer page (mounted once in app/layout.tsx):
-  - every time the site is opened, refreshed or reopened: shows 5 seconds after the page loads; closing
-    it (×, Maybe later, Escape or a click outside it) brings it back once more, 30 seconds later, then not again until the next
-    load (also after a quote is sent);
-  - never on /admin, /login, /cart or /checkout;
-  - floats over the page without darkening it: the page behind can still be scrolled and used;
+  - every time the site is opened, refreshed or reopened: shows 5 seconds after the page loads; closing it
+    (×, Maybe later, Escape or a click outside it) brings it back once more, 30 seconds later; after that
+    second close (or once a quote is sent) it does not come back until the next load. Kept only in memory,
+    so moving between pages keeps the count, and every refresh starts fresh again;
+  - never on /admin, /login, /cart or /checkout (it waits until a page where it may show);
+  - while it is open, the page behind is blurred and dimmed and cannot be clicked or scrolled;
   - opens like the footer's "Good Milk. Good Health." banner: it fades and slides up (700 ms), while
     the lines on its green picture band draw themselves.
   "Get a bulk quote" turns it into the form: name, address, phone, email (optional), and every product with
@@ -23,6 +24,8 @@ import styles from "./bulk-order-popup.module.css";
 
 const FIRST_SHOW_AFTER_MS = 5_000;
 const SECOND_SHOW_AFTER_MS = 30_000;
+// Sent on window when the pop-up is closed: the log in / complete profile notification starts after it
+export const BULK_ORDER_POPUP_CLOSED_EVENT = "chiranvi-bulk-order-popup-closed";
 const PHONE_NUMBER = "9902881718";
 
 const HIDDEN_PAGE_STARTS = ["/admin", "/login", "/cart", "/checkout"];
@@ -38,19 +41,21 @@ const BAND_PICTURES = [
 
 type View = "hidden" | "offer" | "form" | "thanks";
 
+// This page load: "fresh" (not closed yet), "closed-once" (shows once more, 30 s later), "done"
+type VisitStage = "fresh" | "closed-once" | "done";
+
 export default function BulkOrderPopup() {
   const pathname = usePathname();
   const isHiddenPage = HIDDEN_PAGE_STARTS.some((start) => pathname.startsWith(start));
   const [view, setView] = useState<View>("hidden");
   // Becomes true once the timer has run out; the pop-up then waits for a page where it may show
   const [isDue, setIsDue] = useState(false);
-  // This page load: "fresh" (not shown yet), "closed-once" (shows once more after 30 s), "done".
-  // Kept only in memory, so every refresh or reopening of the site starts fresh again.
-  const [visitStage, setVisitStage] = useState<"fresh" | "closed-once" | "done">("fresh");
+  // This page load's stage (only in memory, so a refresh starts fresh)
+  const [visitStage, setVisitStage] = useState<VisitStage>("fresh");
 
-  // The timer: 5 s after landing, or 30 s after the first close
+  // The timer: 5 s after the page loads, or 30 s after the first close; none once done
   useEffect(() => {
-    if (visitStage !== "fresh" && visitStage !== "closed-once") return;
+    if (visitStage === "done") return;
     const timer = window.setTimeout(() => setIsDue(true), visitStage === "fresh" ? FIRST_SHOW_AFTER_MS : SECOND_SHOW_AFTER_MS);
     return () => window.clearTimeout(timer);
   }, [visitStage]);
@@ -63,10 +68,23 @@ export default function BulkOrderPopup() {
     setIsDue(false);
   }, [isDue, isHiddenPage, view]);
 
-  // Closing: the first time it comes back after a minute; the second time it is done until the next load
+  // While it is open the page behind does not scroll (it is blurred behind the pop-up)
+  const isOpen = view !== "hidden" && !isHiddenPage;
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
+  // Closing: the first time it comes back 30 s later; the second time (or after a quote) it is done for
+  // this page load. The notification's 10 s start now.
   function close() {
     setVisitStage(view === "thanks" || visitStage === "closed-once" ? "done" : "closed-once");
     setView("hidden");
+    window.dispatchEvent(new Event(BULK_ORDER_POPUP_CLOSED_EVENT));
   }
 
   // Escape, or a click anywhere outside the pop-up, closes it
@@ -87,15 +105,15 @@ export default function BulkOrderPopup() {
     };
   });
 
-  if (view === "hidden" || isHiddenPage) return null;
+  if (!isOpen) return null;
 
   return (
-    // A see-through layer only to centre the pop-up: clicks and scrolling go through to the page
+    // The blurred, dimmed layer over the page; a click on it (outside the pop-up) closes the pop-up
     <div className={styles["bulk-order-backdrop"]}>
       <div
         ref={popupRef}
         role="dialog"
-        aria-modal="false"
+        aria-modal="true"
         aria-labelledby="bulk-order-title"
         className={`${styles["bulk-order-popup"]} ${view === "form" ? styles["bulk-order-popup-wide"] : ""}`}
       >

@@ -1,0 +1,129 @@
+/* "Complete your profile": a white card on the right, above the page, sliding in from the right edge */
+.profile-reminder-toast {
+  position: fixed;
+  z-index: 55; /* above the menu bar (50), below the bulk order pop-up's blurred layer (60) */
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 16px 14px 16px 16px;
+  border: 1px solid #e6f0e1;
+  border-left: 4px solid #f5bf2c;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(31, 77, 46, 0.18);
+  font-family: var(--font-poppins), sans-serif;
+  color: #1a1a1a;
+  animation: profile-reminder-slide-in 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes profile-reminder-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 32px));
+  }
+}
+
+.profile-reminder-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: #fbf3e1;
+}
+
+.profile-reminder-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #c99a1e;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.profile-reminder-words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.profile-reminder-title {
+  margin: 0;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f4d2e;
+}
+
+.profile-reminder-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5f5f5f;
+}
+
+.profile-reminder-link {
+  margin-top: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: #1f4d2e;
+  font-family: var(--font-ubuntu), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+
+.profile-reminder-link:hover,
+.profile-reminder-link:focus-visible {
+  background: #285c3a;
+}
+
+.profile-reminder-close-button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-reminder-close-button:hover,
+.profile-reminder-close-button:focus-visible {
+  background: #f3f3f0;
+}
+
+.profile-reminder-close-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #5f5f5f;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Phones: across the bottom, inside the 16px side margins */
+@media (max-width: 600px) {
+  .profile-reminder-toast {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-reminder-toast {
+    animation: none;
+  }
+}
