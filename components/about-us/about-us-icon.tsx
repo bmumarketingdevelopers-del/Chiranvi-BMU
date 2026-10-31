@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import styles from "./about-us-page.module.css";
 
 /*
-  Icons for the About Us page, all in one colour (the colour of the text around them, so each section
+  Icons for the About Us page, all in one colour around them, so each section
   can make them green, gold or dark just with CSS).
   - Icons from the design (cow, barn, leaf, flask, churn, shield) are the design's own pictures, used as
     a mask: the picture gives the shape and the CSS colour fills it.
